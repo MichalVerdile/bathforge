@@ -1,0 +1,96 @@
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
+
+interface Template {
+  id: number;
+  name: string;
+  preview: string;
+  roomData: {
+    width: number;
+    height: number;
+    depth: number;
+    fixtures: Array<{
+      type: 'bathtub' | 'sink' | 'toilet' | 'shower' | 'window' | 'door';
+      position: { x: number; y: number; z: number };
+      rotation: { x: number; y: number; z: number };
+      scale: { x: number; y: number; z: number };
+    }>;
+  };
+}
+
+interface Template3DPreviewProps {
+  template: Template;
+}
+
+// 3D Model Component
+const RoomModel: React.FC<{ modelPath: string }> = ({ modelPath }) => {
+  const { scene } = useGLTF(modelPath);
+  return <primitive object={scene} scale={[0.5, 0.5, 0.5]} position={[0, -1, 0]} />;
+};
+
+// 3D Preview Component
+const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    // Hide loading overlay after a delay to ensure model is loaded
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="template-3d-preview">
+      <div className="model-preview">
+        <Canvas
+          camera={{ position: [8, 8, 8], fov: 60 }}
+          style={{ width: '100%', height: '100%' }}
+        >
+          <Suspense fallback={null}>
+            {/* Lighting */}
+            <ambientLight intensity={0.6} />
+            <directionalLight 
+              position={[10, 10, 5]} 
+              intensity={0.8} 
+              castShadow
+              shadow-mapSize-width={2048}
+              shadow-mapSize-height={2048}
+            />
+            <pointLight position={[-10, -10, -10]} intensity={0.4} />
+            
+            {/* Environment */}
+            <Environment preset="apartment" />
+            
+            {/* 3D Model */}
+            <RoomModel modelPath={template.preview} />
+            
+            {/* Controls */}
+            <OrbitControls
+              enablePan={true}
+              enableZoom={true}
+              enableRotate={true}
+              minDistance={5}
+              maxDistance={25}
+              maxPolarAngle={Math.PI / 2}
+              autoRotate={false}
+              autoRotateSpeed={0.5}
+            />
+          </Suspense>
+        </Canvas>
+        
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="loading-overlay">
+            <div className="loading-spinner"></div>
+            <span>Loading 3D Model...</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Template3DPreview;

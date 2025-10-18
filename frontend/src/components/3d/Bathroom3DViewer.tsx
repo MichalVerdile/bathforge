@@ -1,9 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Scene3D from './Scene3D';
 import ModelLoader from './ModelLoader';
 import ModelBrowser, { type ModelItem } from './ModelBrowser';
-import SceneControls, { SceneControlsState } from './SceneControls';
 import * as THREE from 'three';
+import './Bathroom3D.css';
+
+interface SceneControlsState {
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: number;
+  autoRotate: boolean;
+  wireframe: boolean;
+  showGrid: boolean;
+  showEnvironment: boolean;
+}
 
 interface Bathroom3DViewerProps {
   style?: React.CSSProperties;
@@ -12,18 +22,83 @@ interface Bathroom3DViewerProps {
 export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [selectedModel, setSelectedModel] = useState<ModelItem | null>(null);
   const [loadedModels, setLoadedModels] = useState<{ model: ModelItem; id: string }[]>([]);
+  const [templateData, setTemplateData] = useState<any>(null);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
     scale: 1,
     autoRotate: false,
     wireframe: false,
-    showGrid: true,
-    showEnvironment: true
+    showGrid: false,
+    showEnvironment: false
   });
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const modelRef = useRef<THREE.Group | null>(null);
+
+  // Load template data from localStorage if available
+  useEffect(() => {
+    const storedTemplate = localStorage.getItem('selectedTemplate');
+    if (storedTemplate) {
+      try {
+        const template = JSON.parse(storedTemplate);
+        setTemplateData(template);
+        loadTemplateFixtures(template);
+      } catch (error) {
+        console.error('Error parsing template data:', error);
+      }
+    }
+  }, []);
+
+  const loadTemplateFixtures = (template: any) => {
+    // This function would load the fixtures from the template
+    // For now, we'll just log the template data
+    console.log('Loading template fixtures:', template);
+    
+    // Auto-load basic bathroom fixtures based on template
+    const fixtureModels: ModelItem[] = [];
+    
+    template.roomData.fixtures.forEach((fixture: any, index: number) => {
+      let modelPath = '';
+      switch (fixture.type) {
+        case 'bathtub':
+          modelPath = '/assets/bathtubs/modern-bathtub.glb';
+          break;
+        case 'sink':
+          modelPath = '/assets/basins/modern-basin.glb';
+          break;
+        case 'toilet':
+          modelPath = '/assets/wcs/modern-toilet.glb';
+          break;
+        case 'shower':
+          modelPath = '/assets/shower/modern-shower.glb';
+          break;
+        default:
+          return;
+      }
+      
+      fixtureModels.push({
+        id: index + 1,
+        name: `${fixture.type.charAt(0).toUpperCase() + fixture.type.slice(1)}`,
+        url: modelPath,
+        category: fixture.type,
+        categoryId: 1,
+        priceRange: 'MEDIUM' as const,
+        mountingType: 'FLOOR' as const,
+        availableColors: [],
+        thumbnail: `/assets/${fixture.type}/${fixture.type}-preview.jpg`
+      });
+    });
+    
+    // Load the fixtures into the scene
+    fixtureModels.forEach((fixtureModel, index) => {
+      const loadedModel = {
+        model: fixtureModel,
+        id: `template_fixture_${index}_${Date.now()}`
+      };
+      setLoadedModels(prev => [...prev, loadedModel]);
+    });
+  };
 
   const handleModelSelect = (model: ModelItem) => {
     setSelectedModel(model);
@@ -45,25 +120,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }));
   };
 
-  const handleResetView = () => {
-    setControls(prev => ({
-      ...prev,
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: 1,
-      autoRotate: false
-    }));
-  };
-
-  const handleCenterModel = () => {
-    if (selectedModel) {
-      setControls(prev => ({
-        ...prev,
-        position: [0, 0, 0]
-      }));
-    }
-  };
-
   const handleModelLoad = (model: THREE.Group) => {
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
@@ -80,28 +136,15 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   };
 
   return (
-    <div style={{
-      width: '100%',
-      height: '100vh',
-      display: 'flex',
-      background: '#f5f5f5',
-      ...style
-    }}>
+    <div className="bathroom-3d-viewer" style={style}>
       {/* Left Sidebar - Model Browser */}
       <ModelBrowser
         onModelSelect={handleModelSelect}
         selectedModel={selectedModel}
-        style={{ flexShrink: 0 }}
       />
 
       {/* Main 3D Scene */}
-      <div style={{ 
-        flex: 1, 
-        position: 'relative',
-        margin: '10px',
-        borderRadius: '8px',
-        overflow: 'hidden'
-      }}>
+      <div className="scene-container">
         <Scene3D
           showGrid={controls.showGrid}
           showEnvironment={controls.showEnvironment}
@@ -127,71 +170,42 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
         {/* Model Info Overlay */}
         {selectedModel && (
-          <div style={{
-            position: 'absolute',
-            top: '50px',
-            left: '20px',
-            background: 'rgba(255, 255, 255, 0.95)',
-            padding: '12px 16px',
-            borderRadius: '6px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            maxWidth: '300px'
-          }}>
-            <h4 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#212529' }}>
+          <div className="model-info-overlay">
+            <h4 className="model-info-title">
               {selectedModel.name}
             </h4>
-            <p style={{ margin: '0', fontSize: '14px', color: '#6c757d' }}>
+            <p className="model-info-details">
               Category: {selectedModel.category.charAt(0).toUpperCase() + selectedModel.category.slice(1)}
             </p>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6c757d' }}>
+            <p className="model-info-category">
               Price Range: {selectedModel.priceRange} • {selectedModel.mountingType}
             </p>
             {selectedModel.availableColors && selectedModel.availableColors.length > 0 && (
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#adb5bd' }}>
+              <p className="model-info-colors">
                 {selectedModel.availableColors.length} color{selectedModel.availableColors.length > 1 ? 's' : ''} available
               </p>
             )}
-            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#adb5bd' }}>
-              Format: GLB/GLTF 3D Model
+            <p className="model-info-format">
+              3D Model Format: GLB/GLTF
             </p>
           </div>
         )}
 
-        {/* No Model Selected Message */}
+        {/* Welcome Message */}
         {!selectedModel && (
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            textAlign: 'center',
-            color: '#6c757d',
-            background: 'rgba(255, 255, 255, 0.9)',
-            padding: '30px',
-            borderRadius: '8px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '20px' }}>
-              Welcome to BathForge 3D Viewer
+          <div className="welcome-message">
+            <h3 className="welcome-title">
+              Welcome to BathForge 3D
             </h3>
-            <p style={{ margin: '0', fontSize: '16px' }}>
-              Select a 3D model from the browser on the left to get started
+            <p className="welcome-description">
+              Browse and select bathroom fixtures to preview them in stunning 3D
             </p>
-            <p style={{ margin: '8px 0 0 0', fontSize: '14px', opacity: 0.8 }}>
-              Browse basins, bathtubs, accessories and more!
+            <p className="welcome-subtitle">
+              Click on any product card to get started! 🛁✨
             </p>
           </div>
         )}
       </div>
-
-      {/* Right Sidebar - Scene Controls */}
-      <SceneControls
-        controls={controls}
-        onControlsChange={setControls}
-        onResetView={handleResetView}
-        onCenterModel={handleCenterModel}
-        style={{ flexShrink: 0, margin: '10px 10px 10px 0' }}
-      />
     </div>
   );
 }

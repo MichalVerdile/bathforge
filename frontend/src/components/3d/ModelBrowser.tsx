@@ -8,6 +8,46 @@ interface ModelBrowserProps {
   style?: React.CSSProperties;
 }
 
+// Category icons mapping
+const getCategoryIcon = (categoryName: string): string => {
+  const iconMap: { [key: string]: string } = {
+    'bathtubs': '🛁',
+    'basins': '🚰',
+    'wcs': '🚽',
+    'shower': '🚿',
+    'furniture': '🪑',
+    'accessories': '🧴',
+    'fittings': '🔧',
+    'coverings': '🪟',
+    'towel_radiators': '🔥',
+    'fittings_bathtubs': '⚙️'
+  };
+  return iconMap[categoryName.toLowerCase()] || '📦';
+};
+
+// Product type icons for placeholders
+const getProductIcon = (category: string): string => {
+  const iconMap: { [key: string]: string } = {
+    'bathtub': '🛁',
+    'bathtubs': '🛁',
+    'basin': '🚰',
+    'basins': '🚰',
+    'toilet': '🚽',
+    'wcs': '🚽',
+    'shower': '🚿',
+    'furniture': '🪑',
+    'accessoire': '🧴',
+    'accessories': '🧴',
+    'fitting': '🔧',
+    'fittings': '🔧',
+    'covering': '🪟',
+    'coverings': '🪟',
+    'towel_radiator': '🔥',
+    'towel_radiators': '🔥'
+  };
+  return iconMap[category.toLowerCase()] || '📦';
+};
+
 export default function ModelBrowser({ onModelSelect, selectedModel, style }: ModelBrowserProps) {
   const { categories, loading, error, refresh } = useModelData();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -27,20 +67,11 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
 
   if (loading) {
     return (
-      <div style={{
-        width: '300px',
-        height: '100%',
-        background: '#f8f9fa',
-        border: '1px solid #e9ecef',
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        ...style
-      }}>
-        <div style={{ textAlign: 'center', color: '#6c757d' }}>
-          <div style={{ marginBottom: '12px', fontSize: '18px' }}>⚙️</div>
-          <div>Loading models...</div>
+      <div className="loading-state" style={style}>
+        <div className="loading-content">
+          <div className="state-icon">⚙️</div>
+          <div className="state-title">Loading Models</div>
+          <div>Please wait while we load your 3D models...</div>
         </div>
       </div>
     );
@@ -48,36 +79,13 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
 
   if (error) {
     return (
-      <div style={{
-        width: '300px',
-        height: '100%',
-        background: '#f8f9fa',
-        border: '1px solid #e9ecef',
-        borderRadius: '8px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        ...style
-      }}>
-        <div style={{ textAlign: 'center', color: '#dc3545' }}>
-          <div style={{ marginBottom: '12px', fontSize: '18px' }}>❌</div>
-          <div style={{ marginBottom: '12px', fontWeight: 'bold' }}>Failed to load models</div>
-          <div style={{ fontSize: '14px', marginBottom: '16px' }}>{error}</div>
-          <button
-            onClick={refresh}
-            style={{
-              padding: '8px 16px',
-              background: '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            Retry
+      <div className="error-state" style={style}>
+        <div className="error-content">
+          <div className="state-icon">❌</div>
+          <div className="state-title">Failed to Load Models</div>
+          <div className="state-description">{error}</div>
+          <button className="retry-button" onClick={refresh}>
+            Try Again
           </button>
         </div>
       </div>
@@ -86,26 +94,14 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
 
   if (categories.length === 0) {
     return (
-      <div style={{
-        width: '300px',
-        height: '100%',
-        background: '#f8f9fa',
-        border: '1px solid #e9ecef',
-        borderRadius: '8px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
-        ...style
-      }}>
-        <div style={{ textAlign: 'center', color: '#6c757d' }}>
-          <div style={{ marginBottom: '12px', fontSize: '18px' }}>📦</div>
-          <div style={{ marginBottom: '12px', fontWeight: 'bold' }}>No models available</div>
-          <div style={{ fontSize: '14px', marginBottom: '16px' }}>
-            Models need to be imported from assets first
+      <div className="empty-state" style={style}>
+        <div className="empty-content">
+          <div className="state-icon">📦</div>
+          <div className="state-title">No Models Available</div>
+          <div className="state-description">
+            3D models need to be imported first
           </div>
-          <div style={{ fontSize: '12px', color: '#adb5bd' }}>
+          <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
             Use the admin panel to scan assets
           </div>
         </div>
@@ -114,37 +110,14 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
   }
 
   return (
-    <div style={{
-      width: '300px',
-      height: '100%',
-      background: '#f8f9fa',
-      border: '1px solid #e9ecef',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      ...style
-    }}>
+    <div className="model-browser" style={style}>
       {/* Header */}
-      <div style={{
-        padding: '16px',
-        borderBottom: '1px solid #e9ecef',
-        background: '#fff'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', color: '#212529' }}>
-            3D Model Browser
-          </h3>
+      <div className="model-browser-header">
+        <div className="model-browser-title">
+          <span>🛁 Product Browser</span>
           <button
+            className="refresh-button"
             onClick={refresh}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '16px',
-              color: '#6c757d',
-              padding: '4px'
-            }}
             title="Refresh models"
           >
             🔄
@@ -153,121 +126,126 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
         
         {/* Search */}
         <input
+          className="search-input"
           type="text"
-          placeholder="Search models..."
+          placeholder="Search products..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            border: '1px solid #ced4da',
-            borderRadius: '4px',
-            fontSize: '14px',
-            boxSizing: 'border-box'
-          }}
         />
       </div>
 
-      {/* Category tabs */}
-      <div style={{
-        display: 'flex',
-        background: '#fff',
-        borderBottom: '1px solid #e9ecef',
-        overflowX: 'auto',
-        flexWrap: 'wrap'
-      }}>
+      {/* Category tabs with icons only */}
+      <div className="category-tabs">
         {categories.map((category) => (
           <button
             key={category.name}
+            className={`category-tab ${selectedCategory === category.name ? 'active' : ''}`}
             onClick={() => setSelectedCategory(category.name)}
-            style={{
-              padding: '12px 16px',
-              border: 'none',
-              background: selectedCategory === category.name ? '#007bff' : 'transparent',
-              color: selectedCategory === category.name ? '#fff' : '#6c757d',
-              cursor: 'pointer',
-              fontSize: '14px',
-              whiteSpace: 'nowrap',
-              borderBottom: selectedCategory === category.name ? '2px solid #007bff' : 'none',
-              flexShrink: 0
-            }}
+            data-tooltip={category.displayName}
+            title={category.displayName}
           >
-            {category.displayName}
+            <span className="category-icon">{getCategoryIcon(category.name)}</span>
           </button>
         ))}
       </div>
 
-      {/* Model list */}
-      <div style={{
-        flex: 1,
-        overflow: 'auto',
-        padding: '8px'
-      }}>
+      {/* Model grid */}
+      <div className="model-list">
         {filteredModels.length === 0 ? (
-          <div style={{
-            padding: '20px',
-            textAlign: 'center',
-            color: '#6c757d',
-            fontSize: '14px'
-          }}>
-            {searchTerm ? 'No models found matching your search.' : 'No models in this category.'}
+          <div className="no-models-message">
+            {searchTerm ? 'No products found matching your search.' : 'No products in this category.'}
           </div>
         ) : (
           filteredModels.map((model) => (
             <div
               key={model.id}
+              className={`model-item ${selectedModel?.id === model.id ? 'selected' : ''}`}
               onClick={() => onModelSelect(model)}
-              style={{
-                padding: '12px',
-                margin: '4px 0',
-                background: selectedModel?.id === model.id ? '#e3f2fd' : '#fff',
-                border: selectedModel?.id === model.id ? '2px solid #2196f3' : '1px solid #e9ecef',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                fontSize: '14px'
-              }}
-              onMouseEnter={(e) => {
-                if (selectedModel?.id !== model.id) {
-                  e.currentTarget.style.background = '#f8f9fa';
-                  e.currentTarget.style.borderColor = '#ced4da';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedModel?.id !== model.id) {
-                  e.currentTarget.style.background = '#fff';
-                  e.currentTarget.style.borderColor = '#e9ecef';
-                }
-              }}
             >
-              <div style={{ fontWeight: '500', color: '#212529', marginBottom: '4px' }}>
-                {model.name}
-              </div>
-              <div style={{ fontSize: '12px', color: '#6c757d', marginBottom: '4px' }}>
-                {model.category} • {model.priceRange} • {model.mountingType}
-              </div>
-              {model.availableColors && model.availableColors.length > 0 && (
-                <div style={{ fontSize: '11px', color: '#adb5bd' }}>
-                  {model.availableColors.length} color{model.availableColors.length > 1 ? 's' : ''} available
+              {/* Enhanced Product Preview */}
+              <div className="model-item-preview">
+                {model.thumbnail ? (
+                  <img 
+                    src={model.thumbnail} 
+                    alt={model.name}
+                    className="model-item-image"
+                    onError={(e) => {
+                      // If image fails to load, show icon instead
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const placeholder = target.nextElementSibling as HTMLElement;
+                      if (placeholder) placeholder.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <div 
+                  className="model-item-placeholder"
+                  style={{ 
+                    display: model.thumbnail ? 'none' : 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    height: '100%',
+                    background: `linear-gradient(135deg, #1e293b 0%, #0f172a 100%)`
+                  }}
+                >
+                  {getProductIcon(model.category)}
                 </div>
-              )}
+                
+                {/* Preview Badge */}
+                <div style={{
+                  position: 'absolute',
+                  top: '6px',
+                  right: '6px',
+                  background: 'rgba(148, 163, 184, 0.9)',
+                  color: '#0f172a',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '9px',
+                  fontWeight: '600',
+                  textTransform: 'uppercase'
+                }}>
+                  3D
+                </div>
+                
+                {/* Add to Room Button - appears on hover */}
+                <button 
+                  className="add-to-room-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onModelSelect(model);
+                  }}
+                >
+                  + Add to Room
+                </button>
+              </div>
+
+              {/* Product Info */}
+              <div className="model-item-info">
+                <div className="model-item-name">
+                  {model.name}
+                </div>
+                <div className="model-item-details">
+                  {model.priceRange} • {model.mountingType}
+                </div>
+                {model.availableColors && model.availableColors.length > 0 && (
+                  <div className="model-item-colors">
+                    {model.availableColors.length} color{model.availableColors.length > 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
             </div>
           ))
         )}
       </div>
 
       {/* Footer */}
-      <div style={{
-        padding: '12px 16px',
-        borderTop: '1px solid #e9ecef',
-        background: '#f8f9fa',
-        fontSize: '12px',
-        color: '#6c757d'
-      }}>
-        {filteredModels.length} model(s) available
+      <div className="model-browser-footer">
+        {filteredModels.length} product(s) available
         {currentCategory && (
-          <div style={{ marginTop: '4px' }}>
-            Category: {currentCategory.displayName}
+          <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>{getCategoryIcon(currentCategory.name)}</span>
+            <span>{currentCategory.displayName}</span>
           </div>
         )}
       </div>

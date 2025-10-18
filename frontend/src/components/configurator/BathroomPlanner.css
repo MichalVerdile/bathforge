@@ -1,0 +1,257 @@
+/* Bathroom Planner Styles */
+.bathroom-planner {
+  min-height: 100vh;
+  background: #0f172a;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header */
+.planner-header {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem 2rem;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.header-content {
+  text-align: center;
+}
+
+.planner-title {
+  font-size: 1.5rem;
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 400;
+}
+
+.planner-subtitle {
+  font-size: 2rem;
+  color: #f1f5f9;
+  margin: 0.5rem 0 0 0;
+  font-weight: 600;
+}
+
+/* Main Content */
+.planner-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: calc(100vh - 120px);
+  gap: 0;
+}
+
+/* Left Side - Options */
+.planner-left {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #1e293b;
+}
+
+.options-container {
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.option-card {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #f1f5f9;
+}
+
+.option-card:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 20px rgba(148, 163, 184, 0.2);
+  transform: translateY(-2px);
+}
+
+.option-card.selected {
+  border-color: #94a3b8;
+  background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+  color: #0f172a;
+  box-shadow: 0 8px 30px rgba(148, 163, 184, 0.4);
+}
+
+.option-card:last-of-type {
+  border-style: dashed;
+  border-color: #475569;
+}
+
+.option-card:last-of-type.selected {
+  border-style: solid;
+  border-color: #94a3b8;
+}
+
+.option-icon {
+  width: 60px;
+  height: 60px;
+  background: #334155;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+  color: #94a3b8;
+  transition: all 0.3s ease;
+}
+
+.option-card.selected .option-icon {
+  background: rgba(15, 23, 42, 0.3);
+  color: #0f172a;
+}
+
+.option-content h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.option-content p {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+/* Continue Button */
+.continue-button {
+  margin-top: 2rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.continue-button.enabled {
+  background: #94a3b8;
+  color: #0f172a;
+}
+
+.continue-button.enabled:hover {
+  background: #cbd5e1;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.4);
+}
+
+.continue-button.disabled {
+  background: #334155;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.continue-button.disabled {
+  background: #e2e8f0;
+  color: #a0aec0;
+  cursor: not-allowed;
+}
+
+/* Right Side - 3D Preview */
+.planner-right {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.preview-container {
+  width: 100%;
+  max-width: 500px;
+  height: 400px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+/* Bathroom Preview Image */
+.room-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.bathroom-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 15px;
+  border: 2px solid #94a3b8;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bathroom-preview-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .planner-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .planner-right {
+    order: -1;
+    padding: 2rem;
+  }
+  
+  .preview-container {
+    height: 300px;
+  }
+  
+  .room-preview {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .planner-header {
+    padding: 1rem;
+  }
+  
+  .back-button {
+    left: 1rem;
+  }
+  
+  .planner-subtitle {
+    font-size: 1.5rem;
+  }
+  
+  .planner-left {
+    padding: 2rem 1rem;
+  }
+  
+  .option-card {
+    padding: 1rem;
+  }
+  
+  .option-icon {
+    width: 50px;
+    height: 50px;
+  }
+}

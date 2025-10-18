@@ -8,15 +8,21 @@ function Loader() {
   return (
     <Html center>
       <div style={{
-        color: 'white',
+        color: '#f1f5f9',
         fontSize: '14px',
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
         textAlign: 'center',
-        background: 'rgba(0,0,0,0.8)',
-        padding: '10px 20px',
-        borderRadius: '5px'
+        background: 'rgba(30, 41, 59, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        border: '1px solid #334155',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        minWidth: '120px'
       }}>
-        Loading: {progress.toFixed(0)}%
+        <div style={{ marginBottom: '8px', fontSize: '16px' }}>⚙️</div>
+        <div style={{ fontWeight: '600', marginBottom: '4px' }}>Loading 3D Model</div>
+        <div style={{ fontSize: '12px', color: '#94a3b8' }}>{progress.toFixed(0)}% complete</div>
       </div>
     </Html>
   );
@@ -87,7 +93,7 @@ export default function Scene3D({
   showGrid = true,
   showEnvironment = true,
   cameraPosition = [5, 5, 5],
-  backgroundColor = '#f0f0f0',
+  backgroundColor = '#0f172a',
   onSceneReady
 }: Scene3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -145,19 +151,22 @@ export default function Scene3D({
         </Suspense>
       </Canvas>
       
-      {/* UI Controls overlay */}
+      {/* UI Controls overlay - simplified and styled */}
       <div style={{
         position: 'absolute',
-        top: '10px',
+        bottom: '10px',
         left: '10px',
-        background: 'rgba(255, 255, 255, 0.9)',
-        padding: '10px',
-        borderRadius: '5px',
-        fontSize: '12px',
-        color: '#333',
-        pointerEvents: 'none'
+        background: 'rgba(30, 41, 59, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        fontSize: '11px',
+        color: '#94a3b8',
+        pointerEvents: 'none',
+        border: '1px solid #334155',
+        fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
       }}>
-        <div>Mouse: Rotate | Wheel: Zoom | Right-click: Pan</div>
+        <div>🖱️ Rotate • 🎲 Zoom • 🖐️ Pan</div>
       </div>
     </div>
   );

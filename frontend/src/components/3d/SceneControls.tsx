@@ -50,198 +50,111 @@ export default function SceneControls({
   };
 
   return (
-    <div style={{
-      width: '280px',
-      background: '#fff',
-      border: '1px solid #e9ecef',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      ...style
-    }}>
+    <div className="scene-controls" style={style}>
       {/* Header */}
       <div 
-        style={{
-          padding: '12px 16px',
-          background: '#f8f9fa',
-          borderBottom: '1px solid #e9ecef',
-          cursor: 'pointer',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center'
-        }}
+        className="controls-header"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <h4 style={{ margin: 0, fontSize: '16px', color: '#212529' }}>
-          Scene Controls
+        <h4 className="controls-title">
+          ⚙️ View Controls
         </h4>
-        <span style={{ fontSize: '12px', color: '#6c757d' }}>
+        <span className="controls-toggle">
           {isExpanded ? '▼' : '▶'}
         </span>
       </div>
 
       {isExpanded && (
-        <div style={{ padding: '16px' }}>
+        <div className="controls-content">
           {/* Quick Actions */}
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#495057' }}>
+          <div className="controls-section">
+            <h5 className="controls-section-title">
               Quick Actions
             </h5>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="quick-actions">
               <button
+                className="action-button"
                 onClick={onResetView}
-                style={{
-                  padding: '6px 12px',
-                  border: '1px solid #007bff',
-                  background: '#007bff',
-                  color: '#fff',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
               >
-                Reset View
+                🔄 Reset View
               </button>
               <button
+                className="action-button secondary"
                 onClick={onCenterModel}
-                style={{
-                  padding: '6px 12px',
-                  border: '1px solid #6c757d',
-                  background: '#fff',
-                  color: '#6c757d',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '12px'
-                }}
               >
-                Center Model
+                🎯 Center
               </button>
             </div>
           </div>
 
-          {/* Position Controls */}
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#495057' }}>
-              Position
+          {/* Simple Scale Control */}
+          <div className="controls-section">
+            <h5 className="controls-section-title">
+              Size: {controls.scale.toFixed(1)}x
             </h5>
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={axis} style={{ marginBottom: '8px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '12px', 
-                  color: '#6c757d', 
-                  marginBottom: '4px',
-                  textTransform: 'uppercase'
-                }}>
-                  {axis}: {controls.position[axis === 'x' ? 0 : axis === 'y' ? 1 : 2].toFixed(2)}
-                </label>
-                <input
-                  type="range"
-                  min="-10"
-                  max="10"
-                  step="0.1"
-                  value={controls.position[axis === 'x' ? 0 : axis === 'y' ? 1 : 2]}
-                  onChange={(e) => handlePositionChange(axis, parseFloat(e.target.value))}
-                  style={{ width: '100%' }}
-                />
-              </div>
-            ))}
+            <div className="slider-control">
+              <input
+                className="slider-input"
+                type="range"
+                min="0.2"
+                max="3"
+                step="0.1"
+                value={controls.scale}
+                onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
+              />
+            </div>
           </div>
 
-          {/* Rotation Controls */}
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#495057' }}>
-              Rotation (degrees)
+          {/* Rotation - Y axis only for simplicity */}
+          <div className="controls-section">
+            <h5 className="controls-section-title">
+              Rotate: {((controls.rotation[1] * 180) / Math.PI).toFixed(0)}°
             </h5>
-            {(['x', 'y', 'z'] as const).map((axis) => (
-              <div key={axis} style={{ marginBottom: '8px' }}>
-                <label style={{ 
-                  display: 'block', 
-                  fontSize: '12px', 
-                  color: '#6c757d', 
-                  marginBottom: '4px',
-                  textTransform: 'uppercase'
-                }}>
-                  {axis}: {((controls.rotation[axis === 'x' ? 0 : axis === 'y' ? 1 : 2] * 180) / Math.PI).toFixed(0)}°
-                </label>
-                <input
-                  type="range"
-                  min="-180"
-                  max="180"
-                  step="5"
-                  value={(controls.rotation[axis === 'x' ? 0 : axis === 'y' ? 1 : 2] * 180) / Math.PI}
-                  onChange={(e) => handleRotationChange(axis, parseFloat(e.target.value))}
-                  style={{ width: '100%' }}
-                />
-              </div>
-            ))}
+            <div className="slider-control">
+              <input
+                className="slider-input"
+                type="range"
+                min="-180"
+                max="180"
+                step="10"
+                value={(controls.rotation[1] * 180) / Math.PI}
+                onChange={(e) => handleRotationChange('y', parseFloat(e.target.value))}
+              />
+            </div>
           </div>
 
-          {/* Scale Control */}
-          <div style={{ marginBottom: '20px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#495057' }}>
-              Scale: {controls.scale.toFixed(2)}x
-            </h5>
-            <input
-              type="range"
-              min="0.1"
-              max="5"
-              step="0.1"
-              value={controls.scale}
-              onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
-              style={{ width: '100%' }}
-            />
-          </div>
-
-          {/* Toggle Options */}
-          <div>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#495057' }}>
-              Options
+          {/* Simple Options */}
+          <div className="controls-section">
+            <h5 className="controls-section-title">
+              Display Options
             </h5>
             
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              marginBottom: '8px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}>
+            <label className="checkbox-control">
               <input
+                className="checkbox-input"
                 type="checkbox"
                 checked={controls.autoRotate}
                 onChange={() => handleToggle('autoRotate')}
-                style={{ marginRight: '8px' }}
               />
               Auto Rotate
             </label>
 
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              marginBottom: '8px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}>
+            <label className="checkbox-control">
               <input
+                className="checkbox-input"
                 type="checkbox"
                 checked={controls.showGrid}
                 onChange={() => handleToggle('showGrid')}
-                style={{ marginRight: '8px' }}
               />
               Show Grid
             </label>
 
-            <label style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              marginBottom: '8px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}>
+            <label className="checkbox-control">
               <input
+                className="checkbox-input"
                 type="checkbox"
                 checked={controls.showEnvironment}
                 onChange={() => handleToggle('showEnvironment')}
-                style={{ marginRight: '8px' }}
               />
               Environment Lighting
             </label>

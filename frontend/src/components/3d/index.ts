@@ -6,5 +6,4 @@ export { default as SceneControls } from './SceneControls';
 
 export type { ModelItem, ModelCategory } from './ModelBrowser';
 export type { SceneControlsState } from './SceneControls';
-export { MODEL_CATEGORIES } from './ModelBrowser';
 export { useFitModel, preloadModel } from './ModelLoader';

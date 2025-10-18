@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import Scene3D from './Scene3D';
 import ModelLoader from './ModelLoader';
-import ModelBrowser, { ModelItem } from './ModelBrowser';
+import ModelBrowser, { type ModelItem } from './ModelBrowser';
 import SceneControls, { SceneControlsState } from './SceneControls';
 import * as THREE from 'three';
 
@@ -143,7 +143,15 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             <p style={{ margin: '0', fontSize: '14px', color: '#6c757d' }}>
               Category: {selectedModel.category.charAt(0).toUpperCase() + selectedModel.category.slice(1)}
             </p>
-            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#adb5bd' }}>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#6c757d' }}>
+              Price Range: {selectedModel.priceRange} • {selectedModel.mountingType}
+            </p>
+            {selectedModel.availableColors && selectedModel.availableColors.length > 0 && (
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#adb5bd' }}>
+                {selectedModel.availableColors.length} color{selectedModel.availableColors.length > 1 ? 's' : ''} available
+              </p>
+            )}
+            <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: '#adb5bd' }}>
               Format: GLB/GLTF 3D Model
             </p>
           </div>

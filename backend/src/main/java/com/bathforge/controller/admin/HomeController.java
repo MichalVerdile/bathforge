@@ -1,4 +1,4 @@
-package com.bathforge.controller;
+package com.bathforge.controller.admin;
 
 import org.springframework.web.bind.annotation.*;
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { systemController } from './controllers/configuration';
 import { Bathroom3DViewer } from './components/3d';
-import BathroomPlanner from './components/configurator/BathroomPlanner';
-import TemplateSelection from './components/configurator/TemplateSelection';
+import BathroomPlanner from './components/configurator/bathroom_planner/BathroomPlanner';
+import TemplateSelection from './components/configurator/template_selection/TemplateSelection';
 import './index.css';
 
 interface ApiStatus {
@@ -39,7 +39,6 @@ function App() {
     setCurrentView(view as ViewType);
   };
 
-  // Render different views based on current state
   if (currentView === 'planner') {
     return <BathroomPlanner onNavigate={handleNavigate} />;
   }
@@ -73,7 +72,6 @@ function App() {
   if (currentView === '3d') {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        {/* Navigation Header */}
         <header style={{
           background: '#2c3e50',
           color: 'white',
@@ -100,7 +98,6 @@ function App() {
           </button>
         </header>
         
-        {/* 3D Viewer */}
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <Bathroom3DViewer />
         </div>
@@ -108,7 +105,6 @@ function App() {
     );
   }
 
-  // Fallback - should never reach here with proper navigation
   return <BathroomPlanner onNavigate={handleNavigate} />;
 }
 

@@ -116,7 +116,7 @@ public class AssetImportService {
         List<Color> categoryColors = colorRepository.findByCategoryId(category.getId());
 
         int importedCount = 0;
-        int productCounter = 1; // Start counting from 1
+        int productCounter = 1;
         File[] files = categoryDir.listFiles();
 
         if (files != null) {

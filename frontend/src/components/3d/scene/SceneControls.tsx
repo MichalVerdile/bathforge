@@ -51,7 +51,6 @@ export default function SceneControls({
 
   return (
     <div className="scene-controls" style={style}>
-      {/* Header */}
       <div 
         className="controls-header"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -66,7 +65,6 @@ export default function SceneControls({
 
       {isExpanded && (
         <div className="controls-content">
-          {/* Quick Actions */}
           <div className="controls-section">
             <h5 className="controls-section-title">
               Quick Actions
@@ -105,7 +103,6 @@ export default function SceneControls({
             </div>
           </div>
 
-          {/* Rotation - Y axis only for simplicity */}
           <div className="controls-section">
             <h5 className="controls-section-title">
               Rotate: {((controls.rotation[1] * 180) / Math.PI).toFixed(0)}°
@@ -123,7 +120,6 @@ export default function SceneControls({
             </div>
           </div>
 
-          {/* Simple Options */}
           <div className="controls-section">
             <h5 className="controls-section-title">
               Display Options

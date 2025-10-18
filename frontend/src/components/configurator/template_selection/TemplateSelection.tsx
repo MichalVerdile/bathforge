@@ -51,7 +51,6 @@ const templates: Template[] = [
   }
 ];
 
-// Preload the GLB model
 useGLTF.preload('/assets/empty_room.glb');
 
 const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => {
@@ -64,7 +63,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => 
 
   const handleStartFurnishing = () => {
     if (selectedTemplate) {
-      // Store the selected template data for use in 3D viewer
       localStorage.setItem('selectedTemplate', JSON.stringify(selectedTemplate));
       onNavigate('3d');
     }
@@ -74,7 +72,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => 
 
   return (
     <div className="template-selection">
-      {/* Header */}
       <header className="template-header">
         <div className="header-content">
           <h1 className="step-number">Template Selection</h1>
@@ -84,7 +81,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => 
 
       <div className="template-content">
         <div className="template-left">
-          {/* Template Grid */}
           <div className="template-grid">
             {templates.map((template) => (
               <div
@@ -106,7 +102,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => 
             ))}
           </div>
 
-          {/* Action Buttons */}
           <div className="action-buttons">
             <button 
               className="go-back-button"
@@ -124,7 +119,6 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => 
           </div>
         </div>
 
-        {/* 3D Preview */}
         <div className="template-right">
           <div className="preview-container">
             <div className="room-3d-preview">

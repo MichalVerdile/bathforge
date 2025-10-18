@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import Scene3D from './Scene3D';
+import Scene3D from '../scene/Scene3D';
 import ModelLoader from './ModelLoader';
-import ModelBrowser, { type ModelItem } from './ModelBrowser';
+import ModelBrowser, { type ModelItem } from '../model_browser/ModelBrowser';
 import * as THREE from 'three';
 import './Bathroom3D.css';
 
@@ -36,7 +36,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const modelRef = useRef<THREE.Group | null>(null);
 
-  // Load template data from localStorage if available
   useEffect(() => {
     const storedTemplate = localStorage.getItem('selectedTemplate');
     if (storedTemplate) {
@@ -51,11 +50,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   }, []);
 
   const loadTemplateFixtures = (template: any) => {
-    // This function would load the fixtures from the template
-    // For now, we'll just log the template data
     console.log('Loading template fixtures:', template);
     
-    // Auto-load basic bathroom fixtures based on template
     const fixtureModels: ModelItem[] = [];
     
     template.roomData.fixtures.forEach((fixture: any, index: number) => {
@@ -90,7 +86,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       });
     });
     
-    // Load the fixtures into the scene
     fixtureModels.forEach((fixtureModel, index) => {
       const loadedModel = {
         model: fixtureModel,
@@ -137,13 +132,11 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
   return (
     <div className="bathroom-3d-viewer" style={style}>
-      {/* Left Sidebar - Model Browser */}
       <ModelBrowser
         onModelSelect={handleModelSelect}
         selectedModel={selectedModel}
       />
 
-      {/* Main 3D Scene */}
       <div className="scene-container">
         <Scene3D
           showGrid={controls.showGrid}
@@ -168,7 +161,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           )}
         </Scene3D>
 
-        {/* Model Info Overlay */}
         {selectedModel && (
           <div className="model-info-overlay">
             <h4 className="model-info-title">
@@ -191,7 +183,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           </div>
         )}
 
-        {/* Welcome Message */}
         {!selectedModel && (
           <div className="welcome-message">
             <h3 className="welcome-title">

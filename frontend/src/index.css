@@ -19,7 +19,6 @@ code {
     monospace;
 }
 
-/* Legacy App Styles (for backward compatibility) */
 .App {
   text-align: center;
 }
@@ -52,18 +51,15 @@ code {
   border: 1px solid #f5c6cb;
 }
 
-/* Smooth transitions for all interactive elements */
 button, a {
   transition: all 0.3s ease;
 }
 
-/* Remove default button styles */
 button {
   font-family: inherit;
   cursor: pointer;
 }
 
-/* Ensure images are responsive */
 img {
   max-width: 100%;
   height: auto;

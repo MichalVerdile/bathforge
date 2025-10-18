@@ -31,10 +31,8 @@ function Loader() {
 function Lights() {
   return (
     <>
-      {/* Ambient light for overall illumination */}
       <ambientLight intensity={0.4} />
       
-      {/* Main directional light */}
       <directionalLight
         position={[10, 10, 5]}
         intensity={1}
@@ -48,13 +46,11 @@ function Lights() {
         shadow-camera-bottom={-10}
       />
       
-      {/* Fill light from the opposite side */}
       <directionalLight
         position={[-5, 5, -5]}
         intensity={0.3}
       />
       
-      {/* Spot light for highlights */}
       <spotLight
         position={[0, 15, 0]}
         intensity={0.5}
@@ -120,23 +116,18 @@ export default function Scene3D({
         }}
       >
         <Suspense fallback={<Loader />}>
-          {/* Lighting */}
           <Lights />
           
-          {/* Environment for reflections and ambient lighting */}
           {showEnvironment && (
             <Environment preset="apartment" background={false} />
           )}
           
-          {/* Grid helper */}
           {showGrid && (
             <Grid infiniteGrid />
           )}
           
-          {/* Ground plane for shadows */}
           <Ground />
           
-          {/* Camera controls */}
           <OrbitControls
             enablePan={true}
             enableZoom={true}
@@ -146,12 +137,10 @@ export default function Scene3D({
             maxPolarAngle={Math.PI / 2.1}
           />
           
-          {/* Children */}
           {children}
         </Suspense>
       </Canvas>
       
-      {/* UI Controls overlay - simplified and styled */}
       <div style={{
         position: 'absolute',
         bottom: '10px',

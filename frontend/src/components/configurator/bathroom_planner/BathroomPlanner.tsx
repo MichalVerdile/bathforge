@@ -24,7 +24,6 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
 
   return (
     <div className="bathroom-planner">
-      {/* Header */}
       <header className="planner-header">
         <div className="header-content">
           <h1 className="planner-title">Bathroom Planner</h1>
@@ -34,9 +33,7 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
 
       <div className="planner-content">
         <div className="planner-left">
-          {/* Option Cards */}
           <div className="options-container">
-            {/* Template Option */}
             <div 
               className={`option-card ${selectedOption === 'template' ? 'selected' : ''}`}
               onClick={() => handleOptionSelect('template')}
@@ -52,7 +49,6 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* Custom Room Option */}
             <div 
               className={`option-card ${selectedOption === 'custom' ? 'selected' : ''}`}
               onClick={() => handleOptionSelect('custom')}
@@ -68,7 +64,6 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* AI Option */}
             <div 
               className={`option-card ${selectedOption === 'ai' ? 'selected' : ''}`}
               onClick={() => handleOptionSelect('ai')}
@@ -85,7 +80,6 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Continue Button */}
           <button 
             className={`continue-button ${selectedOption ? 'enabled' : 'disabled'}`}
             onClick={handleContinue}
@@ -95,7 +89,6 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
           </button>
         </div>
 
-        {/* 3D Preview */}
         <div className="planner-right">
           <div className="preview-container">
             <div className="room-preview">

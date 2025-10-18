@@ -37,16 +37,13 @@ export class BaseController {
     };
 
     if (error.response) {
-      // Server responded with error status
       apiError.message = error.response.data?.message || error.response.statusText || 'Server error';
       apiError.status = error.response.status;
       apiError.code = error.response.data?.code;
     } else if (error.request) {
-      // Network error
       apiError.message = 'Network error - please check your connection';
       apiError.status = 0;
     } else {
-      // Other error
       apiError.message = error.message || 'Unknown error';
     }
 

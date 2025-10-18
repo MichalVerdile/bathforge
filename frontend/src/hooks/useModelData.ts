@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Category, Product, ModelItem, ModelCategory, ProductFilter } from '../types/api';
-import { CategoryService, ProductService } from '../controllers/api/services';
+import { Product, ModelItem, ModelCategory, ProductFilter } from '../types/api';
+import { CategoryService } from '../controllers/api/products/CategoryService';
+import { ProductService } from '../controllers/api/products/ProductService';
 
 export interface UseModelDataResult {
   categories: ModelCategory[];
@@ -26,7 +27,7 @@ export function useModelData(): UseModelDataResult {
     priceRange: product.priceRange,
     mountingType: product.mountingType,
     availableColors: product.availableColors || [],
-    thumbnail: undefined // We can add thumbnail logic later if needed
+    thumbnail: undefined
   });
 
   const formatCategoryDisplayName = (categoryName: string): string => {
@@ -51,7 +52,6 @@ export function useModelData(): UseModelDataResult {
       setLoading(true);
       setError(null);
 
-      // Load categories and products in parallel
       const [categoriesData, productsData] = await Promise.all([
         CategoryService.getAll(),
         ProductService.getAll()
@@ -59,10 +59,8 @@ export function useModelData(): UseModelDataResult {
 
       setAllProducts(productsData);
 
-      // Group products by category
       const categoryMap = new Map<number, ModelCategory>();
 
-      // Initialize categories
       categoriesData.forEach(category => {
         categoryMap.set(category.id, {
           id: category.id,
@@ -73,7 +71,6 @@ export function useModelData(): UseModelDataResult {
         });
       });
 
-      // Add products to their respective categories
       productsData.forEach(product => {
         const category = categoryMap.get(product.categoryId);
         if (category) {
@@ -81,7 +78,6 @@ export function useModelData(): UseModelDataResult {
         }
       });
 
-      // Convert map to array and filter out empty categories
       const categoriesWithModels = Array.from(categoryMap.values())
         .filter(category => category.models.length > 0)
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -122,7 +118,6 @@ export function useModelData(): UseModelDataResult {
   };
 }
 
-// Hook for loading products by category
 export function useProductsByCategory(categoryId?: number) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);

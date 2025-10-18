@@ -22,16 +22,13 @@ function PreviewModel({ url }: PreviewModelProps) {
 
     const model = gltf.scene.clone();
     
-    // Clear any existing children
     meshRef.current.clear();
     
-    // Configure model for preview
     model.traverse((child: THREE.Object3D) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = false;
         child.receiveShadow = false;
         
-        // Ensure materials are properly set for preview
         if (child.material) {
           if (Array.isArray(child.material)) {
             child.material.forEach(mat => {
@@ -48,15 +45,12 @@ function PreviewModel({ url }: PreviewModelProps) {
       }
     });
 
-    // Auto-scale and center the model
     const box = new THREE.Box3().setFromObject(model);
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     
-    // Center the model
     model.position.sub(center);
     
-    // Scale to fit in preview
     const maxDim = Math.max(size.x, size.y, size.z);
     const scale = maxDim > 0 ? 2 / maxDim : 1;
     model.scale.setScalar(scale);
@@ -108,9 +102,6 @@ function ErrorFallback({ icon }: { icon?: string }) {
 }
 
 export default function ModelPreview({ url, fallbackIcon, className = '' }: ModelPreviewProps) {
-  // Debug logging
-  console.log('ModelPreview rendering with URL:', url);
-  
   if (!url) {
     console.log('No URL provided, showing fallback');
     return <ErrorFallback icon={fallbackIcon} />;
@@ -124,7 +115,7 @@ export default function ModelPreview({ url, fallbackIcon, className = '' }: Mode
         gl={{ 
           antialias: true,
           alpha: true,
-          powerPreference: "low-power" // Optimize for battery life
+          powerPreference: "low-power"
         }}
         onCreated={(state) => {
           console.log('Canvas created for URL:', url);
@@ -134,7 +125,7 @@ export default function ModelPreview({ url, fallbackIcon, className = '' }: Mode
         <directionalLight 
           position={[5, 5, 5]} 
           intensity={0.8}
-          castShadow={false} // Disable shadows for performance
+          castShadow={false}
         />
         <pointLight position={[-5, 5, 5]} intensity={0.4} />
         
@@ -152,7 +143,6 @@ export default function ModelPreview({ url, fallbackIcon, className = '' }: Mode
         />
       </Canvas>
       
-      {/* Loading overlay */}
       <Suspense fallback={<LoadingSpinner />}>
         <div />
       </Suspense>
@@ -160,7 +150,6 @@ export default function ModelPreview({ url, fallbackIcon, className = '' }: Mode
   );
 }
 
-// Add spinner animation to global styles if not already present
 const style = document.createElement('style');
 style.textContent = `
   @keyframes spin {

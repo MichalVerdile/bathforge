@@ -1,5 +1,3 @@
-// Types for the BathForge API
-
 export interface Category {
   id: number;
   name: string;

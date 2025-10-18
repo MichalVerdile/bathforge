@@ -23,18 +23,15 @@ interface Template3DPreviewProps {
   template: Template;
 }
 
-// 3D Model Component
 const RoomModel: React.FC<{ modelPath: string }> = ({ modelPath }) => {
   const { scene } = useGLTF(modelPath);
   return <primitive object={scene} scale={[0.5, 0.5, 0.5]} position={[0, -1, 0]} />;
 };
 
-// 3D Preview Component
 const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    // Hide loading overlay after a delay to ensure model is loaded
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 2000);
@@ -50,7 +47,6 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
           style={{ width: '100%', height: '100%' }}
         >
           <Suspense fallback={null}>
-            {/* Lighting */}
             <ambientLight intensity={0.6} />
             <directionalLight 
               position={[10, 10, 5]} 
@@ -61,13 +57,10 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
             />
             <pointLight position={[-10, -10, -10]} intensity={0.4} />
             
-            {/* Environment */}
             <Environment preset="apartment" />
             
-            {/* 3D Model */}
             <RoomModel modelPath={template.preview} />
             
-            {/* Controls */}
             <OrbitControls
               enablePan={true}
               enableZoom={true}
@@ -81,7 +74,6 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
           </Suspense>
         </Canvas>
         
-        {/* Loading indicator */}
         {isLoading && (
           <div className="loading-overlay">
             <div className="loading-spinner"></div>

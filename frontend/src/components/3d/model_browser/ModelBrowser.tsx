@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useModelData } from '../../hooks/useModelData';
-import { ModelItem, ModelCategory } from '../../types/api';
+import { useModelData } from '../../../hooks/useModelData';
+import { ModelItem, ModelCategory } from '../../../types/api';
 
 interface ModelBrowserProps {
   onModelSelect: (model: ModelItem) => void;
@@ -8,7 +8,6 @@ interface ModelBrowserProps {
   style?: React.CSSProperties;
 }
 
-// Category icons mapping
 const getCategoryIcon = (categoryName: string): string => {
   const iconMap: { [key: string]: string } = {
     'bathtubs': '🛁',
@@ -25,7 +24,6 @@ const getCategoryIcon = (categoryName: string): string => {
   return iconMap[categoryName.toLowerCase()] || '📦';
 };
 
-// Product type icons for placeholders
 const getProductIcon = (category: string): string => {
   const iconMap: { [key: string]: string } = {
     'bathtub': '🛁',
@@ -53,7 +51,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Set default category when categories are loaded
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory(categories[0].name);
@@ -111,7 +108,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
 
   return (
     <div className="model-browser" style={style}>
-      {/* Header */}
       <div className="model-browser-header">
         <div className="model-browser-title">
           <span>🛁 Product Browser</span>
@@ -124,7 +120,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
           </button>
         </div>
         
-        {/* Search */}
         <input
           className="search-input"
           type="text"
@@ -134,7 +129,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
         />
       </div>
 
-      {/* Category tabs with icons only */}
       <div className="category-tabs">
         {categories.map((category) => (
           <button
@@ -149,7 +143,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
         ))}
       </div>
 
-      {/* Model grid */}
       <div className="model-list">
         {filteredModels.length === 0 ? (
           <div className="no-models-message">
@@ -162,7 +155,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
               className={`model-item ${selectedModel?.id === model.id ? 'selected' : ''}`}
               onClick={() => onModelSelect(model)}
             >
-              {/* Enhanced Product Preview */}
               <div className="model-item-preview">
                 {model.thumbnail ? (
                   <img 
@@ -170,7 +162,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                     alt={model.name}
                     className="model-item-image"
                     onError={(e) => {
-                      // If image fails to load, show icon instead
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       const placeholder = target.nextElementSibling as HTMLElement;
@@ -192,7 +183,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                   {getProductIcon(model.category)}
                 </div>
                 
-                {/* Preview Badge */}
                 <div style={{
                   position: 'absolute',
                   top: '6px',
@@ -208,7 +198,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                   3D
                 </div>
                 
-                {/* Add to Room Button - appears on hover */}
                 <button 
                   className="add-to-room-button"
                   onClick={(e) => {
@@ -220,7 +209,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                 </button>
               </div>
 
-              {/* Product Info */}
               <div className="model-item-info">
                 <div className="model-item-name">
                   {model.name}
@@ -239,7 +227,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
         )}
       </div>
 
-      {/* Footer */}
       <div className="model-browser-footer">
         {filteredModels.length} product(s) available
         {currentCategory && (

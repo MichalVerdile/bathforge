@@ -1,11 +1,9 @@
-/* Bathroom Planner Styles */
 .bathroom-planner {
   min-height: 100vh;
   background: #0f172a;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-/* Header */
 .planner-header {
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(10px);
@@ -33,7 +31,6 @@
   font-weight: 600;
 }
 
-/* Main Content */
 .planner-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -41,7 +38,6 @@
   gap: 0;
 }
 
-/* Left Side - Options */
 .planner-left {
   padding: 3rem;
   display: flex;
@@ -122,7 +118,6 @@
   font-size: 0.9rem;
 }
 
-/* Continue Button */
 .continue-button {
   margin-top: 2rem;
   padding: 1rem 2rem;
@@ -161,7 +156,6 @@
   cursor: not-allowed;
 }
 
-/* Right Side - 3D Preview */
 .planner-right {
   background: rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(10px);
@@ -184,7 +178,6 @@
   border: 1px solid rgba(212, 175, 55, 0.2);
 }
 
-/* Bathroom Preview Image */
 .room-preview {
   width: 100%;
   height: 100%;
@@ -209,7 +202,6 @@
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
 }
 
-/* Responsive Design */
 @media (max-width: 1024px) {
   .planner-content {
     grid-template-columns: 1fr;

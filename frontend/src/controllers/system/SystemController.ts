@@ -43,5 +43,4 @@ export class SystemController extends BaseController {
   }
 }
 
-// Export singleton instance
 export const systemController = new SystemController();

@@ -1,0 +1,134 @@
+package com.bathforge.dto.products;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
+
+import com.bathforge.model.products.Product.MountingType;
+import com.bathforge.model.products.Product.PriceRange;
+
+public class ProductDTO {
+
+    private Long id;
+
+    @NotBlank(message = "Product name is required")
+    private String name;
+
+    private String description;
+
+    @NotNull(message = "Price range is required")
+    private PriceRange priceRange;
+
+    @NotBlank(message = "Model path is required")
+    private String modelPath;
+
+    @NotNull(message = "Mounting type is required")
+    private MountingType mountingType;
+
+    @NotNull(message = "Category ID is required")
+    private Long categoryId;
+
+    private String categoryName;
+
+    private List<ColorDTO> availableColors;
+
+    public ProductDTO() {
+    }
+
+    public ProductDTO(String name, String description, PriceRange priceRange,
+            String modelPath, MountingType mountingType, Long categoryId) {
+        this.name = name;
+        this.description = description;
+        this.priceRange = priceRange;
+        this.modelPath = modelPath;
+        this.mountingType = mountingType;
+        this.categoryId = categoryId;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public PriceRange getPriceRange() {
+        return priceRange;
+    }
+
+    public void setPriceRange(PriceRange priceRange) {
+        this.priceRange = priceRange;
+    }
+
+    public String getModelPath() {
+        return modelPath;
+    }
+
+    public void setModelPath(String modelPath) {
+        this.modelPath = modelPath;
+    }
+
+    public MountingType getMountingType() {
+        return mountingType;
+    }
+
+    public void setMountingType(MountingType mountingType) {
+        this.mountingType = mountingType;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
+
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+
+    public List<ColorDTO> getAvailableColors() {
+        return availableColors;
+    }
+
+    public void setAvailableColors(List<ColorDTO> availableColors) {
+        this.availableColors = availableColors;
+    }
+
+    @Override
+    public String toString() {
+        return "ProductDTO{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", priceRange=" + priceRange +
+                ", modelPath='" + modelPath + '\'' +
+                ", mountingType=" + mountingType +
+                ", categoryId=" + categoryId +
+                ", categoryName='" + categoryName + '\'' +
+                '}';
+    }
+}

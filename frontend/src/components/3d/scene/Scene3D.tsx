@@ -8,15 +8,21 @@ function Loader() {
   return (
     <Html center>
       <div style={{
-        color: 'white',
+        color: '#f1f5f9',
         fontSize: '14px',
-        fontFamily: 'Arial, sans-serif',
+        fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
         textAlign: 'center',
-        background: 'rgba(0,0,0,0.8)',
-        padding: '10px 20px',
-        borderRadius: '5px'
+        background: 'rgba(30, 41, 59, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '16px 24px',
+        borderRadius: '12px',
+        border: '1px solid #334155',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+        minWidth: '120px'
       }}>
-        Loading: {progress.toFixed(0)}%
+        <div style={{ marginBottom: '8px', fontSize: '16px' }}>⚙️</div>
+        <div style={{ fontWeight: '600', marginBottom: '4px' }}>Loading 3D Model</div>
+        <div style={{ fontSize: '12px', color: '#94a3b8' }}>{progress.toFixed(0)}% complete</div>
       </div>
     </Html>
   );
@@ -25,10 +31,8 @@ function Loader() {
 function Lights() {
   return (
     <>
-      {/* Ambient light for overall illumination */}
       <ambientLight intensity={0.4} />
       
-      {/* Main directional light */}
       <directionalLight
         position={[10, 10, 5]}
         intensity={1}
@@ -42,13 +46,11 @@ function Lights() {
         shadow-camera-bottom={-10}
       />
       
-      {/* Fill light from the opposite side */}
       <directionalLight
         position={[-5, 5, -5]}
         intensity={0.3}
       />
       
-      {/* Spot light for highlights */}
       <spotLight
         position={[0, 15, 0]}
         intensity={0.5}
@@ -87,7 +89,7 @@ export default function Scene3D({
   showGrid = true,
   showEnvironment = true,
   cameraPosition = [5, 5, 5],
-  backgroundColor = '#f0f0f0',
+  backgroundColor = '#0f172a',
   onSceneReady
 }: Scene3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -114,23 +116,18 @@ export default function Scene3D({
         }}
       >
         <Suspense fallback={<Loader />}>
-          {/* Lighting */}
           <Lights />
           
-          {/* Environment for reflections and ambient lighting */}
           {showEnvironment && (
             <Environment preset="apartment" background={false} />
           )}
           
-          {/* Grid helper */}
           {showGrid && (
             <Grid infiniteGrid />
           )}
           
-          {/* Ground plane for shadows */}
           <Ground />
           
-          {/* Camera controls */}
           <OrbitControls
             enablePan={true}
             enableZoom={true}
@@ -140,24 +137,25 @@ export default function Scene3D({
             maxPolarAngle={Math.PI / 2.1}
           />
           
-          {/* Children */}
           {children}
         </Suspense>
       </Canvas>
       
-      {/* UI Controls overlay */}
       <div style={{
         position: 'absolute',
-        top: '10px',
+        bottom: '10px',
         left: '10px',
-        background: 'rgba(255, 255, 255, 0.9)',
-        padding: '10px',
-        borderRadius: '5px',
-        fontSize: '12px',
-        color: '#333',
-        pointerEvents: 'none'
+        background: 'rgba(30, 41, 59, 0.95)',
+        backdropFilter: 'blur(10px)',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        fontSize: '11px',
+        color: '#94a3b8',
+        pointerEvents: 'none',
+        border: '1px solid #334155',
+        fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
       }}>
-        <div>Mouse: Rotate | Wheel: Zoom | Right-click: Pan</div>
+        <div>🖱️ Rotate • 🎲 Zoom • 🖐️ Pan</div>
       </div>
     </div>
   );

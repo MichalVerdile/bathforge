@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./CustomRoom.css";
+import { RoomEditor } from "./RoomEditor";
 
 interface CustomRoomProps {
   onNavigate: (view: string) => void;
@@ -8,6 +9,9 @@ interface CustomRoomProps {
 const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
   const [isInfoVisible, setInfoVisible] = useState(false);
   const [viewMode, setViewMode] = useState<"2D" | "3D">("3D");
+
+  const [roomWidth, setRoomWidth] = useState(5); // e.g., 5 units/meters
+  const [roomDepth, setRoomDepth] = useState(4); // e.g., 4 units/meters
 
   return (
     <>
@@ -19,7 +23,11 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
 
         <div className="viewer-container">
           <div className="viewer-placeholder">
-            <p>3D/2D Room Viewer Area</p>
+            <RoomEditor
+              viewMode={viewMode}
+              width={roomWidth}
+              depth={roomDepth}
+            />
           </div>
 
           <div
@@ -64,7 +72,6 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
                     />{" "}
                   </svg>
                   <div className="info-item-text">
-                    <h5>Drag to Resize</h5>
                     <p>Click and drag walls to adjust dimensions.</p>
                   </div>
                 </div>
@@ -87,7 +94,6 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
                     />{" "}
                   </svg>
                   <div className="info-item-text">
-                    <h5>Precise Input</h5>
                     <p>Click a dimension to type an exact value.</p>
                   </div>
                 </div>
@@ -110,7 +116,6 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
                     />{" "}
                   </svg>
                   <div className="info-item-text">
-                    <h5>Add Points</h5>
                     <p>Right-click a wall to create custom shapes.</p>
                   </div>
                 </div>

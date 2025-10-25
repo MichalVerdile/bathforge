@@ -60,60 +60,11 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       try {
         const template = JSON.parse(storedTemplate);
         setTemplateData(template);
-        loadTemplateFixtures(template);
       } catch (error) {
         console.error('Error parsing template data:', error);
       }
     }
   }, []);
-
-  const loadTemplateFixtures = (template: any) => {
-    if (!template?.roomData?.fixtures) {
-      console.warn('No fixtures found in template data');
-      return;
-    }
-    
-    template.roomData.fixtures.forEach((fixture: any, index: number) => {
-      let modelPath = '';
-      let categoryId = 1;
-      
-      switch (fixture.type) {
-        case 'bathtub':
-          modelPath = '/assets/bathtubs/A1.glb';
-          categoryId = 1;
-          break;
-        case 'sink':
-          modelPath = '/assets/basins/115_lavabo.glb';
-          categoryId = 2;
-          break;
-        case 'toilet':
-          modelPath = '/assets/wcs/CABS.glb';
-          categoryId = 3;
-          break;
-        case 'shower':
-          modelPath = '/assets/shower/DN01FG120.glb';
-          categoryId = 4;
-          break;
-        default:
-          console.warn(`Unknown fixture type: ${fixture.type}`);
-          return;
-      }
-      
-      const fixtureModel: ModelItem = {
-        id: index + 1000, // Use high IDs to avoid conflicts
-        name: `${fixture.type.charAt(0).toUpperCase() + fixture.type.slice(1)}`,
-        url: modelPath,
-        category: fixture.type,
-        categoryId: categoryId,
-        priceRange: 'MEDIUM' as const,
-        mountingType: 'FLOOR' as const,
-        availableColors: [],
-        thumbnail: `/assets/${fixture.type}/${fixture.type}-preview.jpg`
-      };
-      
-      addProductToScene(fixtureModel);
-    });
-  };
 
   // Auto-save functionality
   const autoSaveScene = async () => {

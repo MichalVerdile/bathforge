@@ -145,22 +145,20 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
               onClick={() => onModelSelect(model)}
             >
               <div className="model-item-preview">
-                {model.thumbnail ? (
-                  <img 
-                    src={model.thumbnail} 
-                    alt={model.name}
-                    className="model-item-image"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const placeholder = target.nextElementSibling as HTMLElement;
-                      if (placeholder) placeholder.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
+                <img
+                  src={model.url ?? model.thumbnail}
+                  alt={model.name}
+                  className="model-item-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const placeholder = target.nextElementSibling as HTMLElement;
+                    if (placeholder) placeholder.style.display = 'flex';
+                  }}
+                />
+                <div
                   className="model-item-placeholder"
-                  style={{ 
+                  style={{
                     display: model.thumbnail ? 'none' : 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -171,7 +169,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                 >
                   {getProductIcon(model.category)}
                 </div>
-                
+
                 <div style={{
                   position: 'absolute',
                   top: '6px',
@@ -186,8 +184,8 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                 }}>
                   3D
                 </div>
-                
-                <button 
+
+                <button
                   className="add-to-room-button"
                   onClick={(e) => {
                     e.stopPropagation();

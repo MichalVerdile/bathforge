@@ -52,14 +52,10 @@ export function useModelData(): UseModelDataResult {
       setLoading(true);
       setError(null);
 
-      console.log('Starting to load categories and products...');
       const [categoriesData, productsData] = await Promise.all([
         CategoryService.getAll(),
         ProductService.getAll()
       ]);
-
-      console.log('Loaded categories:', categoriesData);
-      console.log('Loaded products:', productsData);
 
       setAllProducts(productsData);
 
@@ -79,7 +75,6 @@ export function useModelData(): UseModelDataResult {
         const category = categoryMap.get(product.categoryId);
         if (category) {
           const modelItem = convertProductToModelItem(product);
-          console.log('Adding product to category:', product.name, 'Model URL:', modelItem.url);
           category.models.push(modelItem);
         }
       });
@@ -88,7 +83,6 @@ export function useModelData(): UseModelDataResult {
         .filter(category => category.models.length > 0)
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
-      console.log('Final categories with models:', categoriesWithModels);
       setCategories(categoriesWithModels);
     } catch (err) {
       console.error('Failed to load model data:', err);

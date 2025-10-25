@@ -54,11 +54,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const cameraRef = useRef<THREE.Camera | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  console.log('Bathroom3DViewer - Current state:');
-  console.log('  - selectedModel:', selectedModel);
-  console.log('  - sceneProducts:', sceneProducts);
-  console.log('  - templateData:', templateData);
-
   useEffect(() => {
     const storedTemplate = localStorage.getItem('selectedTemplate');
     if (storedTemplate) {
@@ -69,31 +64,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       } catch (error) {
         console.error('Error parsing template data:', error);
       }
-    } else {
-      // For testing: Add a simple test model if no template is found
-      console.log('No template found, adding test model...');
-      const testModel: ModelItem = {
-        id: 999,
-        name: 'Test Bathtub',
-        url: '/assets/bathtubs/A1.glb',
-        category: 'bathtub',
-        categoryId: 1,
-        priceRange: 'MEDIUM' as const,
-        mountingType: 'FLOOR' as const,
-        availableColors: [],
-        thumbnail: undefined
-      };
-      
-      setTimeout(() => {
-        console.log('Adding test model to scene...');
-        addProductToScene(testModel, [0, 0, 0]);
-      }, 1000);
     }
   }, []);
 
   const loadTemplateFixtures = (template: any) => {
-    console.log('Loading template fixtures:', template);
-    
     if (!template?.roomData?.fixtures) {
       console.warn('No fixtures found in template data');
       return;
@@ -137,7 +111,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         thumbnail: `/assets/${fixture.type}/${fixture.type}-preview.jpg`
       };
       
-      console.log(`Adding fixture to scene: ${fixtureModel.name} at ${modelPath}`);
       addProductToScene(fixtureModel);
     });
   };
@@ -216,7 +189,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       selectedColorId: model.availableColors && model.availableColors.length > 0 ? model.availableColors[0].id : undefined
     };
 
-    console.log(`Adding product to scene:`, newProduct);
     setSceneProducts(prev => [...prev, newProduct]);
     setSelectedProductId(uniqueId);
     

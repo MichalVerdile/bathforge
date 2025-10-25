@@ -42,7 +42,7 @@ export default function DraggableModel({
   color,
   dragSensitivity = 1.1,
   // Use a standard 6-digit hex; 8-digit (with alpha) is not supported by THREE.Color
-  highlightColor = '#ffffffff',
+  highlightColor = 'white',
   onClick,
   onPositionChange,
   onRotationChange,
@@ -329,7 +329,6 @@ export default function DraggableModel({
       setError(null);
 
       if (onLoad) onLoad(model);
-      console.log(`Successfully processed model: ${url} (scaled: ${scaleFactor.toFixed(2)})`);
     } catch (err) {
       const errorMessage = `Failed to process model: ${err instanceof Error ? err.message : 'Unknown error'}`;
       setError(errorMessage);
@@ -358,7 +357,6 @@ export default function DraggableModel({
 
   // Loading display
   if (!gltf?.scene) {
-    console.log(`Loading model: ${url}`);
     return (
       <group position={currentPosition}>
         <mesh>
@@ -373,8 +371,6 @@ export default function DraggableModel({
       </group>
     );
   }
-
-  console.log(`Rendering model: ${url}`, gltf.scene);
 
   return (
     <group

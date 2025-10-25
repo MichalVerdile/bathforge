@@ -49,7 +49,6 @@ const getProductIcon = (category: string): string => {
 export default function ModelBrowser({ onModelSelect, selectedModel, style }: ModelBrowserProps) {
   const { categories, loading, error, refresh } = useModelData();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
@@ -58,9 +57,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
   }, [categories, selectedCategory]);
 
   const currentCategory = categories.find(cat => cat.name === selectedCategory);
-  const filteredModels = currentCategory?.models.filter(model =>
-    model.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredModels = currentCategory?.models || [];
 
   if (loading) {
     return (
@@ -119,14 +116,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
             🔄
           </button>
         </div>
-        
-        <input
-          className="search-input"
-          type="text"
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
 
       <div className="category-tabs">
@@ -146,7 +135,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
       <div className="model-list">
         {filteredModels.length === 0 ? (
           <div className="no-models-message">
-            {searchTerm ? 'No products found matching your search.' : 'No products in this category.'}
+            No products in this category.
           </div>
         ) : (
           filteredModels.map((model) => (

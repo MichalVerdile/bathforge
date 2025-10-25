@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import "./CustomRoom.css";
-import { RoomEditor } from "./RoomEditor";
+import { RoomEditor, RoomEditorRef } from "./RoomEditor";
 
 interface CustomRoomProps {
   onNavigate: (view: string) => void;
@@ -9,9 +9,17 @@ interface CustomRoomProps {
 const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
   const [isInfoVisible, setInfoVisible] = useState(false);
   const [viewMode, setViewMode] = useState<"2D" | "3D">("3D");
+  const roomEditorRef = useRef<RoomEditorRef>(null);
 
   const [roomWidth, setRoomWidth] = useState(5); // e.g., 5 units/meters
   const [roomDepth, setRoomDepth] = useState(4); // e.g., 4 units/meters
+  const [roomHeight, setRoomHeight] = useState(2.5); // e.g., 2.5 units/meters
+
+  const handleReset = () => {
+    if (roomEditorRef.current) {
+      roomEditorRef.current.reset();
+    }
+  };
 
   return (
     <>
@@ -24,9 +32,14 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
         <div className="viewer-container">
           <div className="viewer-placeholder">
             <RoomEditor
+              ref={roomEditorRef}
               viewMode={viewMode}
               width={roomWidth}
               depth={roomDepth}
+              height={roomHeight}
+              onWidthChange={setRoomWidth}
+              onDepthChange={setRoomDepth}
+              onHeightChange={setRoomHeight}
             />
           </div>
 
@@ -121,6 +134,30 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
                 </div>
               </div>
             )}
+          </div>
+
+          <div className="reset-button-container">
+            <button
+              className="reset-button"
+              onClick={handleReset}
+              aria-label="Reset room shape"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="1.5"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                />
+              </svg>
+              <span>Reset</span>
+            </button>
           </div>
 
           <div className="view-toggle-buttons">

@@ -223,6 +223,21 @@
   box-shadow: 0 6px 20px rgba(148, 163, 184, 0.4);
 }
 
+/* Dimension Labels */
+.dimension-label {
+  background: rgba(30, 41, 59, 0.9);
+  color: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
 @media (max-width: 768px) {
   .planner-header {
     padding: 1rem;
@@ -253,4 +268,44 @@
     padding: 0.6rem 1rem;
     font-size: 0.85rem;
   }
+
+  .dimension-label {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+  }
+}
+
+/* Reset Button */
+.reset-button-container {
+  position: absolute;
+  top: 2rem;
+  right: 6rem;
+  z-index: 20;
+}
+
+.reset-button {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.reset-button:hover {
+  background: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+.reset-button svg {
+  width: 18px;
+  height: 18px;
 }

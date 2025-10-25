@@ -141,7 +141,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         z: cameraRef.current.position.z
       }) : undefined;
 
-      const savedScene = await sceneService.saveCurrentScene(
+      await sceneService.saveCurrentScene(
         currentScene.name,
         'guest',
         sceneData,
@@ -151,7 +151,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         currentScene.id
       );
 
-      setCurrentScene({ id: savedScene.id, name: savedScene.name });
       setLastSaveTime(new Date());
     } catch (error) {
       console.error('Failed to auto-save scene:', error);

@@ -107,11 +107,11 @@ public class SceneController {
      * Update existing scene
      */
     @PutMapping("/{id}")
-    public ResponseEntity<SceneDTO> updateScene(@PathVariable Long id,
+    public ResponseEntity<Void> updateScene(@PathVariable Long id,
             @Valid @RequestBody UpdateSceneDTO updateSceneDTO) {
         try {
-            SceneDTO updatedScene = sceneService.updateScene(id, updateSceneDTO);
-            return ResponseEntity.ok(updatedScene);
+            sceneService.updateScene(id, updateSceneDTO);
+            return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }

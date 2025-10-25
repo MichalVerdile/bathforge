@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+        "type": "java",
+        "request": "attach",
+        "name": "Java",
+        "hostName": "localhost",
+        "port": 5005,
+        "sourceRoots": [
+        ]
+    }
+  ]
+}

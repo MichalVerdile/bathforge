@@ -122,9 +122,8 @@ class SceneService {
     return response.data;
   }
 
-  async updateScene(id: number, sceneData: UpdateSceneRequest): Promise<Scene> {
-    const response = await apiClient.put<Scene>(`${this.BASE_PATH}/${id}`, sceneData);
-    return response.data;
+  async updateScene(id: number, sceneData: UpdateSceneRequest): Promise<void> {
+    await apiClient.put<Scene>(`${this.BASE_PATH}/${id}`, sceneData);
   }
 
   async deleteScene(id: number): Promise<void> {
@@ -160,7 +159,7 @@ class SceneService {
     lightingSettings?: string,
     backgroundColor?: string,
     existingSceneId?: number
-  ): Promise<Scene> {
+  ): Promise<void> {
     const products = sceneProducts.map(product => ({
       productId: product.productId,
       colorId: product.colorId,
@@ -177,7 +176,7 @@ class SceneService {
     }));
 
     if (existingSceneId) {
-      return this.updateScene(existingSceneId, {
+      this.updateScene(existingSceneId, {
         name,
         products,
         cameraPosition,
@@ -185,7 +184,7 @@ class SceneService {
         backgroundColor
       });
     } else {
-      return this.createScene({
+      this.createScene({
         name,
         user,
         products,

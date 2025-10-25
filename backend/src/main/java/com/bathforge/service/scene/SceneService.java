@@ -118,6 +118,7 @@ public class SceneService {
     /**
      * Update existing scene
      */
+    @Transactional
     public SceneDTO updateScene(Long id, UpdateSceneDTO updateSceneDTO) {
         Scene existingScene = sceneRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Scene not found with id: " + id));

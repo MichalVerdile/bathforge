@@ -56,3 +56,40 @@ export interface ModelCategory {
   description: string;
   models: ModelItem[];
 }
+
+// Scene Management Types
+export interface SceneProduct {
+  id?: number;
+  sceneId?: number;
+  productId: number;
+  productName?: string;
+  productModelPath?: string;
+  colorId?: number;
+  colorName?: string;
+  colorHexCode?: string;
+  positionX?: number;
+  positionY?: number;
+  positionZ?: number;
+  rotationX?: number;
+  rotationY?: number;
+  rotationZ?: number;
+  scaleX?: number;
+  scaleY?: number;
+  scaleZ?: number;
+  customProperties?: string;
+}
+
+export interface Scene {
+  id?: number;
+  name: string;
+  description?: string;
+  user: string;
+  sceneData?: string;
+  cameraPosition?: string;
+  lightingSettings?: string;
+  backgroundColor?: string;
+  isPublic?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+  sceneProducts?: SceneProduct[];
+}

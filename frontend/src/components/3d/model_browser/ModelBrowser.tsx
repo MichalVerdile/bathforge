@@ -51,13 +51,21 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   useEffect(() => {
+    console.log('ModelBrowser - Categories loaded:', categories);
+    console.log('ModelBrowser - Loading state:', loading);
+    console.log('ModelBrowser - Error state:', error);
+    
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory(categories[0].name);
+      console.log('ModelBrowser - Auto-selected first category:', categories[0].name);
     }
-  }, [categories, selectedCategory]);
+  }, [categories, selectedCategory, loading, error]);
 
   const currentCategory = categories.find(cat => cat.name === selectedCategory);
   const filteredModels = currentCategory?.models || [];
+  
+  console.log('ModelBrowser - Current category:', currentCategory);
+  console.log('ModelBrowser - Filtered models:', filteredModels);
 
   if (loading) {
     return (

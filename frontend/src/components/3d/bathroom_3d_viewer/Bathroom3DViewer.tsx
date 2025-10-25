@@ -2,8 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import Scene3D from '../scene/Scene3D';
 import ModelLoader from './ModelLoader';
 import ModelBrowser, { type ModelItem } from '../model_browser/ModelBrowser';
+import sceneService, { SceneProduct } from '../../../controllers/api/scenes/SceneService';
+import { Color } from '../../../types/api';
+import { ProductService } from '../../../controllers/api/products/ProductService';
 import * as THREE from 'three';
 import './Bathroom3D.css';
+import DraggableModel from './DraggableModel';
+
+interface SceneProduct3D extends SceneProduct {
+  uniqueId: string;
+  modelItem: ModelItem;
+  selectedColorId?: number;
+}
 
 interface SceneControlsState {
   position: [number, number, number];
@@ -21,8 +31,15 @@ interface Bathroom3DViewerProps {
 
 export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [selectedModel, setSelectedModel] = useState<ModelItem | null>(null);
-  const [loadedModels, setLoadedModels] = useState<{ model: ModelItem; id: string }[]>([]);
+  const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [isDraggingModel, setIsDraggingModel] = useState(false);
+  const [currentScene, setCurrentScene] = useState<{ id?: number; name: string }>({
+    name: `Scene ${new Date().toLocaleString()}`
+  });
   const [templateData, setTemplateData] = useState<any>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
@@ -34,7 +51,13 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   });
 
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const modelRef = useRef<THREE.Group | null>(null);
+  const cameraRef = useRef<THREE.Camera | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  console.log('Bathroom3DViewer - Current state:');
+  console.log('  - selectedModel:', selectedModel);
+  console.log('  - sceneProducts:', sceneProducts);
+  console.log('  - templateData:', templateData);
 
   useEffect(() => {
     const storedTemplate = localStorage.getItem('selectedTemplate');
@@ -46,66 +69,229 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       } catch (error) {
         console.error('Error parsing template data:', error);
       }
+    } else {
+      // For testing: Add a simple test model if no template is found
+      console.log('No template found, adding test model...');
+      const testModel: ModelItem = {
+        id: 999,
+        name: 'Test Bathtub',
+        url: '/assets/bathtubs/A1.glb',
+        category: 'bathtub',
+        categoryId: 1,
+        priceRange: 'MEDIUM' as const,
+        mountingType: 'FLOOR' as const,
+        availableColors: [],
+        thumbnail: undefined
+      };
+      
+      setTimeout(() => {
+        console.log('Adding test model to scene...');
+        addProductToScene(testModel, [0, 0, 0]);
+      }, 1000);
     }
   }, []);
 
   const loadTemplateFixtures = (template: any) => {
     console.log('Loading template fixtures:', template);
     
-    const fixtureModels: ModelItem[] = [];
+    if (!template?.roomData?.fixtures) {
+      console.warn('No fixtures found in template data');
+      return;
+    }
     
     template.roomData.fixtures.forEach((fixture: any, index: number) => {
       let modelPath = '';
+      let categoryId = 1;
+      
       switch (fixture.type) {
         case 'bathtub':
-          modelPath = '/assets/bathtubs/modern-bathtub.glb';
+          modelPath = '/assets/bathtubs/A1.glb';
+          categoryId = 1;
           break;
         case 'sink':
-          modelPath = '/assets/basins/modern-basin.glb';
+          modelPath = '/assets/basins/115_lavabo.glb';
+          categoryId = 2;
           break;
         case 'toilet':
-          modelPath = '/assets/wcs/modern-toilet.glb';
+          modelPath = '/assets/wcs/CABS.glb';
+          categoryId = 3;
           break;
         case 'shower':
-          modelPath = '/assets/shower/modern-shower.glb';
+          modelPath = '/assets/shower/DN01FG120.glb';
+          categoryId = 4;
           break;
         default:
+          console.warn(`Unknown fixture type: ${fixture.type}`);
           return;
       }
       
-      fixtureModels.push({
-        id: index + 1,
+      const fixtureModel: ModelItem = {
+        id: index + 1000, // Use high IDs to avoid conflicts
         name: `${fixture.type.charAt(0).toUpperCase() + fixture.type.slice(1)}`,
         url: modelPath,
         category: fixture.type,
-        categoryId: 1,
+        categoryId: categoryId,
         priceRange: 'MEDIUM' as const,
         mountingType: 'FLOOR' as const,
         availableColors: [],
         thumbnail: `/assets/${fixture.type}/${fixture.type}-preview.jpg`
-      });
-    });
-    
-    fixtureModels.forEach((fixtureModel, index) => {
-      const loadedModel = {
-        model: fixtureModel,
-        id: `template_fixture_${index}_${Date.now()}`
       };
-      setLoadedModels(prev => [...prev, loadedModel]);
+      
+      console.log(`Adding fixture to scene: ${fixtureModel.name} at ${modelPath}`);
+      addProductToScene(fixtureModel);
     });
+  };
+
+  // Auto-save functionality
+  const autoSaveScene = async () => {
+    if (sceneProducts.length === 0) return;
+    
+    setIsAutoSaving(true);
+    try {
+      const sceneData = sceneProducts.map(product => ({
+        productId: product.productId,
+        colorId: product.selectedColorId,
+        positionX: product.positionX || 0,
+        positionY: product.positionY || 0,
+        positionZ: product.positionZ || 0,
+        rotationX: product.rotationX || 0,
+        rotationY: product.rotationY || 0,
+        rotationZ: product.rotationZ || 0,
+        scaleX: product.scaleX || 1,
+        scaleY: product.scaleY || 1,
+        scaleZ: product.scaleZ || 1
+      }));
+
+      const cameraPosition = cameraRef.current ? JSON.stringify({
+        x: cameraRef.current.position.x,
+        y: cameraRef.current.position.y,
+        z: cameraRef.current.position.z
+      }) : undefined;
+
+      const savedScene = await sceneService.saveCurrentScene(
+        currentScene.name,
+        'guest',
+        sceneData,
+        cameraPosition,
+        undefined,
+        '#0f172a',
+        currentScene.id
+      );
+
+      setCurrentScene({ id: savedScene.id, name: savedScene.name });
+      setLastSaveTime(new Date());
+    } catch (error) {
+      console.error('Failed to auto-save scene:', error);
+    } finally {
+      setIsAutoSaving(false);
+    }
+  };
+
+  // Debounced scheduler for auto-saving to avoid saving on every small movement
+  const scheduleAutoSave = (delay: number = 1000) => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+    }
+    saveTimerRef.current = setTimeout(() => {
+      autoSaveScene();
+      saveTimerRef.current = null;
+    }, delay);
+  };
+
+  const addProductToScene = (model: ModelItem, position?: [number, number, number]) => {
+    const uniqueId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const newProduct: SceneProduct3D = {
+      uniqueId,
+      productId: model.id,
+      modelItem: model,
+      positionX: position ? position[0] : 0,
+      positionY: position ? position[1] : 0,
+      positionZ: position ? position[2] : 0,
+      rotationX: 0,
+      rotationY: 0,
+      rotationZ: 0,
+      scaleX: 1,
+      scaleY: 1,
+      scaleZ: 1,
+      selectedColorId: model.availableColors && model.availableColors.length > 0 ? model.availableColors[0].id : undefined
+    };
+
+    console.log(`Adding product to scene:`, newProduct);
+    setSceneProducts(prev => [...prev, newProduct]);
+    setSelectedProductId(uniqueId);
+    
+    // Debounced auto-save after adding product
+    scheduleAutoSave(400);
+  };
+
+  const removeProductFromScene = (uniqueId: string) => {
+    setSceneProducts(prev => prev.filter(p => p.uniqueId !== uniqueId));
+    if (selectedProductId === uniqueId) {
+      setSelectedProductId(null);
+    }
+    
+    // Debounced auto-save after removing product
+    scheduleAutoSave(400);
+  };
+
+  const updateProductPosition = (uniqueId: string, position: [number, number, number]) => {
+    setSceneProducts(prev => 
+      prev.map(product => 
+        product.uniqueId === uniqueId 
+          ? { ...product, positionX: position[0], positionY: position[1], positionZ: position[2] }
+          : product
+      )
+    );
+    
+    // Debounced auto-save as the user drags; only saves after they pause
+    scheduleAutoSave(1000);
+  };
+
+  const updateProductColor = (uniqueId: string, colorId: number) => {
+    setSceneProducts(prev => 
+      prev.map(product => 
+        product.uniqueId === uniqueId 
+          ? { ...product, selectedColorId: colorId }
+          : product
+      )
+    );
+    
+    // Debounced auto-save after color change
+    scheduleAutoSave(400);
+  };
+
+  // Ensure colors are loaded for a selected product (useful for template-loaded fixtures)
+  const ensureSelectedProductColors = async (uniqueId: string, productId: number) => {
+    const sp = sceneProducts.find(p => p.uniqueId === uniqueId);
+    if (!sp) return;
+    if (sp.modelItem.availableColors && sp.modelItem.availableColors.length > 0) return;
+
+    try {
+      const colors = await ProductService.getColors(productId);
+      setSceneProducts(prev => prev.map(p => {
+        if (p.uniqueId !== uniqueId) return p;
+        const next = {
+          ...p,
+          modelItem: { ...p.modelItem, availableColors: colors }
+        } as typeof p;
+        if (!p.selectedColorId && colors.length > 0) {
+          next.selectedColorId = colors[0].id;
+        }
+        return next;
+      }));
+    } catch (e) {
+      console.error('Failed to load colors for product', productId, e);
+    }
+  };
+
+  const getSelectedColor = (product: SceneProduct3D): Color | undefined => {
+    if (!product.selectedColorId) return undefined;
+    return product.modelItem.availableColors.find(color => color.id === product.selectedColorId);
   };
 
   const handleModelSelect = (model: ModelItem) => {
     setSelectedModel(model);
-    
-    const isAlreadyLoaded = loadedModels.some(loaded => loaded.model.url === model.url);
-    if (!isAlreadyLoaded) {
-      const newLoadedModel = {
-        model,
-        id: `model_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      };
-      setLoadedModels(prev => [...prev, newLoadedModel]);
-    }
+    addProductToScene(model);
 
     setControls(prev => ({
       ...prev,
@@ -115,20 +301,19 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }));
   };
 
-  const handleModelLoad = (model: THREE.Group) => {
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const maxDimension = Math.max(size.x, size.y, size.z);
-    
-    const targetSize = 2.5;
-    const scale = targetSize / maxDimension;
-    
-    setControls(prev => ({
-      ...prev,
-      scale: scale,
-      position: [0, 0, 0]
-    }));
+  const handleModelLoad = (_model: THREE.Group) => {
+    // Model normalization is handled inside DraggableModel now
   };
+
+  // Cleanup any pending save timers on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div className="bathroom-3d-viewer" style={style}>
@@ -137,62 +322,146 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         selectedModel={selectedModel}
       />
 
-      <div className="scene-container">
+      <div className="scene-container" style={{ cursor: isDraggingModel ? 'grabbing' : 'default' }}>
         <Scene3D
           showGrid={controls.showGrid}
           showEnvironment={controls.showEnvironment}
+          controlsEnabled={!isDraggingModel}
+          onBackgroundClick={() => setSelectedProductId(null)}
           onSceneReady={(scene) => {
             sceneRef.current = scene;
           }}
+          onCameraReady={(camera) => {
+            cameraRef.current = camera;
+          }}
         >
-          {selectedModel && (
+          {/* Load the selected template room model (static) */}
+          {templateData?.preview && (
             <ModelLoader
-              url={selectedModel.url}
-              position={controls.position}
-              rotation={controls.rotation}
-              scale={controls.scale}
-              autoRotate={controls.autoRotate}
-              onLoad={handleModelLoad}
-              onError={(error) => {
-                console.error('Failed to load model:', error);
-                alert(`Failed to load model: ${selectedModel.name}\nError: ${error.message}`);
-              }}
+              url={templateData.preview}
+              position={[0, 0.94, 0]}
+              rotation={[0, 0, 0]}
+              scale={[1, 1, 1]}
+              castShadow={true}
+              receiveShadow={true}
+              onError={(err) => console.error('Failed to load template model:', err)}
             />
           )}
+
+          {sceneProducts.map((product) => {
+            const selectedColor = getSelectedColor(product);
+            return (
+              <DraggableModel
+                key={product.uniqueId}
+                id={product.uniqueId}
+                url={product.modelItem.url}
+                position={[
+                  product.positionX || 0,
+                  product.positionY || 0,
+                  product.positionZ || 0
+                ]}
+                rotation={[
+                  product.rotationX || 0,
+                  product.rotationY || 0,
+                  product.rotationZ || 0
+                ]}
+                scale={[
+                  product.scaleX || 1,
+                  product.scaleY || 1,
+                  product.scaleZ || 1
+                ]}
+                color={selectedColor?.hexCode}
+                selected={selectedProductId === product.uniqueId}
+                onPositionChange={(position) => updateProductPosition(product.uniqueId, position)}
+                onClick={() => {
+                  setSelectedProductId(product.uniqueId);
+                  ensureSelectedProductColors(product.uniqueId, product.productId);
+                }}
+                onLoad={handleModelLoad}
+                onDragStart={() => setIsDraggingModel(true)}
+                onDragEnd={() => setIsDraggingModel(false)}
+                onError={(error) => {
+                  console.error('Failed to load model:', error);
+                  alert(`Failed to load model: ${product.modelItem.name}\nError: ${error.message}`);
+                }}
+              />
+            );
+          })}
         </Scene3D>
 
-        {selectedModel && (
-          <div className="model-info-overlay">
-            <h4 className="model-info-title">
-              {selectedModel.name}
-            </h4>
-            <p className="model-info-details">
-              Category: {selectedModel.category.charAt(0).toUpperCase() + selectedModel.category.slice(1)}
-            </p>
-            <p className="model-info-category">
-              Price Range: {selectedModel.priceRange} • {selectedModel.mountingType}
-            </p>
-            {selectedModel.availableColors && selectedModel.availableColors.length > 0 && (
-              <p className="model-info-colors">
-                {selectedModel.availableColors.length} color{selectedModel.availableColors.length > 1 ? 's' : ''} available
-              </p>
-            )}
-            <p className="model-info-format">
-              3D Model Format: GLB/GLTF
-            </p>
+        {/* Scene Info Panel */}
+        <div className="scene-info-panel">
+          <div className="scene-header">
+            <h4>🛁 {currentScene.name}</h4>
+            <div className="scene-stats">
+              {sceneProducts.length} product{sceneProducts.length !== 1 ? 's' : ''}
+              {isAutoSaving && <span className="saving-indicator">💾 Saving...</span>}
+              {lastSaveTime && !isAutoSaving && (
+                <span className="last-saved">
+                  ✅ Saved {lastSaveTime.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Product Controls */}
+        {selectedProductId && (
+          <div className="product-controls-panel">
+            {(() => {
+              const selectedProduct = sceneProducts.find(p => p.uniqueId === selectedProductId);
+              if (!selectedProduct) return null;
+              
+              return (
+                <div className="product-controls">
+                  <div className="control-header">
+                    <h5>🎨 {selectedProduct.modelItem.name}</h5>
+                    <button 
+                      className="remove-button"
+                      onClick={() => removeProductFromScene(selectedProductId)}
+                      title="Remove from scene"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                  
+                  {selectedProduct.modelItem.availableColors.length > 0 && (
+                    <div className="color-selector">
+                      <label>Color:</label>
+                      <div className="color-options">
+                        {selectedProduct.modelItem.availableColors.map((color) => (
+                          <button
+                            key={color.id}
+                            className={`color-option ${
+                              selectedProduct.selectedColorId === color.id ? 'selected' : ''
+                            }`}
+                            style={{ backgroundColor: color.hexCode }}
+                            onClick={() => updateProductColor(selectedProductId, color.id)}
+                            title={color.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="position-info">
+                    <small>
+                      Position: [{(selectedProduct.positionX || 0).toFixed(1)}, {(selectedProduct.positionY || 0).toFixed(1)}, {(selectedProduct.positionZ || 0).toFixed(1)}]
+                    </small>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
-        {!selectedModel && (
+        {sceneProducts.length === 0 && (
           <div className="welcome-message">
             <h3 className="welcome-title">
               Welcome to BathForge 3D
             </h3>
             <p className="welcome-description">
-              Browse and select bathroom fixtures to preview them in stunning 3D
-            </p>
-            <p className="welcome-subtitle">
-              Click on any product card to get started! 🛁✨
+              Browse and select bathroom fixtures to add them to your scene
             </p>
           </div>
         )}

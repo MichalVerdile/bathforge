@@ -82,6 +82,9 @@ interface Scene3DProps {
   cameraPosition?: [number, number, number];
   backgroundColor?: string;
   onSceneReady?: (scene: THREE.Scene) => void;
+  onCameraReady?: (camera: THREE.Camera) => void;
+  controlsEnabled?: boolean;
+  onBackgroundClick?: () => void;
 }
 
 export default function Scene3D({
@@ -90,7 +93,10 @@ export default function Scene3D({
   showEnvironment = true,
   cameraPosition = [5, 5, 5],
   backgroundColor = '#0f172a',
-  onSceneReady
+  onSceneReady,
+  onCameraReady,
+  controlsEnabled = true,
+  onBackgroundClick,
 }: Scene3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -106,14 +112,19 @@ export default function Scene3D({
           far: 1000
         }}
         style={{ background: backgroundColor }}
-        onCreated={({ scene }) => {
+        onCreated={({ scene, camera }) => {
           scene.castShadow = true;
           scene.receiveShadow = true;
           
           if (onSceneReady) {
             onSceneReady(scene);
           }
+          
+          if (onCameraReady) {
+            onCameraReady(camera);
+          }
         }}
+        onPointerMissed={() => onBackgroundClick?.()}
       >
         <Suspense fallback={<Loader />}>
           <Lights />
@@ -129,6 +140,7 @@ export default function Scene3D({
           <Ground />
           
           <OrbitControls
+            enabled={controlsEnabled}
             enablePan={true}
             enableZoom={true}
             enableRotate={true}

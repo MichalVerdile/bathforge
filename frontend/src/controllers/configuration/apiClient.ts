@@ -12,6 +12,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
+    console.log(`Making API request to: ${config.baseURL}${config.url}`);
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -19,15 +20,18 @@ apiClient.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('API request error:', error);
     return Promise.reject(error);
   }
 );
 
 apiClient.interceptors.response.use(
   (response) => {
+    console.log(`API response from ${response.config.url}:`, response.status);
     return response;
   },
   (error) => {
+    console.error('API response error:', error.response?.status, error.response?.data || error.message);
     if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
     }
@@ -35,4 +39,5 @@ apiClient.interceptors.response.use(
   }
 );
 
+export { apiClient };
 export default apiClient;

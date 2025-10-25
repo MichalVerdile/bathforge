@@ -36,7 +36,8 @@ public class AssetImportService {
     private ProductColorRepository productColorRepository;
 
     private static final Map<String, String> CATEGORY_MAPPING = Map.of(
-            "accessoires", "accessories",
+            // Use database category names as canonical values
+            "accessoires", "accessoires",
             "basins", "basins",
             "bathtubs", "bathtubs",
             "coverings", "coverings",
@@ -48,7 +49,8 @@ public class AssetImportService {
             "wcs", "wcs");
 
     private static final Map<String, Product.MountingType> MOUNTING_MAPPING = Map.of(
-            "accessories", Product.MountingType.WALL,
+            // Align keys with actual category names used in DB
+            "accessoires", Product.MountingType.WALL,
             "basins", Product.MountingType.WALL,
             "bathtubs", Product.MountingType.FREESTANDING,
             "coverings", Product.MountingType.FLOOR,

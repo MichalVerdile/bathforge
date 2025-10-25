@@ -3,6 +3,7 @@ import { systemController } from './controllers/configuration';
 import { Bathroom3DViewer } from './components/3d';
 import BathroomPlanner from './components/configurator/bathroom_planner/BathroomPlanner';
 import TemplateSelection from './components/configurator/template_selection/TemplateSelection';
+import { Header } from './components/common';
 import './index.css';
 
 interface ApiStatus {
@@ -39,32 +40,83 @@ function App() {
     setCurrentView(view as ViewType);
   };
 
+  const handleNavigateHome = () => {
+    setCurrentView('planner');
+  };
+
+  const handleNavigateLogin = () => {
+    // Login functionality to be implemented later
+    console.log('Login clicked - not yet implemented');
+  };
+
   if (currentView === 'planner') {
-    return <BathroomPlanner onNavigate={handleNavigate} />;
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          title="Home"
+        />
+        <div style={{ flex: 1 }}>
+          <BathroomPlanner onNavigate={handleNavigate} />
+        </div>
+      </div>
+    );
   }
 
   if (currentView === 'template-selection') {
-    return <TemplateSelection onNavigate={handleNavigate} />;
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="Template Selection"
+        />
+        <div style={{ flex: 1 }}>
+          <TemplateSelection onNavigate={handleNavigate} />
+        </div>
+      </div>
+    );
   }
 
   if (currentView === 'custom-room') {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>Custom Room Configuration</h1>
-        <p>Set your bathroom dimensions and layout</p>
-        <button onClick={() => handleNavigate('planner')}>Back to Planner</button>
-        <button onClick={() => handleNavigate('3d')} style={{ marginLeft: '1rem' }}>Continue to 3D Designer</button>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="Custom Room"
+        />
+        <div style={{ flex: 1, padding: '2rem', textAlign: 'center' }}>
+          <h1>Custom Room Configuration</h1>
+          <p>Set your bathroom dimensions and layout</p>
+          <button onClick={() => handleNavigate('planner')}>Back to Planner</button>
+          <button onClick={() => handleNavigate('3d')} style={{ marginLeft: '1rem' }}>Continue to 3D Designer</button>
+        </div>
       </div>
     );
   }
 
   if (currentView === 'ai-design') {
     return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>AI Bathroom Designer</h1>
-        <p>Let our AI create the perfect bathroom for you</p>
-        <button onClick={() => handleNavigate('planner')}>Back to Planner</button>
-        <button onClick={() => handleNavigate('3d')} style={{ marginLeft: '1rem' }}>Continue to 3D Designer</button>
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="AI Designer"
+        />
+        <div style={{ flex: 1, padding: '2rem', textAlign: 'center' }}>
+          <h1>AI Bathroom Designer</h1>
+          <p>Let our AI create the perfect bathroom for you</p>
+          <button onClick={() => handleNavigate('planner')}>Back to Planner</button>
+          <button onClick={() => handleNavigate('3d')} style={{ marginLeft: '1rem' }}>Continue to 3D Designer</button>
+        </div>
       </div>
     );
   }
@@ -72,32 +124,13 @@ function App() {
   if (currentView === '3d') {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <header style={{
-          background: '#2c3e50',
-          color: 'white',
-          padding: '10px 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexShrink: 0
-        }}>
-          <h1 style={{ margin: 0, fontSize: '24px' }}>🛁 BathForge 3D</h1>
-          <button
-            onClick={() => handleNavigate('planner')}
-            style={{
-              background: '#3498db',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '4px',
-              cursor: 'pointer',
-              fontSize: '14px'
-            }}
-          >
-            ← Back to Planner
-          </button>
-        </header>
-        
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="3D Designer"
+        />
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <Bathroom3DViewer />
         </div>
@@ -105,7 +138,18 @@ function App() {
     );
   }
 
-  return <BathroomPlanner onNavigate={handleNavigate} />;
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Header 
+        onNavigateHome={handleNavigateHome}
+        onNavigateLogin={handleNavigateLogin}
+        title="Home"
+      />
+      <div style={{ flex: 1 }}>
+        <BathroomPlanner onNavigate={handleNavigate} />
+      </div>
+    </div>
+  );
 }
 
 export default App;

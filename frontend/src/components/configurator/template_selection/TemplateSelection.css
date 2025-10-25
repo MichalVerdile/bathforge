@@ -4,17 +4,10 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.template-header {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(10px);
-  padding: 1.5rem 2rem;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
-  position: relative;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-}
-
-.header-content {
+.page-title {
   text-align: center;
+  margin-bottom: 2rem;
+  padding: 1.5rem 2rem;
 }
 
 .step-number {
@@ -54,7 +47,7 @@
 .template-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: calc(100vh - 120px);
+  min-height: 100vh;
   gap: 0;
 }
 

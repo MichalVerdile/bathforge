@@ -24,15 +24,13 @@ const BathroomPlanner: React.FC<BathroomPlannerProps> = ({ onNavigate }) => {
 
   return (
     <div className="bathroom-planner">
-      <header className="planner-header">
-        <div className="header-content">
-          <h1 className="planner-title">Bathroom Planner</h1>
-          <h2 className="planner-subtitle">Choose your Starting Point</h2>
-        </div>
-      </header>
-
       <div className="planner-content">
         <div className="planner-left">
+          <div className="page-title">
+            <h1 className="planner-title">Bathroom Planner</h1>
+            <h2 className="planner-subtitle">Choose your Starting Point</h2>
+          </div>
+          
           <div className="options-container">
             <div 
               className={`option-card ${selectedOption === 'template' ? 'selected' : ''}`}

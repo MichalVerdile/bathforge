@@ -5,12 +5,11 @@ interface Vertex {
   y: number;
 }
 
-interface Simple2DEditorProps {
+interface TwoDEditorProps {
   vertices: Vertex[];
   setVertices: (vertices: Vertex[]) => void;
 }
 
-// Calculate canvas size based on viewport
 const calculateCanvasSize = (): number => {
   const viewportHeight = window.innerHeight;
   const viewportWidth = window.innerWidth;
@@ -27,7 +26,7 @@ const calculateCanvasSize = (): number => {
   return Math.max(size, 300); // minimum size of 300px
 };
 
-export const Simple2DEditor: React.FC<Simple2DEditorProps> = ({
+export const TwoDEditor: React.FC<TwoDEditorProps> = ({
   vertices,
   setVertices,
 }) => {

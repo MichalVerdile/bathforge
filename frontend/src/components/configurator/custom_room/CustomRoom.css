@@ -141,6 +141,59 @@
   gap: 0.75rem;
 }
 
+.height-input-container {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: rgba(30, 41, 59, 0.95);
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 0.625rem 1rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.height-input-label {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.height-input {
+  width: 70px;
+  padding: 0.5rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #475569;
+  color: #f1f5f9;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.2s ease;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.height-input::-webkit-outer-spin-button,
+.height-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.height-input:hover {
+  border-bottom-color: #64748b;
+}
+
+.height-input:focus {
+  border-bottom-color: #94a3b8;
+}
+
 .view-toggle-btn {
   background: rgba(30, 41, 59, 0.8);
   border: 1px solid #334155;
@@ -273,13 +326,33 @@
     font-size: 0.7rem;
     padding: 0.2rem 0.4rem;
   }
+
+  .height-input-container {
+    top: 1rem;
+    right: 1rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .height-input {
+    width: 60px;
+    font-size: 0.875rem;
+  }
+
+  .height-input-label {
+    font-size: 0.8125rem;
+  }
+
+  .reset-button-container {
+    top: 1rem;
+    right: 1rem;
+  }
 }
 
 /* Reset Button */
 .reset-button-container {
   position: absolute;
   top: 2rem;
-  right: 6rem;
+  right: 2rem;
   z-index: 20;
 }
 

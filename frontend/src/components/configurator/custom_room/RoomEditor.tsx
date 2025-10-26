@@ -3,11 +3,12 @@ import React, {
   useState,
   useImperativeHandle,
   forwardRef,
+  useMemo,
 } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Room } from "./Room";
-import { Simple2DEditor } from "./Simple2DEditor";
+import { TwoDEditor } from "./2DEditor";
 import {
   OrthographicCamera,
   PerspectiveCamera,
@@ -21,41 +22,72 @@ interface Vertex {
 
 const DynamicCamera: React.FC<{
   viewMode: "2D" | "3D";
-  width: number;
-  depth: number;
+  vertices: Vertex[];
   height: number;
-  isDragging: boolean;
-}> = ({ viewMode, width, depth, height, isDragging }) => {
+}> = ({ viewMode, vertices, height }) => {
   const { camera } = useThree();
   const [controlsRef, setControlsRef] = useState<any>(null);
+  const [hasSet3DInitialPosition, setHasSet3DInitialPosition] = useState(false);
 
+  // Calculate bounding box from vertices
+  const bounds = useMemo(() => {
+    if (vertices.length === 0) return { width: 8, depth: 8 };
+
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+
+    vertices.forEach((v) => {
+      minX = Math.min(minX, v.x);
+      maxX = Math.max(maxX, v.x);
+      minY = Math.min(minY, v.y);
+      maxY = Math.max(maxY, v.y);
+    });
+
+    // Convert to meters (1 pixel = 0.01 meters)
+    return {
+      width: (maxX - minX) * 0.01,
+      depth: (maxY - minY) * 0.01,
+    };
+  }, [vertices]);
+
+  // Set initial camera position when switching to 3D mode
   useEffect(() => {
     if (viewMode === "2D") {
       camera.position.set(0, 20, 0);
       camera.rotation.set(-Math.PI / 2, 0, 0);
+      setHasSet3DInitialPosition(false);
 
       if ("zoom" in camera) {
-        const maxDim = Math.max(width, depth);
+        const maxDim = Math.max(bounds.width, bounds.depth);
         (camera as THREE.OrthographicCamera).zoom = 100 / (maxDim * 0.3);
         camera.updateProjectionMatrix();
       }
-    } else {
-      camera.position.set(width, 10, depth * 1.5);
-      camera.rotation.set(0, 0, 0);
+    } else if (controlsRef && !hasSet3DInitialPosition) {
+      // Set initial 3D position only once when controls are ready
+      const maxDim = Math.max(bounds.width, bounds.depth);
+      const desiredPosition = new THREE.Vector3(
+        maxDim * 1.5,
+        height * 1.5,
+        maxDim * 1.5
+      );
 
-      if ("zoom" in camera) {
-        (camera as THREE.PerspectiveCamera).zoom = 1;
-        camera.updateProjectionMatrix();
-      }
-    }
-  }, [viewMode, width, depth, camera]);
+      // Set camera position
+      camera.position.copy(desiredPosition);
+      camera.lookAt(0, height / 2, 0);
 
-  // Re-enable controls after drag completes
-  useEffect(() => {
-    if (!isDragging && controlsRef) {
-      controlsRef.enabled = true;
+      // Mark as set
+      setHasSet3DInitialPosition(true);
     }
-  }, [isDragging, controlsRef]);
+  }, [viewMode, bounds, camera, controlsRef, height, hasSet3DInitialPosition]);
+
+  // Update camera controls for damping effect
+  useFrame(() => {
+    if (controlsRef && viewMode === "3D") {
+      controlsRef.update();
+    }
+  });
 
   return (
     <>
@@ -65,11 +97,16 @@ const DynamicCamera: React.FC<{
         <PerspectiveCamera makeDefault fov={60} />
       )}
 
-      {viewMode === "2D" ? null : ( // No camera controls in 2D mode - panning disabled
+      {viewMode === "3D" && (
         <OrbitControls
           ref={setControlsRef}
           target={[0, 1.25, 0]}
-          enabled={!isDragging}
+          enableDamping={true}
+          dampingFactor={0.05}
+          minPolarAngle={0}
+          maxPolarAngle={Math.PI / 1.8}
+          minDistance={Math.max(bounds.width, bounds.depth) * 1.5}
+          maxDistance={Math.max(bounds.width, bounds.depth) * 6}
         />
       )}
     </>
@@ -78,12 +115,7 @@ const DynamicCamera: React.FC<{
 
 interface RoomEditorProps {
   viewMode: "2D" | "3D";
-  width: number;
-  depth: number;
   height: number;
-  onWidthChange: (width: number) => void;
-  onDepthChange: (depth: number) => void;
-  onHeightChange: (height: number) => void;
 }
 
 export interface RoomEditorRef {
@@ -91,20 +123,7 @@ export interface RoomEditorRef {
 }
 
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
-  (
-    {
-      viewMode,
-      width,
-      depth,
-      height,
-      onWidthChange,
-      onDepthChange,
-      onHeightChange,
-    },
-    ref
-  ) => {
-    const [isDragging, setIsDragging] = useState(false);
-    // Calculate initial canvas size and default square
+  ({ viewMode, height }, ref) => {
     const getInitialVertices = (): Vertex[] => {
       const canvasSize = Math.min(
         Math.min(window.innerHeight - 200, window.innerWidth - 40),
@@ -123,25 +142,18 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
 
     const [vertices, setVertices] = useState<Vertex[]>(getInitialVertices());
 
-    const handleDragStart = () => setIsDragging(true);
-    const handleDragEnd = () => setIsDragging(false);
-
-    // Reset function to restore default vertices
     const resetVertices = () => {
       setVertices(getInitialVertices());
     };
 
-    // Expose reset function to parent
     useImperativeHandle(ref, () => ({
       reset: resetVertices,
     }));
 
-    // If in 2D mode, render the Simple2DEditor
     if (viewMode === "2D") {
-      return <Simple2DEditor vertices={vertices} setVertices={setVertices} />;
+      return <TwoDEditor vertices={vertices} setVertices={setVertices} />;
     }
 
-    // If in 3D mode, render the 3D canvas
     return (
       <Canvas shadows camera={undefined}>
         <color attach="background" args={["#0f172a"]} />
@@ -155,23 +167,11 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
           shadow-mapSize-height={2048}
         />
 
-        <Room
-          width={width}
-          depth={depth}
-          height={height}
-          viewMode={viewMode}
-          onWidthChange={onWidthChange}
-          onDepthChange={onDepthChange}
-          onHeightChange={onHeightChange}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        />
+        <Room vertices={vertices} height={height} viewMode={viewMode} />
         <DynamicCamera
           viewMode={viewMode}
-          width={width}
-          depth={depth}
+          vertices={vertices}
           height={height}
-          isDragging={isDragging}
         />
       </Canvas>
     );

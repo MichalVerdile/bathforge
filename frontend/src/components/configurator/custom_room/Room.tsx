@@ -1,300 +1,193 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useRef, useEffect } from "react";
 import * as THREE from "three";
-import { Html } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
 
-// Room component with drag functionality
-
-interface RoomProps {
-  width: number;
-  depth: number;
-  height: number;
-  viewMode: "2D" | "3D";
-  onWidthChange: (width: number) => void;
-  onDepthChange: (depth: number) => void;
-  onHeightChange: (height: number) => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
+interface Vertex {
+  x: number;
+  y: number;
 }
 
-const WALL_THICKNESS = 0.2;
+interface RoomProps {
+  vertices: Vertex[];
+  height: number;
+  viewMode: "2D" | "3D";
+}
+
+const WALL_THICKNESS = 0.075;
+const FLOOR_THICKNESS = 0.075;
 
 const wallMaterial = new THREE.MeshStandardMaterial({ color: "#f1f5f9" });
-const wallHoverMaterial = new THREE.MeshStandardMaterial({ color: "#cbd5e1" });
 const floorMaterial = new THREE.MeshStandardMaterial({ color: "#7b7e81ff" });
+const cornerMaterial = new THREE.MeshStandardMaterial({ color: "#f1f5f9" });
 
-// Dimension constraints
-const MIN_DIMENSION = 2; // meters
-const MAX_DIMENSION = 10; // meters
-const MIN_HEIGHT = 2; // meters
-const MAX_HEIGHT = 4; // meters
-
-export const Room: React.FC<RoomProps> = ({
-  width,
-  depth,
-  height,
-  viewMode,
-  onWidthChange,
-  onDepthChange,
-  onHeightChange,
-  onDragStart,
-  onDragEnd,
-}) => {
-  const [hoveredWall, setHoveredWall] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<THREE.Vector2 | null>(null);
-  const [dragWall, setDragWall] = useState<string | null>(null);
-  const [dragStartDimensions, setDragStartDimensions] = useState<{
-    width: number;
-    depth: number;
-    height: number;
-  } | null>(null);
-  const [roomPosition, setRoomPosition] = useState<THREE.Vector3>(
-    new THREE.Vector3(0, 0, 0)
+const convert2DTo3D = (
+  vertex: Vertex,
+  centerOffset: { x: number; y: number }
+): THREE.Vector3 => {
+  return new THREE.Vector3(
+    (vertex.x - centerOffset.x) * 0.01,
+    0,
+    (vertex.y - centerOffset.y) * 0.01
   );
+};
 
+const calculateCentroid = (vertices: Vertex[]): { x: number; y: number } => {
+  if (vertices.length === 0) return { x: 0, y: 0 };
+
+  const sum = vertices.reduce(
+    (acc, v) => ({ x: acc.x + v.x, y: acc.y + v.y }),
+    { x: 0, y: 0 }
+  );
+  return { x: sum.x / vertices.length, y: sum.y / vertices.length };
+};
+
+export const Room: React.FC<RoomProps> = ({ vertices, height, viewMode }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const { camera } = useThree();
+  const wallRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const cornerRefs = useRef<(THREE.Mesh | null)[]>([]);
 
-  const constrainDimension = (value: number, min: number, max: number) => {
-    return Math.max(min, Math.min(max, value));
-  };
+  useEffect(() => {
+    wallRefs.current = wallRefs.current.slice(0, vertices.length);
+    cornerRefs.current = cornerRefs.current.slice(0, vertices.length);
+  }, [vertices.length]);
 
-  const handlePointerEnter = useCallback(
-    (wall: string) => {
-      if (viewMode === "2D") {
-        setHoveredWall(wall);
-        // Set cursor based on wall direction
-        if (wall === "north" || wall === "south") {
-          document.body.style.cursor = "ns-resize";
-        } else if (wall === "east" || wall === "west") {
-          document.body.style.cursor = "ew-resize";
-        }
-      } else if (viewMode === "3D") {
-        // In 3D mode, show height adjustment cursor
-        document.body.style.cursor = "ns-resize";
+  const centroid = calculateCentroid(vertices);
+
+  useFrame(() => {
+    if (
+      viewMode !== "3D" ||
+      vertices.length < 3 ||
+      wallRefs.current.length === 0
+    )
+      return;
+
+    const hiddenWalls = new Set<number>();
+
+    wallRefs.current.forEach((wallRef, index) => {
+      if (!wallRef || index >= vertices.length) return;
+
+      const nextIndex = (index + 1) % vertices.length;
+      const v1_3D = convert2DTo3D(vertices[index], centroid);
+      const v2_3D = convert2DTo3D(vertices[nextIndex], centroid);
+
+      const wallDir = new THREE.Vector3(
+        v2_3D.x - v1_3D.x,
+        0,
+        v2_3D.z - v1_3D.z
+      ).normalize();
+      const normal = new THREE.Vector3(-wallDir.z, 0, wallDir.x);
+
+      const midpoint = new THREE.Vector3(
+        (v1_3D.x + v2_3D.x) / 2,
+        height / 2,
+        (v1_3D.z + v2_3D.z) / 2
+      );
+
+      const cameraPos = new THREE.Vector3();
+      camera.getWorldPosition(cameraPos);
+      const toWall = new THREE.Vector3()
+        .subVectors(midpoint, cameraPos)
+        .normalize();
+
+      const dotProduct = normal.dot(toWall);
+      if (dotProduct > 0) {
+        wallRef.visible = false;
+        hiddenWalls.add(index);
+      } else {
+        wallRef.visible = true;
       }
-    },
-    [viewMode]
-  );
+    });
 
-  const handlePointerLeave = useCallback(() => {
-    if (!isDragging) {
-      setHoveredWall(null);
-      document.body.style.cursor = "default";
-    }
-  }, [isDragging]);
+    cornerRefs.current.forEach((cornerRef, index) => {
+      if (!cornerRef || index >= vertices.length) return;
 
-  const handlePointerDown = useCallback(
-    (event: any, wall: string) => {
-      event.stopPropagation();
-      setIsDragging(true);
-      setDragWall(wall);
-      setDragStart(new THREE.Vector2(event.clientX, event.clientY));
-      setDragStartDimensions({ width, depth, height });
-      onDragStart(); // Notify parent that dragging has started
-    },
-    [width, depth, height, onDragStart]
-  );
+      const prevIndex = (index - 1 + vertices.length) % vertices.length;
+      const isHidden = hiddenWalls.has(prevIndex) || hiddenWalls.has(index);
 
-  const handlePointerMove = useCallback(
-    (event: any) => {
-      if (!isDragging || !dragStart || !dragStartDimensions) return;
-
-      const deltaX = (event.clientX - dragStart.x) * 0.01; // Scale factor for sensitivity
-      const deltaY = (event.clientY - dragStart.y) * 0.01;
-
-      if (viewMode === "2D") {
-        // In 2D mode, move the room position to make it feel like the wall is moving
-        if (dragWall === "east") {
-          const newWidth = constrainDimension(
-            dragStartDimensions.width + deltaX,
-            MIN_DIMENSION,
-            MAX_DIMENSION
-          );
-          onWidthChange(newWidth);
-          // Move room left to keep the dragged wall in place
-          setRoomPosition(new THREE.Vector3(-deltaX * 0.5, 0, 0));
-        } else if (dragWall === "west") {
-          const newWidth = constrainDimension(
-            dragStartDimensions.width - deltaX,
-            MIN_DIMENSION,
-            MAX_DIMENSION
-          );
-          onWidthChange(newWidth);
-          // Move room right to keep the dragged wall in place
-          setRoomPosition(new THREE.Vector3(deltaX * 0.5, 0, 0));
-        } else if (dragWall === "north") {
-          const newDepth = constrainDimension(
-            dragStartDimensions.depth - deltaY, // Fixed: was + deltaY
-            MIN_DIMENSION,
-            MAX_DIMENSION
-          );
-          onDepthChange(newDepth);
-          // Move room down to keep the dragged wall in place
-          setRoomPosition(new THREE.Vector3(0, 0, deltaY * 0.5));
-        } else if (dragWall === "south") {
-          const newDepth = constrainDimension(
-            dragStartDimensions.depth + deltaY, // Fixed: was - deltaY
-            MIN_DIMENSION,
-            MAX_DIMENSION
-          );
-          onDepthChange(newDepth);
-          // Move room up to keep the dragged wall in place
-          setRoomPosition(new THREE.Vector3(0, 0, -deltaY * 0.5));
-        }
-      } else if (viewMode === "3D") {
-        const newHeight = constrainDimension(
-          dragStartDimensions.height - deltaY,
-          MIN_HEIGHT,
-          MAX_HEIGHT
-        );
-        onHeightChange(newHeight);
+      if (isHidden) {
+        cornerRef.visible = false;
+      } else {
+        cornerRef.visible = true;
       }
-    },
-    [
-      isDragging,
-      dragStart,
-      dragStartDimensions,
-      dragWall,
-      viewMode,
-      onWidthChange,
-      onDepthChange,
-      onHeightChange,
-    ]
-  );
+    });
+  });
 
-  const handlePointerUp = useCallback(() => {
-    setIsDragging(false);
-    setDragWall(null);
-    setDragStart(null);
-    setDragStartDimensions(null);
-    setHoveredWall(null);
-    document.body.style.cursor = "default";
+  if (vertices.length < 3) {
+    return null;
+  }
 
-    // Center the room after dragging completes
-    if (viewMode === "2D") {
-      setRoomPosition(new THREE.Vector3(0, 0, 0));
-    }
+  const floor3DVerts = vertices.map((v) => {
+    const pos3D = convert2DTo3D(v, centroid);
+    return new THREE.Vector2(pos3D.x, -pos3D.z);
+  });
 
-    onDragEnd(); // Notify parent that dragging has ended
-  }, [onDragEnd, viewMode]);
+  const floorShape = new THREE.Shape(floor3DVerts);
+  const floorGeometry = new THREE.ExtrudeGeometry(floorShape, {
+    depth: FLOOR_THICKNESS,
+    bevelEnabled: false,
+  });
 
-  // Add global pointer move and up listeners
-  React.useEffect(() => {
-    if (isDragging) {
-      const handleGlobalPointerMove = (event: PointerEvent) =>
-        handlePointerMove(event);
-      const handleGlobalPointerUp = () => handlePointerUp();
-
-      document.addEventListener("pointermove", handleGlobalPointerMove);
-      document.addEventListener("pointerup", handleGlobalPointerUp);
-
-      return () => {
-        document.removeEventListener("pointermove", handleGlobalPointerMove);
-        document.removeEventListener("pointerup", handleGlobalPointerUp);
-      };
-    }
-  }, [isDragging, handlePointerMove, handlePointerUp]);
   return (
-    <group ref={groupRef} position={roomPosition}>
-      <mesh receiveShadow rotation-x={-Math.PI / 2} material={floorMaterial}>
-        <planeGeometry args={[width, depth]} />
-      </mesh>
-
-      {/* Back Wall (North) */}
+    <group ref={groupRef}>
       <mesh
-        castShadow
         receiveShadow
-        position={[0, height / 2, -depth / 2]}
-        material={
-          viewMode === "2D" && hoveredWall === "north"
-            ? wallHoverMaterial
-            : wallMaterial
-        }
-        onPointerEnter={() => handlePointerEnter("north")}
-        onPointerLeave={handlePointerLeave}
-        onPointerDown={(e) => handlePointerDown(e, "north")}
-      >
-        <boxGeometry args={[width + WALL_THICKNESS, height, WALL_THICKNESS]} />
-      </mesh>
+        position-y={0}
+        rotation-x={-Math.PI / 2}
+        material={floorMaterial}
+        geometry={floorGeometry}
+      />
 
-      {/* Front Wall (South) */}
-      <mesh
-        castShadow
-        receiveShadow
-        position={[0, height / 2, depth / 2]}
-        material={
-          viewMode === "2D" && hoveredWall === "south"
-            ? wallHoverMaterial
-            : wallMaterial
-        }
-        onPointerEnter={() => handlePointerEnter("south")}
-        onPointerLeave={handlePointerLeave}
-        onPointerDown={(e) => handlePointerDown(e, "south")}
-      >
-        <boxGeometry args={[width + WALL_THICKNESS, height, WALL_THICKNESS]} />
-      </mesh>
+      {vertices.map((vertex, index) => {
+        const nextIndex = (index + 1) % vertices.length;
+        const nextVertex = vertices[nextIndex];
 
-      {/* Left Wall (West) */}
-      <mesh
-        castShadow
-        receiveShadow
-        position={[-width / 2, height / 2, 0]}
-        material={
-          viewMode === "2D" && hoveredWall === "west"
-            ? wallHoverMaterial
-            : wallMaterial
-        }
-        onPointerEnter={() => handlePointerEnter("west")}
-        onPointerLeave={handlePointerLeave}
-        onPointerDown={(e) => handlePointerDown(e, "west")}
-      >
-        <boxGeometry args={[WALL_THICKNESS, height, depth]} />
-      </mesh>
+        const v1_3D = convert2DTo3D(vertex, centroid);
+        const v2_3D = convert2DTo3D(nextVertex, centroid);
+        const dx = v2_3D.x - v1_3D.x;
+        const dz = v2_3D.z - v1_3D.z;
+        const length = Math.sqrt(dx * dx + dz * dz);
 
-      {/* Right Wall (East) */}
-      <mesh
-        castShadow
-        receiveShadow
-        position={[width / 2, height / 2, 0]}
-        material={
-          viewMode === "2D" && hoveredWall === "east"
-            ? wallHoverMaterial
-            : wallMaterial
-        }
-        onPointerEnter={() => handlePointerEnter("east")}
-        onPointerLeave={handlePointerLeave}
-        onPointerDown={(e) => handlePointerDown(e, "east")}
-      >
-        <boxGeometry args={[WALL_THICKNESS, height, depth]} />
-      </mesh>
+        const midpoint = new THREE.Vector3(
+          (v1_3D.x + v2_3D.x) / 2,
+          height / 2,
+          (v1_3D.z + v2_3D.z) / 2
+        );
 
-      {/* Dimension Labels - Only show in 2D mode */}
-      {viewMode === "2D" && (
-        <>
-          {/* Width labels (top and bottom) */}
-          <Html position={[0, height + 0.5, -depth / 2 - 0.3]} center>
-            <div className="dimension-label">{Math.round(width * 100)} cm</div>
-          </Html>
-          <Html position={[0, height + 0.5, depth / 2 + 0.3]} center>
-            <div className="dimension-label">{Math.round(width * 100)} cm</div>
-          </Html>
+        const angle = Math.atan2(-dz, dx);
 
-          {/* Depth labels (left and right) */}
-          <Html position={[-width / 2 - 0.3, height + 0.5, 0]} center>
-            <div className="dimension-label">{Math.round(depth * 100)} cm</div>
-          </Html>
-          <Html position={[width / 2 + 0.3, height + 0.5, 0]} center>
-            <div className="dimension-label">{Math.round(depth * 100)} cm</div>
-          </Html>
-        </>
-      )}
+        return (
+          <mesh
+            key={`wall-${index}`}
+            ref={(el) => (wallRefs.current[index] = el)}
+            castShadow
+            receiveShadow
+            position={midpoint}
+            rotation-y={angle}
+            material={wallMaterial}
+          >
+            <boxGeometry args={[length, height, WALL_THICKNESS]} />
+          </mesh>
+        );
+      })}
 
-      {/* Height label - Only show in 3D mode */}
-      {viewMode === "3D" && (
-        <Html position={[width / 2 + 0.5, height / 2, 0]} center>
-          <div className="dimension-label">{Math.round(height * 100)} cm</div>
-        </Html>
-      )}
+      {vertices.map((vertex, index) => {
+        const v_3D = convert2DTo3D(vertex, centroid);
+        return (
+          <mesh
+            key={`corner-${index}`}
+            ref={(el) => (cornerRefs.current[index] = el)}
+            castShadow
+            receiveShadow
+            position={[v_3D.x, height / 2, v_3D.z]}
+            material={cornerMaterial}
+          >
+            <cylinderGeometry
+              args={[WALL_THICKNESS / 2, WALL_THICKNESS / 2, height, 12]}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 };

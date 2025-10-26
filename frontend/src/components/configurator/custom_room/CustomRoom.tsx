@@ -11,9 +11,9 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
   const [viewMode, setViewMode] = useState<"2D" | "3D">("3D");
   const roomEditorRef = useRef<RoomEditorRef>(null);
 
-  const [roomWidth, setRoomWidth] = useState(5); // e.g., 5 units/meters
-  const [roomDepth, setRoomDepth] = useState(4); // e.g., 4 units/meters
   const [roomHeight, setRoomHeight] = useState(2.5); // e.g., 2.5 units/meters
+  const MIN_HEIGHT = 1.75;
+  const MAX_HEIGHT = 4;
 
   const handleReset = () => {
     if (roomEditorRef.current) {
@@ -34,131 +34,108 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
             <RoomEditor
               ref={roomEditorRef}
               viewMode={viewMode}
-              width={roomWidth}
-              depth={roomDepth}
               height={roomHeight}
-              onWidthChange={setRoomWidth}
-              onDepthChange={setRoomDepth}
-              onHeightChange={setRoomHeight}
             />
           </div>
 
-          <div
-            className="info-popup-container"
-            onMouseEnter={() => setInfoVisible(true)}
-            onMouseLeave={() => setInfoVisible(false)}
-          >
-            <button className="info-icon-button" aria-label="Show help">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                {" "}
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                />{" "}
-              </svg>
-            </button>
-            {isInfoVisible && (
-              <div className="info-popup-content">
-                <div className="info-item">
-                  <svg
-                    className="info-item-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    {" "}
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15"
-                    />{" "}
-                  </svg>
-                  <div className="info-item-text">
-                    <p>Click and drag walls to adjust dimensions.</p>
-                  </div>
-                </div>
-
-                <div className="info-item">
-                  <svg
-                    className="info-item-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    {" "}
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931ZM18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                    />{" "}
-                  </svg>
-                  <div className="info-item-text">
-                    <p>Click a dimension to type an exact value.</p>
-                  </div>
-                </div>
-
-                <div className="info-item">
-                  <svg
-                    className="info-item-icon"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    {" "}
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                    />{" "}
-                  </svg>
-                  <div className="info-item-text">
-                    <p>Right-click a wall to create custom shapes.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="reset-button-container">
-            <button
-              className="reset-button"
-              onClick={handleReset}
-              aria-label="Reset room shape"
+          {viewMode === "2D" && (
+            <div
+              className="info-popup-container"
+              onMouseEnter={() => setInfoVisible(true)}
+              onMouseLeave={() => setInfoVisible(false)}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="1.5"
-                stroke="currentColor"
-                aria-hidden="true"
+              <button className="info-icon-button" aria-label="Show help">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  {" "}
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                  />{" "}
+                </svg>
+              </button>
+              {isInfoVisible && (
+                <div className="info-popup-content">
+                  <div className="info-item">
+                    <svg
+                      className="info-item-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      {" "}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15"
+                      />{" "}
+                    </svg>
+                    <div className="info-item-text">
+                      <p>Click and drag walls to adjust dimensions.</p>
+                    </div>
+                  </div>
+
+                  <div className="info-item">
+                    <svg
+                      className="info-item-icon"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth="1.5"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      {" "}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931ZM18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                      />{" "}
+                    </svg>
+                    <div className="info-item-text">
+                      <p>Click a dimension to type an exact value.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {viewMode === "2D" && (
+            <div className="reset-button-container">
+              <button
+                className="reset-button"
+                onClick={handleReset}
+                aria-label="Reset room shape"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                />
-              </svg>
-              <span>Reset</span>
-            </button>
-          </div>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
+                <span>Reset</span>
+              </button>
+            </div>
+          )}
 
           <div className="view-toggle-buttons">
             <button
@@ -204,6 +181,27 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
               </svg>
             </button>
           </div>
+
+          {/* Height Input - Only show in 3D mode */}
+          {viewMode === "3D" && (
+            <div className="height-input-container">
+              <label className="height-input-label">Room Height (m)</label>
+              <input
+                type="number"
+                min={MIN_HEIGHT}
+                max={MAX_HEIGHT}
+                step="0.05"
+                value={roomHeight}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= MIN_HEIGHT && val <= MAX_HEIGHT) {
+                    setRoomHeight(val);
+                  }
+                }}
+                className="height-input"
+              />
+            </div>
+          )}
 
           <div className="bottom-nav-buttons">
             <button

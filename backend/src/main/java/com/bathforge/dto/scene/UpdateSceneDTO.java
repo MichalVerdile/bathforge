@@ -23,7 +23,6 @@ public class UpdateSceneDTO {
     public UpdateSceneDTO() {
     }
 
-    // Getters and setters
     public String getName() {
         return name;
     }

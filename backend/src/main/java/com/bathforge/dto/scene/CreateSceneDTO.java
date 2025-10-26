@@ -10,7 +10,7 @@ public class CreateSceneDTO {
 
     private String description;
 
-    private String user = "guest"; // Default to guest
+    private String user = "guest";
 
     private String sceneData;
 
@@ -33,7 +33,6 @@ public class CreateSceneDTO {
         this.user = user;
     }
 
-    // Getters and setters
     public String getName() {
         return name;
     }

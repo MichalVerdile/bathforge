@@ -44,7 +44,6 @@ public class SceneDTO {
         this.user = user;
     }
 
-    // Getters and setters
     public Long getId() {
         return id;
     }

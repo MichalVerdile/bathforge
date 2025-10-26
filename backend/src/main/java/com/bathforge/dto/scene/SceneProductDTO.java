@@ -59,7 +59,6 @@ public class SceneProductDTO {
         this.rotationZ = rotationZ;
     }
 
-    // Getters and setters
     public Long getId() {
         return id;
     }

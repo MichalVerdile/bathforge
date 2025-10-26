@@ -23,22 +23,22 @@ public class Scene {
 
     @NotBlank(message = "User is required")
     @Column(nullable = false)
-    private String username; // For now using String, later can be changed to User entity
+    private String username;
 
     @Column(name = "scene_data", columnDefinition = "TEXT")
-    private String sceneData; // JSON string containing the complete 3D scene data
+    private String sceneData;
 
     @Column(name = "camera_position")
-    private String cameraPosition; // JSON string for camera position and rotation
+    private String cameraPosition;
 
     @Column(name = "lighting_settings")
-    private String lightingSettings; // JSON string for lighting configuration
+    private String lightingSettings;
 
     @Column(name = "background_color")
-    private String backgroundColor; // Hex color code for background
+    private String backgroundColor;
 
     @Column(name = "is_public")
-    private Boolean isPublic = false; // Whether the scene is publicly visible
+    private Boolean isPublic = false;
 
     @NotNull
     @Column(name = "created_at", nullable = false)
@@ -68,7 +68,6 @@ public class Scene {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Getters and setters
     public Long getId() {
         return id;
     }

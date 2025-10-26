@@ -11,13 +11,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(@NonNull ResourceHandlerRegistry registry) {
-        // Serve static assets from classpath
         registry.addResourceHandler("/assets/**")
                 .addResourceLocations("classpath:/static/assets/");
-
-        // Alternative: serve from file system if assets are stored there
-        // registry.addResourceHandler("/assets/**")
-        // .addResourceLocations("file:assets/");
     }
 
     @Override

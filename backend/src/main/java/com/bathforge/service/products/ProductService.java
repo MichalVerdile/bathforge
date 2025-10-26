@@ -214,7 +214,6 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // Helper methods for conversion
     private ProductDTO convertToDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setId(product.getId());
@@ -227,7 +226,6 @@ public class ProductService {
         dto.setCategoryId(product.getCategory().getId());
         dto.setCategoryName(product.getCategory().getName());
 
-        // Load available colors
         List<ColorDTO> colors = productColorRepository.findColorsByProduct(product)
                 .stream()
                 .map(this::convertColorToDTO)

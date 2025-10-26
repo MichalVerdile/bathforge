@@ -8,35 +8,37 @@ import com.bathforge.repository.products.CategoryRepository;
 import com.bathforge.repository.products.ColorRepository;
 import com.bathforge.repository.products.ProductColorRepository;
 import com.bathforge.repository.products.ProductRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class AssetImportService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AssetImportService.class);
+    private static final Logger log = LoggerFactory.getLogger(AssetImportService.class);
 
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
+    private final ColorRepository colorRepository;
+    private final ProductRepository productRepository;
+    private final ProductColorRepository productColorRepository;
 
-    @Autowired
-    private ColorRepository colorRepository;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @Autowired
-    private ProductColorRepository productColorRepository;
+    public AssetImportService(CategoryRepository categoryRepository,
+            ColorRepository colorRepository,
+            ProductRepository productRepository,
+            ProductColorRepository productColorRepository) {
+        this.categoryRepository = categoryRepository;
+        this.colorRepository = colorRepository;
+        this.productRepository = productRepository;
+        this.productColorRepository = productColorRepository;
+    }
 
     private static final Map<String, String> CATEGORY_MAPPING = Map.of(
-            // Use database category names as canonical values
             "accessoires", "accessoires",
             "basins", "basins",
             "bathtubs", "bathtubs",
@@ -49,7 +51,6 @@ public class AssetImportService {
             "wcs", "wcs");
 
     private static final Map<String, Product.MountingType> MOUNTING_MAPPING = Map.of(
-            // Align keys with actual category names used in DB
             "accessoires", Product.MountingType.WALL,
             "basins", Product.MountingType.WALL,
             "bathtubs", Product.MountingType.FREESTANDING,
@@ -61,167 +62,165 @@ public class AssetImportService {
             "towel_radiators", Product.MountingType.WALL,
             "wcs", Product.MountingType.FLOOR);
 
+    private static final Set<String> MODEL_EXTS = Set.of(".glb", ".gltf");
+    private static final Set<String> IMAGE_EXTS = Set.of(".jpg", ".jpeg", ".png", ".webp");
+
     @Transactional
     public Map<String, Object> importAllAssets(String assetsPath) {
-        logger.info("Starting asset import from: {}", assetsPath);
-
-        Map<String, Object> result = new HashMap<>();
-        List<String> importedProducts = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
-
-        File assetsDir = new File(assetsPath);
-        if (!assetsDir.exists() || !assetsDir.isDirectory()) {
-            throw new RuntimeException("Assets directory not found: " + assetsPath);
+        final Path assetsRoot = Paths.get(assetsPath).toAbsolutePath().normalize();
+        if (!Files.isDirectory(assetsRoot)) {
+            throw new IllegalArgumentException("Assets directory not found: " + assetsRoot);
         }
 
-        try {
-            File[] categoryDirs = assetsDir.listFiles(File::isDirectory);
-            if (categoryDirs != null) {
-                for (File categoryDir : categoryDirs) {
-                    String categoryName = categoryDir.getName().toLowerCase();
-                    if (CATEGORY_MAPPING.containsKey(categoryName)) {
-                        try {
-                            int imported = processCategoryDirectory(assetsDir, categoryDir, categoryName);
-                            importedProducts.add(categoryName + ": " + imported + " products");
-                            logger.info("Imported {} products from category: {}", imported, categoryName);
-                        } catch (Exception e) {
-                            String error = "Error processing category " + categoryName + ": " + e.getMessage();
-                            errors.add(error);
-                            logger.error(error, e);
-                        }
-                    } else {
-                        logger.warn("Unknown category directory: {}", categoryName);
-                    }
-                }
-            }
+        log.info("Starting asset import from: {}", assetsRoot);
 
-            result.put("status", "success");
-            result.put("imported", importedProducts);
-            result.put("errors", errors);
-            result.put("totalProducts", productRepository.count());
+        final List<String> importedProducts = new ArrayList<>();
+        final List<String> errors = new ArrayList<>();
 
-        } catch (Exception e) {
-            logger.error("Failed to import assets", e);
-            result.put("status", "error");
-            result.put("message", e.getMessage());
-            result.put("errors", errors);
-        }
-
-        return result;
-    }
-
-    private int processCategoryDirectory(File assetsRoot, File categoryDir, String categoryName) {
-        String normalizedCategory = CATEGORY_MAPPING.get(categoryName);
-        Category category = categoryRepository.findByNameIgnoreCase(normalizedCategory)
-                .orElseThrow(() -> new RuntimeException("Category not found: " + normalizedCategory));
-
-        List<Color> categoryColors = colorRepository.findByCategoryId(category.getId());
-
-        int importedCount = 0;
-        File[] files = categoryDir.listFiles();
-
-        if (files != null) {
-            for (File file : files) {
-                if (file.isDirectory()) {
-                    // Recurse into subdirectories (e.g., bathtubs/garniture)
-                    importedCount += processCategoryDirectory(assetsRoot, file, categoryName);
+        try (DirectoryStream<Path> categories = Files.newDirectoryStream(assetsRoot, Files::isDirectory)) {
+            for (Path categoryDir : categories) {
+                final String rawCategory = categoryDir.getFileName().toString().toLowerCase(Locale.ROOT);
+                if (!CATEGORY_MAPPING.containsKey(rawCategory)) {
+                    log.warn("Unknown category directory: {}", rawCategory);
                     continue;
                 }
 
-                // Accept GLB/GLTF everywhere; additionally accept image files for 'coverings'
-                if (isModelFile(file) || ("coverings".equalsIgnoreCase(categoryName) && isImageFile(file))) {
-                    try {
-                        Product product = createProductFromModelFile(assetsRoot, categoryDir, file, category);
-                        if (product != null) {
-                            if (!productRepository.existsByNameAndCategoryId(product.getName(), category.getId())) {
-                                Product savedProduct = productRepository.save(product);
+                try {
+                    int imported = processCategoryDirectory(assetsRoot, categoryDir, rawCategory);
+                    importedProducts.add(rawCategory + ": " + imported + " products");
+                    log.info("Imported {} products from category: {}", imported, rawCategory);
+                } catch (Exception e) {
+                    String msg = "Error processing category " + rawCategory + ": " + e.getMessage();
+                    errors.add(msg);
+                    log.error(msg, e);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Failed to enumerate category directories", e);
+            return Map.of(
+                    "status", "error",
+                    "message", e.getMessage(),
+                    "errors", errors);
+        }
 
-                                for (Color color : categoryColors) {
-                                    if (!productColorRepository.existsByProductIdAndColorId(savedProduct.getId(),
-                                            color.getId())) {
-                                        ProductColor productColor = new ProductColor();
-                                        productColor.setProduct(savedProduct);
-                                        productColor.setColor(color);
-                                        productColorRepository.save(productColor);
-                                    }
-                                }
+        return Map.of(
+                "status", "success",
+                "imported", importedProducts,
+                "errors", errors,
+                "totalProducts", productRepository.count());
+    }
 
-                                importedCount++;
-                                logger.debug("Created product: {} in category: {}", product.getName(),
-                                        normalizedCategory);
-                            } else {
-                                logger.debug("Product already exists: {} in category: {}", product.getName(),
-                                        normalizedCategory);
-                            }
-                        }
-                    } catch (Exception e) {
-                        logger.error("Error processing file: {} - {}", file.getName(), e.getMessage());
+    private int processCategoryDirectory(Path assetsRoot, Path categoryDir, String categoryKey) throws IOException {
+        final String canonicalCategory = CATEGORY_MAPPING.get(categoryKey);
+        final Category category = categoryRepository.findByNameIgnoreCase(canonicalCategory)
+                .orElseThrow(() -> new IllegalStateException("Category not found in DB: " + canonicalCategory));
+
+        final List<Color> categoryColors = colorRepository.findByCategoryId(category.getId());
+        int importedCount = 0;
+
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(categoryDir)) {
+            for (Path entry : stream) {
+                if (Files.isDirectory(entry)) {
+                    importedCount += processCategoryDirectory(assetsRoot, entry, categoryKey);
+                    continue;
+                }
+
+                final String nameLower = entry.getFileName().toString().toLowerCase(Locale.ROOT);
+                final boolean isModel = hasAnySuffix(nameLower, MODEL_EXTS);
+                final boolean isCoveringImage = "coverings".equalsIgnoreCase(categoryKey)
+                        && hasAnySuffix(nameLower, IMAGE_EXTS);
+
+                if (!isModel && !isCoveringImage)
+                    continue;
+
+                try {
+                    Product product = createProductFromAsset(assetsRoot, categoryDir, entry, category, categoryKey);
+                    if (product == null)
+                        continue;
+
+                    if (!productRepository.existsByNameAndCategoryId(product.getName(), category.getId())) {
+                        Product saved = productRepository.save(product);
+                        attachColors(saved, categoryColors);
+                        importedCount++;
+                        log.debug("Created product '{}' in category '{}'", product.getName(), canonicalCategory);
+                    } else {
+                        log.debug("Product already exists: '{}' in category '{}'", product.getName(),
+                                canonicalCategory);
                     }
+                } catch (Exception e) {
+                    log.error("Error processing file {}: {}", entry.getFileName(), e.getMessage(), e);
                 }
             }
         }
-
         return importedCount;
     }
 
-    private boolean isModelFile(File file) {
-        if (file.isDirectory())
-            return false;
-        String fileName = file.getName().toLowerCase();
-        return fileName.endsWith(".glb") || fileName.endsWith(".gltf");
+    private static boolean hasAnySuffix(String filenameLower, Set<String> suffixes) {
+        for (String s : suffixes) {
+            if (filenameLower.endsWith(s))
+                return true;
+        }
+        return false;
     }
 
-    private String getBaseName(File file) {
-        String name = file.getName();
-        int idx = name.lastIndexOf('.');
-        return idx > 0 ? name.substring(0, idx) : name;
+    private void attachColors(Product product, List<Color> colors) {
+        for (Color color : colors) {
+            if (!productColorRepository.existsByProductIdAndColorId(product.getId(), color.getId())) {
+                ProductColor pc = new ProductColor();
+                pc.setProduct(product);
+                pc.setColor(color);
+                productColorRepository.save(pc);
+            }
+        }
     }
 
-    private String toRelativeAssetPath(File assetsRoot, File target) {
-        String rootPath = assetsRoot.getAbsolutePath();
-        String targetPath = target.getAbsolutePath();
-        String rel = targetPath.substring(rootPath.length()).replace('\\', '/');
-        if (!rel.startsWith("/"))
-            rel = "/" + rel;
-        return "/assets" + rel; // assets folder is served at /assets
-    }
+    private Product createProductFromAsset(Path assetsRoot,
+            Path categoryDir,
+            Path file,
+            Category category,
+            String categoryKey) {
+        final Product product = new Product();
 
-    private Product createProductFromModelFile(File assetsRoot, File categoryDir, File modelFile, Category category) {
-        Product product = new Product();
-        // Preserve naming style and do not derive from model filename
         long nextIndex = productRepository.countByCategoryId(category.getId()) + 1;
         product.setName(formatProductName(category.getName(), (int) nextIndex));
         product.setDescription("");
         product.setCategory(category);
 
-        // Compute model path relative to /assets, preserving subfolders
-        String modelPath = toRelativeAssetPath(assetsRoot, modelFile);
+        String modelPath = toRelativeAssetPath(assetsRoot, file);
         product.setModelPath(modelPath);
 
-        // Assign price and mounting
-        Product.PriceRange[] priceRanges = Product.PriceRange.values();
-        product.setPriceRange(priceRanges[new Random().nextInt(priceRanges.length)]);
-        product.setMountingType(
-                MOUNTING_MAPPING.getOrDefault(category.getName().toLowerCase(), Product.MountingType.WALL));
+        Product.PriceRange[] ranges = Product.PriceRange.values();
+        product.setPriceRange(ranges[ThreadLocalRandom.current().nextInt(ranges.length)]);
 
-        // Determine thumbnail by category-specific rules
-        String thumbnail = resolveThumbnail(category.getName().toLowerCase(), assetsRoot, categoryDir, modelFile);
+        product.setMountingType(MOUNTING_MAPPING.getOrDefault(
+                category.getName().toLowerCase(Locale.ROOT),
+                Product.MountingType.WALL));
+
+        String thumbnail = resolveThumbnail(categoryKey, assetsRoot, categoryDir, file);
         product.setThumbnail(thumbnail);
 
         return product;
     }
 
-    private String formatProductName(String categoryName, int productNumber) {
-        String formattedCategory = categoryName.substring(0, 1).toUpperCase() +
-                categoryName.substring(1).toLowerCase();
-        return formattedCategory + " " + productNumber;
+    private static String formatProductName(String categoryName, int productNumber) {
+        if (categoryName == null || categoryName.isEmpty())
+            return "Product " + productNumber;
+        String formatted = Character.toUpperCase(categoryName.charAt(0))
+                + categoryName.substring(1).toLowerCase(Locale.ROOT);
+        return formatted + " " + productNumber;
     }
 
-    private String resolveThumbnail(String categoryName, File assetsRoot, File categoryDir, File modelFile) {
-        String base = getBaseName(modelFile);
-        String baseLower = base.toLowerCase();
+    private static String toRelativeAssetPath(Path assetsRoot, Path target) {
+        Path rel = assetsRoot.relativize(target.toAbsolutePath().normalize());
+        return "/assets/" + rel.toString().replace('\\', '/');
+    }
 
-        switch (categoryName) {
+    private String resolveThumbnail(String categoryKey, Path assetsRoot, Path categoryDir, Path assetFile) {
+        String base = stripExtension(assetFile.getFileName().toString());
+        String baseLower = base.toLowerCase(Locale.ROOT);
+        String baseUpper = base.toUpperCase(Locale.ROOT);
+
+        switch (categoryKey) {
             case "furniture":
                 return furnitureThumbnail(baseLower, assetsRoot, categoryDir);
             case "fittings":
@@ -233,18 +232,17 @@ public class AssetImportService {
                 return mappedThumbnailByGlb(base, assetsRoot, categoryDir, wcImageMap());
             case "bathtubs":
                 // If under garniture subfolder, skip image for now
-                if (categoryDir.getName().equalsIgnoreCase("garniture")
-                        || modelFile.getParentFile().getName().equalsIgnoreCase("garniture")) {
+                if (categoryDir.getFileName().toString().equalsIgnoreCase("garniture")
+                        || assetFile.getParent().getFileName().toString().equalsIgnoreCase("garniture")) {
                     return null;
                 }
                 return mappedThumbnailByGlb(base, assetsRoot, categoryDir, bathtubImageMap());
             case "shower":
-                return showersThumbnail(baseUpper(base), assetsRoot, categoryDir);
+                return showersThumbnail(baseUpper, assetsRoot, categoryDir);
             case "towel_radiators":
                 return towelRadiatorsThumbnail(base, assetsRoot, categoryDir);
             case "coverings":
-                // For coverings, the image should be the same as the modelPath
-                return toRelativeAssetPath(assetsRoot, modelFile);
+                return toRelativeAssetPath(assetsRoot, assetFile);
             case "accessoires":
                 return specificImage(assetsRoot, categoryDir,
                         "Rexa_accessorimensola_specchiera_interlude_gallery_1.jpg");
@@ -253,11 +251,12 @@ public class AssetImportService {
         }
     }
 
-    private String baseUpper(String s) {
-        return s.toUpperCase();
+    private static String stripExtension(String filename) {
+        int idx = filename.lastIndexOf('.');
+        return (idx > 0) ? filename.substring(0, idx) : filename;
     }
 
-    private String furnitureThumbnail(String nameLower, File assetsRoot, File categoryDir) {
+    private String furnitureThumbnail(String nameLower, Path assetsRoot, Path categoryDir) {
         Map<String, String> map = new LinkedHashMap<>();
         map.put("esperanto", "ESPERANTO_mobili_generale-2.jpg");
         map.put("interlude", "INTERLUDE_mobili_generale-1.jpg");
@@ -278,52 +277,52 @@ public class AssetImportService {
         return null;
     }
 
-    private String imageContainingModelName(File assetsRoot, File dir, String modelBaseLower) {
-        File[] images = dir.listFiles(f -> !f.isDirectory() && isImageFile(f));
-        if (images == null)
-            return null;
-        for (File img : images) {
-            if (img.getName().toLowerCase().contains(modelBaseLower)) {
-                return toRelativeAssetPath(assetsRoot, img);
+    private String imageContainingModelName(Path assetsRoot, Path dir, String modelBaseLower) {
+        try (DirectoryStream<Path> images = Files.newDirectoryStream(dir,
+                p -> Files.isRegularFile(p) && isImageFile(p))) {
+            for (Path img : images) {
+                if (img.getFileName().toString().toLowerCase(Locale.ROOT).contains(modelBaseLower)) {
+                    return toRelativeAssetPath(assetsRoot, img);
+                }
             }
+        } catch (IOException e) {
+            log.debug("imageContainingModelName scan error: {}", e.getMessage());
         }
         return null;
     }
 
-    private boolean isImageFile(File f) {
-        String n = f.getName().toLowerCase();
-        return n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png") || n.endsWith(".webp");
+    private static boolean isImageFile(Path p) {
+        String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
+        return hasAnySuffix(n, IMAGE_EXTS);
     }
 
-    private String mappedThumbnailByGlb(String glbBaseName, File assetsRoot, File dir,
+    private String mappedThumbnailByGlb(String glbBaseName,
+            Path assetsRoot,
+            Path dir,
             Map<String, String> imgByGlbBase) {
-        String key = glbBaseName; // keep original case for exact keys, but also try case-insensitive
-        String img = imgByGlbBase.get(key);
+        String img = imgByGlbBase.get(glbBaseName);
         if (img == null) {
-            // try case-insensitive
             for (Map.Entry<String, String> e : imgByGlbBase.entrySet()) {
-                if (e.getKey().equalsIgnoreCase(key)) {
+                if (e.getKey().equalsIgnoreCase(glbBaseName)) {
                     img = e.getValue();
                     break;
                 }
             }
         }
-        if (img == null)
-            return null;
-        return specificImage(assetsRoot, dir, img);
+        return (img == null) ? null : specificImage(assetsRoot, dir, img);
     }
 
-    private String specificImage(File assetsRoot, File dir, String imageFileName) {
-        File candidate = new File(dir, imageFileName);
-        if (!candidate.exists()) {
-            // Try image in the category root if we're in a subfolder
-            File rootDir = dir;
-            while (rootDir.getParentFile() != null && !CATEGORY_MAPPING.containsKey(rootDir.getName().toLowerCase())) {
-                rootDir = rootDir.getParentFile();
+    private String specificImage(Path assetsRoot, Path currentDir, String imageFileName) {
+        Path candidate = currentDir.resolve(imageFileName);
+        if (!Files.exists(candidate)) {
+            Path rootDir = currentDir;
+            while (rootDir.getParent() != null &&
+                    !CATEGORY_MAPPING.containsKey(rootDir.getFileName().toString().toLowerCase(Locale.ROOT))) {
+                rootDir = rootDir.getParent();
             }
-            candidate = new File(rootDir, imageFileName);
+            candidate = rootDir.resolve(imageFileName);
         }
-        return candidate.exists() ? toRelativeAssetPath(assetsRoot, candidate) : null;
+        return Files.exists(candidate) ? toRelativeAssetPath(assetsRoot, candidate) : null;
     }
 
     private Map<String, String> basinImageMap() {
@@ -372,8 +371,7 @@ public class AssetImportService {
         return m;
     }
 
-    private String showersThumbnail(String modelUpper, File assetsRoot, File dir) {
-        // Order by most specific first
+    private String showersThumbnail(String modelUpper, Path assetsRoot, Path dir) {
         if (modelUpper.contains("DN01FG"))
             return specificImage(assetsRoot, dir, "cq5dam.web.460.460_(8).jpeg");
         if (modelUpper.contains("DN01G"))
@@ -395,8 +393,8 @@ public class AssetImportService {
         return null;
     }
 
-    private String towelRadiatorsThumbnail(String glbBase, File assetsRoot, File dir) {
-        String upper = glbBase.toUpperCase();
+    private String towelRadiatorsThumbnail(String glbBase, Path assetsRoot, Path dir) {
+        String upper = glbBase.toUpperCase(Locale.ROOT);
         if (upper.contains("LANA"))
             return specificImage(assetsRoot, dir, "lana-1.jpg");
         if (upper.contains("ANDROID"))
@@ -423,62 +421,51 @@ public class AssetImportService {
     }
 
     public Map<String, Object> getImportStatistics() {
-        Map<String, Object> stats = new HashMap<>();
-
         try {
             long totalProducts = productRepository.count();
             long totalCategories = categoryRepository.count();
             long totalColors = colorRepository.count();
             long totalProductColors = productColorRepository.count();
 
-            // Get products per category
             Map<String, Long> productsByCategory = new HashMap<>();
-            List<Category> categories = categoryRepository.findAll();
-            for (Category category : categories) {
-                long count = productRepository.countByCategoryId(category.getId());
-                productsByCategory.put(category.getName(), count);
+            for (Category c : categoryRepository.findAll()) {
+                productsByCategory.put(c.getName(), productRepository.countByCategoryId(c.getId()));
             }
 
+            Map<String, Object> stats = new LinkedHashMap<>();
             stats.put("totalProducts", totalProducts);
             stats.put("totalCategories", totalCategories);
             stats.put("totalColors", totalColors);
             stats.put("totalProductColors", totalProductColors);
             stats.put("productsByCategory", productsByCategory);
-
+            return stats;
         } catch (Exception e) {
-            logger.error("Error getting import statistics", e);
-            stats.put("error", e.getMessage());
+            log.error("Error getting import statistics", e);
+            return Map.of("error", e.getMessage());
         }
-
-        return stats;
     }
 
     @Transactional
     public Map<String, Object> clearAllProducts() {
-        Map<String, Object> result = new HashMap<>();
-
         try {
-            // Delete all product-color associations first
             long deletedProductColors = productColorRepository.count();
             productColorRepository.deleteAll();
 
-            // Delete all products
             long deletedProducts = productRepository.count();
             productRepository.deleteAll();
 
-            result.put("status", "success");
-            result.put("deletedProducts", deletedProducts);
-            result.put("deletedProductColors", deletedProductColors);
-            result.put("message", "All products and their color associations have been cleared");
+            log.info("Cleared {} products and {} product-color associations", deletedProducts, deletedProductColors);
 
-            logger.info("Cleared {} products and {} product-color associations", deletedProducts, deletedProductColors);
-
+            return Map.of(
+                    "status", "success",
+                    "deletedProducts", deletedProducts,
+                    "deletedProductColors", deletedProductColors,
+                    "message", "All products and their color associations have been cleared");
         } catch (Exception e) {
-            logger.error("Error clearing products", e);
-            result.put("status", "error");
-            result.put("message", e.getMessage());
+            log.error("Error clearing products", e);
+            return Map.of(
+                    "status", "error",
+                    "message", e.getMessage());
         }
-
-        return result;
     }
 }

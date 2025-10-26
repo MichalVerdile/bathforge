@@ -6,7 +6,7 @@ import sceneService, { SceneProduct } from '../../../controllers/api/scenes/Scen
 import { Color } from '../../../types/api';
 import { ProductService } from '../../../controllers/api/products/ProductService';
 import * as THREE from 'three';
-import './Bathroom3D.css';
+import './Bathroom3DViewer.css';
 import DraggableModel from './DraggableModel';
 
 interface SceneProduct3D extends SceneProduct {
@@ -66,7 +66,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }
   }, []);
 
-  // Auto-save functionality
   const autoSaveScene = async () => {
     if (sceneProducts.length === 0) return;
     
@@ -110,7 +109,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }
   };
 
-  // Debounced scheduler for auto-saving to avoid saving on every small movement
   const scheduleAutoSave = (delay: number = 1000) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -141,8 +139,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
     setSceneProducts(prev => [...prev, newProduct]);
     setSelectedProductId(uniqueId);
-    
-    // Debounced auto-save after adding product
     scheduleAutoSave(400);
   };
 
@@ -152,7 +148,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       setSelectedProductId(null);
     }
     
-    // Debounced auto-save after removing product
     scheduleAutoSave(400);
   };
 
@@ -165,7 +160,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       )
     );
     
-    // Debounced auto-save as the user drags; only saves after they pause
     scheduleAutoSave(1000);
   };
 
@@ -178,11 +172,9 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       )
     );
     
-    // Debounced auto-save after color change
     scheduleAutoSave(400);
   };
 
-  // Ensure colors are loaded for a selected product (useful for template-loaded fixtures)
   const ensureSelectedProductColors = async (uniqueId: string, productId: number) => {
     const sp = sceneProducts.find(p => p.uniqueId === uniqueId);
     if (!sp) return;
@@ -223,11 +215,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }));
   };
 
-  const handleModelLoad = (_model: THREE.Group) => {
-    // Model normalization is handled inside DraggableModel now
-  };
-
-  // Cleanup any pending save timers on unmount
   useEffect(() => {
     return () => {
       if (saveTimerRef.current) {
@@ -257,7 +244,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             cameraRef.current = camera;
           }}
         >
-          {/* Load the selected template room model (static) */}
           {templateData?.preview && (
             <ModelLoader
               url={templateData.preview}
@@ -299,7 +285,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                   setSelectedProductId(product.uniqueId);
                   ensureSelectedProductColors(product.uniqueId, product.productId);
                 }}
-                onLoad={handleModelLoad}
                 onDragStart={() => setIsDraggingModel(true)}
                 onDragEnd={() => setIsDraggingModel(false)}
                 onError={(error) => {
@@ -311,23 +296,21 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           })}
         </Scene3D>
 
-        {/* Scene Info Panel */}
         <div className="scene-info-panel">
           <div className="scene-header">
-            <h4>🛁 {currentScene.name}</h4>
+            <h4>{currentScene.name}</h4>
             <div className="scene-stats">
               {sceneProducts.length} product{sceneProducts.length !== 1 ? 's' : ''}
-              {isAutoSaving && <span className="saving-indicator">💾 Saving...</span>}
+              {isAutoSaving && <span className="saving-indicator">Saving...</span>}
               {lastSaveTime && !isAutoSaving && (
                 <span className="last-saved">
-                  ✅ Saved {lastSaveTime.toLocaleTimeString()}
+                  Saved {lastSaveTime.toLocaleTimeString()}
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Selected Product Controls */}
         {selectedProductId && (
           <div className="product-controls-panel">
             {(() => {
@@ -337,7 +320,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
               return (
                 <div className="product-controls">
                   <div className="control-header">
-                    <h5>🎨 {selectedProduct.modelItem.name}</h5>
+                    <h5>{selectedProduct.modelItem.name}</h5>
                     <button 
                       className="remove-button"
                       onClick={() => removeProductFromScene(selectedProductId)}
@@ -377,7 +360,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           </div>
         )}
 
-        {sceneProducts.length === 0 && (
+        {sceneProducts.length === 0 && !templateData?.preview && (
           <div className="welcome-message">
             <h3 className="welcome-title">
               Welcome to BathForge 3D

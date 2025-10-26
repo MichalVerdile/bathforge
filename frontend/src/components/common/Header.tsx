@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({
 
             <div className="header-center">
                 <h1 className="header-title">
-                    🛁 BathForge
+                    BathForge
                     {title && <span className="header-subtitle"> - {title}</span>}
                 </h1>
             </div>

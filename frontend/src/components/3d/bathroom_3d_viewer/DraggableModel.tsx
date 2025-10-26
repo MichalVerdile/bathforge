@@ -14,12 +14,7 @@ interface DraggableModelProps {
   castShadow?: boolean;
   receiveShadow?: boolean;
   color?: string;
-  /**
-   * Drag sensitivity multiplier. 1 = direct mapping; < 1 slows movement; > 1 speeds up.
-   * Defaults to 0.5 for smoother control.
-   */
   dragSensitivity?: number;
-  /** Hex color for subtle selection glow */
   highlightColor?: string;
   onClick?: () => void;
   onPositionChange?: (position: [number, number, number]) => void;
@@ -41,7 +36,6 @@ export default function DraggableModel({
   receiveShadow = true,
   color,
   dragSensitivity = 1.1,
-  // Use a standard 6-digit hex; 8-digit (with alpha) is not supported by THREE.Color
   highlightColor = 'white',
   onClick,
   onPositionChange,
@@ -56,20 +50,16 @@ export default function DraggableModel({
     GLTFLoader,
     url,
     (loader: GLTFLoader) => {
-      // Configure DRACO loader to support compressed GLBs
       const dracoLoader = new DRACOLoader();
-      // Use a reliable CDN for decoders; alternatively, copy decoders into /public/draco/ and use that path
       dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-      dracoLoader.setDecoderConfig({ type: 'js' }); // wasm also works if preferred
+      dracoLoader.setDecoderConfig({ type: 'js' });
       loader.setDRACOLoader(dracoLoader);
     }
   );
   const { camera, gl } = useThree();
-  
-  // Local state
+
   const [currentPosition, setCurrentPosition] = useState<[number, number, number]>(position);
   const [currentRotation, setCurrentRotation] = useState<[number, number, number]>(rotation);
-  const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{
@@ -80,7 +70,6 @@ export default function DraggableModel({
   const [processedModel, setProcessedModel] = useState<THREE.Group | null>(null);
   const [highlightModel, setHighlightModel] = useState<THREE.Group | null>(null);
 
-  // Handle click events
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     if (onClick && !isDragging) {
@@ -88,11 +77,10 @@ export default function DraggableModel({
     }
   };
 
-  // Cursor helpers
   const setCursor = (cursor: string) => {
     try {
       (gl.domElement as HTMLCanvasElement).style.cursor = cursor;
-    } catch {}
+    } catch { }
   };
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
@@ -105,15 +93,13 @@ export default function DraggableModel({
     if (!isDragging) setCursor('default');
   };
 
-  // Handle pointer down (start drag)
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
-    // Ensure selection happens even if user starts dragging immediately
     if (onClick) onClick();
-    
+
     setIsDragging(true);
     if (onDragStart) onDragStart(id);
-  setCursor('grabbing');
+    setCursor('grabbing');
     setDragStart({
       position: [...currentPosition] as [number, number, number],
       mouse: new THREE.Vector2(
@@ -123,14 +109,12 @@ export default function DraggableModel({
       client: { x: event.clientX, y: event.clientY }
     });
 
-    // Set pointer capture
     (event.target as any).setPointerCapture?.(event.pointerId);
   };
 
-  // Handle pointer move (drag)
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     if (!isDragging || !dragStart || !meshRef.current) return;
-    
+
     event.stopPropagation();
 
     const currentMouse = new THREE.Vector2(
@@ -138,11 +122,9 @@ export default function DraggableModel({
       -(event.clientY / gl.domElement.clientHeight) * 2 + 1
     );
 
-    // Modifier keys for movement modes
     const shift = (event as any).shiftKey;
     const alt = (event as any).altKey;
 
-    // If SHIFT is held: vertical movement along world Y
     if (shift) {
       const pixelDeltaY = event.clientY - dragStart.client.y;
       const distance = camera.position.distanceTo(meshRef.current.position);
@@ -159,7 +141,6 @@ export default function DraggableModel({
       return;
     }
 
-    // If ALT is held: move along camera forward/back (depth)
     if (alt) {
       const pixelDeltaY = event.clientY - dragStart.client.y;
       const distance = camera.position.distanceTo(meshRef.current.position);
@@ -179,7 +160,6 @@ export default function DraggableModel({
       return;
     }
 
-    // Default: movement on the ground plane (X/Z), Y stays constant
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(currentMouse, camera);
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
@@ -192,8 +172,8 @@ export default function DraggableModel({
     startRaycaster.ray.intersectPlane(groundPlane, startIntersection);
 
     if (intersection && startIntersection) {
-  const deltaX = (intersection.x - startIntersection.x) * dragSensitivity;
-  const deltaZ = (intersection.z - startIntersection.z) * dragSensitivity;
+      const deltaX = (intersection.x - startIntersection.x) * dragSensitivity;
+      const deltaZ = (intersection.z - startIntersection.z) * dragSensitivity;
 
       const newPosition: [number, number, number] = [
         dragStart.position[0] + deltaX,
@@ -205,7 +185,6 @@ export default function DraggableModel({
     }
   };
 
-  // Handle pointer up (end drag)
   const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
     if (isDragging) {
       event.stopPropagation();
@@ -213,23 +192,19 @@ export default function DraggableModel({
       if (onDragEnd) onDragEnd(id);
       setDragStart(null);
       setCursor('grab');
-      
-      // Release pointer capture
+
       (event.target as any).releasePointerCapture?.(event.pointerId);
     }
   };
 
-  // Update position when prop changes
   useEffect(() => {
     setCurrentPosition(position);
   }, [position]);
 
-  // Update rotation when prop changes
   useEffect(() => {
     setCurrentRotation(rotation);
   }, [rotation]);
 
-  // Process the GLTF model into a normalized, centered, tinted clone we can render
   useEffect(() => {
     if (!gltf?.scene) {
       setError('Failed to load model');
@@ -240,33 +215,28 @@ export default function DraggableModel({
     try {
       const model = gltf.scene.clone(true);
 
-      // Compute bounding box & apply scale first, then recalc and place on ground
       let box = new THREE.Box3().setFromObject(model);
       let size = box.getSize(new THREE.Vector3());
       let maxDimension = Math.max(size.x, size.y, size.z);
 
-      const TARGET_MAX = 1.5; // scene units
+      const TARGET_MAX = 1.5;
       const scaleFactor = maxDimension > 0 ? Math.min(1, TARGET_MAX / maxDimension) : 1;
       if (scaleFactor !== 1) model.scale.multiplyScalar(scaleFactor);
 
-      // Recalculate bounds after scaling
       model.updateMatrixWorld(true);
       box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
 
-      // Center on X/Z and drop to ground (y=0)
       model.position.x -= center.x;
       model.position.z -= center.z;
       model.position.y -= box.min.y;
 
-      // Configure materials, color tint and shadow properties
       model.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = castShadow;
           child.receiveShadow = receiveShadow;
-          child.frustumCulled = false; // avoid accidental culling from bad bounds
+          child.frustumCulled = false;
 
-          // Ensure geometry has valid normals and bounds
           if (child.geometry) {
             child.geometry.computeVertexNormals();
             child.geometry.computeBoundingSphere();
@@ -283,9 +253,9 @@ export default function DraggableModel({
               if (color) {
                 try {
                   mat.color.set(color);
-                } catch {}
+                } catch { }
               }
-              // Clamp roughness/metalness to sane values
+              
               if (typeof mat.roughness === 'number') mat.roughness = Math.min(1, Math.max(0, mat.roughness ?? 0.6));
               if (typeof mat.metalness === 'number') mat.metalness = Math.min(1, Math.max(0, mat.metalness ?? 0.1));
             }
@@ -300,7 +270,6 @@ export default function DraggableModel({
       });
 
       setProcessedModel(model);
-      // Build a subtle highlight clone (very slightly scaled, transparent basic material)
       try {
         const glow = model.clone(true);
         glow.traverse((child: THREE.Object3D) => {
@@ -317,15 +286,14 @@ export default function DraggableModel({
             child.material = mat;
           }
         });
-        
+
         glow.scale.multiplyScalar(1.02);
-        glow.position.set(model.position.x*1.02, model.position.y*1.02, model.position.z*1.02);
+        glow.position.set(model.position.x * 1.02, model.position.y * 1.02, model.position.z * 1.02);
         glow.renderOrder = -1;
         setHighlightModel(glow);
       } catch {
         setHighlightModel(null);
       }
-      setIsLoaded(true);
       setError(null);
 
       if (onLoad) onLoad(model);
@@ -337,7 +305,6 @@ export default function DraggableModel({
     }
   }, [gltf, castShadow, receiveShadow, onLoad, onError, color, url, highlightColor]);
 
-  // Error display
   if (error) {
     console.error(`Model error for ${url}:`, error);
     return (
@@ -346,7 +313,6 @@ export default function DraggableModel({
           <boxGeometry args={[1, 1, 1]} />
           <meshStandardMaterial color="red" />
         </mesh>
-        {/* Add text to show the error */}
         <mesh position={[0, 1.5, 0]}>
           <boxGeometry args={[2, 0.3, 0.1]} />
           <meshBasicMaterial color="white" />
@@ -355,7 +321,6 @@ export default function DraggableModel({
     );
   }
 
-  // Loading display
   if (!gltf?.scene) {
     return (
       <group position={currentPosition}>
@@ -363,7 +328,6 @@ export default function DraggableModel({
           <boxGeometry args={[0.8, 0.8, 0.8]} />
           <meshStandardMaterial color="#94a3b8" wireframe />
         </mesh>
-        {/* Add a spinning indicator */}
         <mesh rotation={[0, Date.now() * 0.001, 0]}>
           <boxGeometry args={[1.2, 0.1, 0.1]} />
           <meshBasicMaterial color="#10b981" />
@@ -395,9 +359,6 @@ export default function DraggableModel({
           receiveShadow={receiveShadow}
         />
       )}
-      {/* Selection outline removed per user request */}
     </group>
   );
 }
-
-// Note: Preloading can be added by hosting DRACO decoders locally and using GLTFLoader.preload-equivalent patterns if needed.

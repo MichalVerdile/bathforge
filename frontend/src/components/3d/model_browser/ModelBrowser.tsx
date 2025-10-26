@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useModelData } from '../../../hooks/useModelData';
 import { ModelItem, ModelCategory } from '../../../types/api';
+import './ModelBrowser.css';
 
 interface ModelBrowserProps {
   onModelSelect: (model: ModelItem) => void;
@@ -63,7 +64,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     return (
       <div className="loading-state" style={style}>
         <div className="loading-content">
-          <div className="state-icon">⚙️</div>
           <div className="state-title">Loading Models</div>
           <div>Please wait while we load your 3D models...</div>
         </div>
@@ -75,7 +75,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     return (
       <div className="error-state" style={style}>
         <div className="error-content">
-          <div className="state-icon">❌</div>
           <div className="state-title">Failed to Load Models</div>
           <div className="state-description">{error}</div>
           <button className="retry-button" onClick={refresh}>
@@ -90,12 +89,11 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     return (
       <div className="empty-state" style={style}>
         <div className="empty-content">
-          <div className="state-icon">📦</div>
           <div className="state-title">No Models Available</div>
           <div className="state-description">
             3D models need to be imported first
           </div>
-          <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
+          <div className="empty-hint">
             Use the admin panel to scan assets
           </div>
         </div>
@@ -107,7 +105,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     <div className="model-browser" style={style}>
       <div className="model-browser-header">
         <div className="model-browser-title">
-          <span>🛁 Product Browser</span>
+          <span>Product Browser</span>
           <button
             className="refresh-button"
             onClick={refresh}
@@ -144,22 +142,11 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
               className={`model-item ${selectedModel?.id === model.id ? 'selected' : ''}`}
               onClick={() => onModelSelect(model)}
             >
-              <div
-                className="model-item-preview"
-                style={{
-                  position: 'relative',
-                  height: '100%',
-                  width: '100%',
-                  borderRadius: 8,
-                  overflow: 'hidden',
-                  background: '#e2e8f0'
-                }}
-              >
+              <div className="model-item-preview">
                 <img
                   src={model.thumbnail ?? ''}
                   alt={model.name}
                   className="model-item-image"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -167,41 +154,12 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                     if (placeholder) placeholder.style.display = 'flex';
                   }}
                 />
-                <div
-                  className="model-item-placeholder"
-                  style={{
-                    display: 'none',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    height: '100%',
-                    background: '#f1f5f9',
-                    color: '#64748b',
-                    fontSize: '12px',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    borderRadius: '8px'
-                  }}
-                >
-                  <span style={{ fontSize: '18px', marginRight: 6 }}>{getProductIcon(model.category)}</span>
+                <div className="model-item-placeholder">
+                  <span className="placeholder-icon">{getProductIcon(model.category)}</span>
                   <span>No image</span>
                 </div>
 
-                <div style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  background: 'rgba(148, 163, 184, 0.9)',
-                  color: '#0f172a',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontSize: '9px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase'
-                }}>
-                  3D
-                </div>
+                <div className="badge-3d">3D</div>
 
                 <button
                   className="add-to-room-button"
@@ -235,8 +193,8 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
       <div className="model-browser-footer">
         {filteredModels.length} product(s) available
         {currentCategory && (
-          <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>{getCategoryIcon(currentCategory.name)}</span>
+          <div className="current-category">
+            <span className="current-category-icon">{getCategoryIcon(currentCategory.name)}</span>
             <span>{currentCategory.displayName}</span>
           </div>
         )}

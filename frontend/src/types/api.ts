@@ -18,6 +18,7 @@ export interface Product {
   description: string;
   priceRange: 'LOW' | 'MEDIUM' | 'HIGH';
   modelPath: string;
+  thumbnail?: string; // Optional thumbnail field added
   mountingType: 'FLOOR' | 'WALL' | 'FREESTANDING';
   categoryId: number;
   categoryName: string;

@@ -23,6 +23,9 @@ public class ProductDTO {
     @NotBlank(message = "Model path is required")
     private String modelPath;
 
+    // Optional URL (relative or absolute) to a thumbnail image for this product
+    private String thumbnail;
+
     @NotNull(message = "Mounting type is required")
     private MountingType mountingType;
 
@@ -86,6 +89,14 @@ public class ProductDTO {
         this.modelPath = modelPath;
     }
 
+    public String getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail;
+    }
+
     public MountingType getMountingType() {
         return mountingType;
     }
@@ -126,6 +137,7 @@ public class ProductDTO {
                 ", description='" + description + '\'' +
                 ", priceRange=" + priceRange +
                 ", modelPath='" + modelPath + '\'' +
+                ", thumbnail='" + thumbnail + '\'' +
                 ", mountingType=" + mountingType +
                 ", categoryId=" + categoryId +
                 ", categoryName='" + categoryName + '\'' +

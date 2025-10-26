@@ -144,11 +144,22 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
               className={`model-item ${selectedModel?.id === model.id ? 'selected' : ''}`}
               onClick={() => onModelSelect(model)}
             >
-              <div className="model-item-preview">
+              <div
+                className="model-item-preview"
+                style={{
+                  position: 'relative',
+                  height: '100%',
+                  width: '100%',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  background: '#e2e8f0'
+                }}
+              >
                 <img
-                  src={model.url ?? model.thumbnail}
+                  src={model.thumbnail ?? ''}
                   alt={model.name}
                   className="model-item-image"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
                     target.style.display = 'none';
@@ -159,15 +170,22 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                 <div
                   className="model-item-placeholder"
                   style={{
-                    display: model.thumbnail ? 'none' : 'flex',
+                    display: 'none',
                     alignItems: 'center',
                     justifyContent: 'center',
                     width: '100%',
                     height: '100%',
-                    background: `linear-gradient(135deg, #1e293b 0%, #0f172a 100%)`
+                    background: '#f1f5f9',
+                    color: '#64748b',
+                    fontSize: '12px',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    borderRadius: '8px'
                   }}
                 >
-                  {getProductIcon(model.category)}
+                  <span style={{ fontSize: '18px', marginRight: 6 }}>{getProductIcon(model.category)}</span>
+                  <span>No image</span>
                 </div>
 
                 <div style={{

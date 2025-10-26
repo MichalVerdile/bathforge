@@ -18,16 +18,18 @@ export function useModelData(): UseModelDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const normalizeUrl = (u?: string) => u ? (u.startsWith('/') ? u : `/${u}`) : undefined;
+
   const convertProductToModelItem = (product: Product): ModelItem => ({
     id: product.id,
     name: product.name,
-    url: product.modelPath.startsWith('/') ? product.modelPath : `/${product.modelPath}`,
+    url: normalizeUrl(product.modelPath)!,
     category: product.categoryName,
     categoryId: product.categoryId,
     priceRange: product.priceRange,
     mountingType: product.mountingType,
     availableColors: product.availableColors || [],
-    thumbnail: undefined
+    thumbnail: normalizeUrl(product.thumbnail)
   });
 
   const formatCategoryDisplayName = (categoryName: string): string => {

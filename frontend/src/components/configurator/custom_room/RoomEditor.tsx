@@ -8,7 +8,7 @@ import React, {
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Room } from "./Room";
-import { TwoDEditor } from "./2DEditor";
+import { TwoDEditor, calculateCanvasSize } from "./2DEditor";
 import {
   OrthographicCamera,
   PerspectiveCamera,
@@ -125,18 +125,19 @@ export interface RoomEditorRef {
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
   ({ viewMode, height }, ref) => {
     const getInitialVertices = (): Vertex[] => {
-      const canvasSize = Math.min(
-        Math.min(window.innerHeight - 200, window.innerWidth - 40),
-        800
-      );
-      const margin = canvasSize * 0.3;
-      const squareSize = canvasSize * 0.4;
+      const canvas = calculateCanvasSize();
+      const squareSize = 200; // Fixed 200x200 square
+
+      // Center the square on the canvas
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const halfSize = squareSize / 2;
 
       return [
-        { x: margin, y: margin },
-        { x: margin + squareSize, y: margin },
-        { x: margin + squareSize, y: margin + squareSize },
-        { x: margin, y: margin + squareSize },
+        { x: centerX - halfSize, y: centerY - halfSize },
+        { x: centerX + halfSize, y: centerY - halfSize },
+        { x: centerX + halfSize, y: centerY + halfSize },
+        { x: centerX - halfSize, y: centerY + halfSize },
       ];
     };
 
@@ -160,11 +161,12 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
 
         <ambientLight intensity={0.5} />
         <directionalLight
-          position={[10, 15, 10]}
+          position={[5, 8, 5]}
           intensity={1}
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
+          shadow-bias={-0.0001}
         />
 
         <Room vertices={vertices} height={height} viewMode={viewMode} />

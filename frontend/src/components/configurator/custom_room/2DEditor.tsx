@@ -10,7 +10,7 @@ interface TwoDEditorProps {
   setVertices: (vertices: Vertex[]) => void;
 }
 
-const calculateCanvasSize = (): number => {
+export const calculateCanvasSize = (): { width: number; height: number } => {
   const viewportHeight = window.innerHeight;
   const viewportWidth = window.innerWidth;
   const headerHeight = 100; // approximate header height
@@ -21,9 +21,14 @@ const calculateCanvasSize = (): number => {
     viewportHeight - headerHeight - bottomButtonsHeight - padding;
   const availableWidth = viewportWidth - padding;
 
-  // Use square canvas, take minimum dimension and cap at 800px
-  const size = Math.min(availableHeight, availableWidth, 800);
-  return Math.max(size, 300); // minimum size of 300px
+  const width = Math.min(availableWidth * 0.9, 1200);
+
+  const height = Math.min(availableHeight * 0.95, 1200);
+
+  return {
+    width: Math.max(width, 400),
+    height: Math.max(height, 300),
+  };
 };
 
 export const TwoDEditor: React.FC<TwoDEditorProps> = ({
@@ -40,12 +45,27 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
   const [editingWall, setEditingWall] = useState<number | null>(null);
   const [editingValue, setEditingValue] = useState<string>("");
   const [selectedVertex, setSelectedVertex] = useState<number | null>(null);
-  const [canvasSize, setCanvasSize] = useState<number>(calculateCanvasSize());
+  const [canvasSize, setCanvasSize] = useState<{
+    width: number;
+    height: number;
+  }>(calculateCanvasSize());
+  const [showAddButton, setShowAddButton] = useState<{
+    wallIndex: number;
+    position: { x: number; y: number };
+    clickPosition: { x: number; y: number };
+  } | null>(null);
+  const [showDeleteButton, setShowDeleteButton] = useState<{
+    vertexIndex: number;
+    position: { x: number; y: number };
+  } | null>(null);
+  const [mouseDownPos, setMouseDownPos] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const DRAG_THRESHOLD = 5;
 
-  // Wall snapping configuration
-  const SNAP_THRESHOLD = 5; // degrees - how close to horizontal/vertical to trigger snap
+  const SNAP_THRESHOLD = 5;
 
-  // Handle window resize to update canvas size
   useEffect(() => {
     const handleResize = () => {
       const newSize = calculateCanvasSize();
@@ -336,7 +356,7 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
     }
   }, [editingWall]);
 
-  // Handle clicks outside the popup to close it
+  // Handle clicks outside the popup/button to close it
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -430,6 +450,12 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
       const vertexIndex = getVertexAt(mousePos.x, mousePos.y);
       const wallIndex = getWallAt(mousePos.x, mousePos.y);
 
+      // Store initial mouse position to detect if it's a click or drag
+      setMouseDownPos(mousePos);
+      // Hide any existing buttons
+      setShowAddButton(null);
+      setShowDeleteButton(null);
+
       // Handle right-click for vertex removal
       if (event.button === 2 && vertexIndex !== null) {
         event.preventDefault();
@@ -483,6 +509,16 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
       const mousePos = getMousePos(event);
+
+      if (mouseDownPos !== null) {
+        const dragDistance = Math.sqrt(
+          (mousePos.x - mouseDownPos.x) ** 2 +
+            (mousePos.y - mouseDownPos.y) ** 2
+        );
+        if (dragDistance > DRAG_THRESHOLD) {
+          setMouseDownPos(null);
+        }
+      }
 
       // Update hover state (prioritize vertex over wall)
       const vertexIndex = getVertexAt(mousePos.x, mousePos.y);
@@ -579,19 +615,96 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
       setVertices,
       wouldCreateIntersection,
       applyWallSnapping,
+      mouseDownPos,
+      DRAG_THRESHOLD,
     ]
   );
 
-  const handleMouseUp = useCallback(() => {
-    setDraggingVertex(null);
-    setDraggingWall(null);
-  }, []);
+  const handleMouseUp = useCallback(
+    (event: React.MouseEvent) => {
+      const mousePos = getMousePos(event);
+      const vertexIndex = getVertexAt(mousePos.x, mousePos.y);
+      const wallIndex = getWallAt(mousePos.x, mousePos.y);
+
+      if (mouseDownPos !== null && event.button === 0) {
+        // Show delete button if clicking on a vertex
+        if (vertexIndex !== null && vertices.length > 3) {
+          const vertex = vertices[vertexIndex];
+          // Position button above the vertex
+          setShowDeleteButton({
+            vertexIndex,
+            position: { x: vertex.x, y: vertex.y - 30 },
+          });
+        }
+        // Show add button if clicking on a wall (not a vertex)
+        else if (wallIndex !== null && vertexIndex === null) {
+          const current = vertices[wallIndex];
+          const next = vertices[(wallIndex + 1) % vertices.length];
+          const midpoint = getWallMidpoint(current, next);
+
+          // Check if we're clicking on the label (don't show button if clicking label)
+          const distanceToLabel = Math.sqrt(
+            (mousePos.x - midpoint.x) ** 2 + (mousePos.y - midpoint.y) ** 2
+          );
+
+          if (distanceToLabel > 20) {
+            // Determine wall orientation to position button appropriately
+            const wallAngle = getWallAngle(current, next);
+            const absAngle = Math.abs(wallAngle);
+
+            // Check if wall is vertical (close to 90° or 270°)
+            const isVertical =
+              Math.abs(absAngle - 90) <= 45 || Math.abs(absAngle - 270) <= 45;
+
+            let buttonX = mousePos.x;
+            let buttonY = mousePos.y;
+
+            if (isVertical) {
+              if (mousePos.x < canvasSize.width / 2) {
+                // Left side of canvas, place button on the left
+                buttonX = mousePos.x - 30;
+              } else {
+                // Right side of canvas, place button on the right
+                buttonX = mousePos.x + 30;
+              }
+            } else {
+              // For horizontal walls, place button above
+              buttonY = mousePos.y - 30;
+            }
+
+            // Store both button position (for rendering) and click position (for adding vertex)
+            setShowAddButton({
+              wallIndex,
+              position: { x: buttonX, y: buttonY },
+              clickPosition: { x: mousePos.x, y: mousePos.y }, // Original click position on wall
+            });
+          }
+        }
+      }
+
+      setMouseDownPos(null);
+      setDraggingVertex(null);
+      setDraggingWall(null);
+    },
+    [
+      getMousePos,
+      getVertexAt,
+      getWallAt,
+      mouseDownPos,
+      vertices,
+      getWallMidpoint,
+      getWallAngle,
+      canvasSize.width,
+      removeVertex,
+    ]
+  );
 
   const handleMouseLeave = useCallback(() => {
     setDraggingVertex(null);
     setDraggingWall(null);
     setHoveredVertex(null);
     setHoveredWall(null);
+    setMouseDownPos(null);
   }, []);
 
   // Handle keyboard events for wall length editing and vertex removal
@@ -659,8 +772,26 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
     event.preventDefault(); // Prevent default context menu
   }, []);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const getButtonScreenPosition = useCallback(
+    (canvasX: number, canvasY: number) => {
+      if (!containerRef.current || !canvasRef.current) {
+        return { left: 0, top: 0 };
+      }
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const canvasRect = canvasRef.current.getBoundingClientRect();
+      return {
+        left: canvasRect.left - containerRect.left + canvasX,
+        top: canvasRect.top - containerRect.top + canvasY,
+      };
+    },
+    []
+  );
+
   return (
     <div
+      ref={containerRef}
       style={{
         width: "100%",
         height: "100%",
@@ -682,8 +813,8 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
       </style>
       <canvas
         ref={canvasRef}
-        width={canvasSize}
-        height={canvasSize}
+        width={canvasSize.width}
+        height={canvasSize.height}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -708,6 +839,127 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
           outline: "none",
         }}
       />
+
+      {/* Add vertex button */}
+      {showAddButton && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Add vertex at the click position on the wall
+            const newVertex: Vertex = {
+              x: showAddButton.clickPosition.x,
+              y: showAddButton.clickPosition.y,
+            };
+            const newVertices = [...vertices];
+            // Insert the new vertex after the wall's starting vertex
+            newVertices.splice(showAddButton.wallIndex + 1, 0, newVertex);
+            setVertices(newVertices);
+            setShowAddButton(null);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            ...getButtonScreenPosition(
+              showAddButton.position.x,
+              showAddButton.position.y
+            ),
+            transform: "translate(-50%, -50%)",
+            background: "rgba(148, 163, 184, 0.9)",
+            border: "1px solid rgba(203, 213, 225, 0.6)",
+            borderRadius: "50%",
+            width: "32px",
+            height: "32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 100,
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+            transition: "background-color 0.15s ease",
+            padding: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(203, 213, 225, 0.95)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(148, 163, 184, 0.9)";
+          }}
+          aria-label="Add vertex"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="#0f172a"
+            style={{ width: "18px", height: "18px" }}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+        </button>
+      )}
+
+      {/* Delete vertex button */}
+      {showDeleteButton && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            // Delete vertex if we have more than 3 vertices
+            if (vertices.length > 3) {
+              removeVertex(showDeleteButton.vertexIndex);
+            }
+            setShowDeleteButton(null);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+          style={{
+            position: "absolute",
+            ...getButtonScreenPosition(
+              showDeleteButton.position.x,
+              showDeleteButton.position.y
+            ),
+            transform: "translate(-50%, -50%)",
+            background: "rgba(148, 163, 184, 0.9)",
+            border: "1px solid rgba(203, 213, 225, 0.6)",
+            borderRadius: "50%",
+            width: "32px",
+            height: "32px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            zIndex: 100,
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
+            transition: "background-color 0.15s ease",
+            padding: 0,
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(203, 213, 225, 0.95)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(148, 163, 184, 0.9)";
+          }}
+          aria-label="Delete vertex"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth="2"
+            stroke="#0f172a"
+            style={{ width: "18px", height: "18px" }}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      )}
 
       {/* Input overlay for wall length editing */}
       {editingWall !== null && (

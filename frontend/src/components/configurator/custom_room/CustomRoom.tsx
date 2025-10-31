@@ -7,8 +7,7 @@ interface CustomRoomProps {
 }
 
 const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
-  const [isInfoVisible, setInfoVisible] = useState(false);
-  const [viewMode, setViewMode] = useState<"2D" | "3D">("3D");
+  const [viewMode, setViewMode] = useState<"2D" | "3D">("2D");
   const roomEditorRef = useRef<RoomEditorRef>(null);
 
   const [roomHeight, setRoomHeight] = useState(2.5); // e.g., 2.5 units/meters
@@ -37,79 +36,6 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
               height={roomHeight}
             />
           </div>
-
-          {viewMode === "2D" && (
-            <div
-              className="info-popup-container"
-              onMouseEnter={() => setInfoVisible(true)}
-              onMouseLeave={() => setInfoVisible(false)}
-            >
-              <button className="info-icon-button" aria-label="Show help">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  {" "}
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-                  />{" "}
-                </svg>
-              </button>
-              {isInfoVisible && (
-                <div className="info-popup-content">
-                  <div className="info-item">
-                    <svg
-                      className="info-item-icon"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      {" "}
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m5.25 11.25v-4.5m0 4.5h-4.5m4.5 0L15 15"
-                      />{" "}
-                    </svg>
-                    <div className="info-item-text">
-                      <p>Click and drag walls to adjust dimensions.</p>
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <svg
-                      className="info-item-icon"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      {" "}
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M16.862 4.487l1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931ZM18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
-                      />{" "}
-                    </svg>
-                    <div className="info-item-text">
-                      <p>Click a dimension to type an exact value.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
 
           {viewMode === "2D" && (
             <div className="reset-button-container">

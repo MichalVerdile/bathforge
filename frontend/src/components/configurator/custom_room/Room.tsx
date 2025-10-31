@@ -160,7 +160,7 @@ export const Room: React.FC<RoomProps> = ({ vertices, height, viewMode }) => {
           <mesh
             key={`wall-${index}`}
             ref={(el) => (wallRefs.current[index] = el)}
-            castShadow
+            castShadow={false}
             receiveShadow
             position={midpoint}
             rotation-y={angle}
@@ -177,7 +177,7 @@ export const Room: React.FC<RoomProps> = ({ vertices, height, viewMode }) => {
           <mesh
             key={`corner-${index}`}
             ref={(el) => (cornerRefs.current[index] = el)}
-            castShadow
+            castShadow={false}
             receiveShadow
             position={[v_3D.x, height / 2, v_3D.z]}
             material={cornerMaterial}

@@ -1,21 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { systemController } from './controllers/configuration';
-import { Bathroom3DViewer } from './components/3d';
-import BathroomPlanner from './components/configurator/bathroom_planner/BathroomPlanner';
-import TemplateSelection from './components/configurator/template_selection/TemplateSelection';
-import { Header } from './components/common';
-import './index.css';
+import React, { useState, useEffect } from "react";
+import { systemController } from "./controllers/configuration";
+import { Bathroom3DViewer } from "./components/3d";
+import BathroomPlanner from "./components/configurator/bathroom_planner/BathroomPlanner";
+import TemplateSelection from "./components/configurator/template_selection/TemplateSelection";
+import "./index.css";
+import CustomRoom from "./components/configurator/custom_room/CustomRoom";
 
 interface ApiStatus {
   message: string;
-  status: 'success' | 'error';
+  status: "success" | "error";
 }
 
-type ViewType = '3d' | 'planner' | 'template-selection' | 'custom-room' | 'ai-design';
+type ViewType =
+  | "3d"
+  | "planner"
+  | "template-selection"
+  | "custom-room"
+  | "ai-design";
 
 function App() {
   const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
-  const [currentView, setCurrentView] = useState<ViewType>('planner');
+  const [currentView, setCurrentView] = useState<ViewType>("planner");
 
   useEffect(() => {
     const testBackendConnection = async () => {
@@ -23,12 +28,12 @@ function App() {
         const result = await systemController.testConnection();
         setApiStatus({
           message: result.message,
-          status: result.isConnected ? 'success' : 'error'
+          status: result.isConnected ? "success" : "error",
         });
       } catch (error: any) {
         setApiStatus({
-          message: error.message || 'Unexpected error occurred',
-          status: 'error'
+          message: error.message || "Unexpected error occurred",
+          status: "error",
         });
       }
     };
@@ -49,7 +54,7 @@ function App() {
     console.log('Login clicked - not yet implemented');
   };
 
-  if (currentView === 'planner') {
+  if (currentView === "planner") {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header 
@@ -64,7 +69,7 @@ function App() {
     );
   }
 
-  if (currentView === 'template-selection') {
+  if (currentView === "template-selection") {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header 
@@ -81,7 +86,8 @@ function App() {
     );
   }
 
-  if (currentView === 'custom-room') {
+
+  if (currentView === "custom-room") {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header 
@@ -91,17 +97,12 @@ function App() {
           onNavigateBack={() => handleNavigate('planner')}
           title="Custom Room"
         />
-        <div style={{ flex: 1, padding: '2rem', textAlign: 'center' }}>
-          <h1>Custom Room Configuration</h1>
-          <p>Set your bathroom dimensions and layout</p>
-          <button onClick={() => handleNavigate('planner')}>Back to Planner</button>
-          <button onClick={() => handleNavigate('3d')} style={{ marginLeft: '1rem' }}>Continue to 3D Designer</button>
-        </div>
+        <CustomRoom onNavigate={handleNavigate} />;
       </div>
     );
   }
 
-  if (currentView === 'ai-design') {
+  if (currentView === "ai-design") {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header 
@@ -111,17 +112,24 @@ function App() {
           onNavigateBack={() => handleNavigate('planner')}
           title="AI Designer"
         />
-        <div style={{ flex: 1, padding: '2rem', textAlign: 'center' }}>
+        <div style={{ flex: 1, padding: "2rem", textAlign: "center" }}>
           <h1>AI Bathroom Designer</h1>
           <p>Let our AI create the perfect bathroom for you</p>
-          <button onClick={() => handleNavigate('planner')}>Back to Planner</button>
-          <button onClick={() => handleNavigate('3d')} style={{ marginLeft: '1rem' }}>Continue to 3D Designer</button>
+          <button onClick={() => handleNavigate("planner")}>
+          Back to Planner
+        </button>
+          <button
+          onClick={() => handleNavigate("3d")}
+          style={{ marginLeft: "1rem" }}
+        >
+          Continue to 3D Designer
+        </button>
         </div>
       </div>
     );
   }
 
-  if (currentView === '3d') {
+  if (currentView === "3d") {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Header 

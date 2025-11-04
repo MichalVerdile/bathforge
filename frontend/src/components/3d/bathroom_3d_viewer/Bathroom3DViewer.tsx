@@ -1,13 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
-import Scene3D from '../scene/Scene3D';
-import ModelLoader from './ModelLoader';
-import ModelBrowser, { type ModelItem } from '../model_browser/ModelBrowser';
-import sceneService, { SceneProduct } from '../../../controllers/api/scenes/SceneService';
-import { Color } from '../../../types/api';
-import { ProductService } from '../../../controllers/api/products/ProductService';
-import * as THREE from 'three';
-import './Bathroom3DViewer.css';
-import DraggableModel from './DraggableModel';
+import React, { useState, useRef, useEffect } from "react";
+import Scene3D from "../scene/Scene3D";
+import ModelLoader from "./ModelLoader";
+import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
+import sceneService, {
+  SceneProduct,
+} from "../../../controllers/api/scenes/SceneService";
+import { Color } from "../../../types/api";
+import { ProductService } from "../../../controllers/api/products/ProductService";
+import * as THREE from "three";
+import "./Bathroom3DViewer.css";
+import DraggableModel from "./DraggableModel";
+import { Room } from "../../configurator/custom_room/Room";
+
+interface Vertex {
+  x: number;
+  y: number;
+}
 
 interface SceneProduct3D extends SceneProduct {
   uniqueId: string;
@@ -32,12 +40,21 @@ interface Bathroom3DViewerProps {
 export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [selectedModel, setSelectedModel] = useState<ModelItem | null>(null);
   const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null
+  );
   const [isDraggingModel, setIsDraggingModel] = useState(false);
-  const [currentScene, setCurrentScene] = useState<{ id?: number; name: string }>({
-    name: `Scene ${new Date().toLocaleString()}`
+  const [currentScene, setCurrentScene] = useState<{
+    id?: number;
+    name: string;
+  }>({
+    name: `Scene ${new Date().toLocaleString()}`,
   });
   const [templateData, setTemplateData] = useState<any>(null);
+  const [customRoomData, setCustomRoomData] = useState<{
+    vertices: Vertex[];
+    height: number;
+  } | null>(null);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [controls, setControls] = useState<SceneControlsState>({
@@ -47,7 +64,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     autoRotate: false,
     wireframe: false,
     showGrid: false,
-    showEnvironment: false
+    showEnvironment: false,
   });
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -55,23 +72,34 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const storedTemplate = localStorage.getItem('selectedTemplate');
+    const storedTemplate = localStorage.getItem("selectedTemplate");
     if (storedTemplate) {
       try {
         const template = JSON.parse(storedTemplate);
         setTemplateData(template);
       } catch (error) {
-        console.error('Error parsing template data:', error);
+        console.error("Error parsing template data:", error);
+      }
+    }
+
+    const storedCustomRoom = localStorage.getItem("customRoom");
+    if (storedCustomRoom) {
+      try {
+        const customRoom = JSON.parse(storedCustomRoom);
+        setCustomRoomData(customRoom);
+        localStorage.removeItem("customRoom");
+      } catch (error) {
+        console.error("Error parsing custom room data:", error);
       }
     }
   }, []);
 
   const autoSaveScene = async () => {
     if (sceneProducts.length === 0) return;
-    
+
     setIsAutoSaving(true);
     try {
-      const sceneData = sceneProducts.map(product => ({
+      const sceneData = sceneProducts.map((product) => ({
         productId: product.productId,
         colorId: product.selectedColorId,
         positionX: product.positionX || 0,
@@ -82,28 +110,30 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         rotationZ: product.rotationZ || 0,
         scaleX: product.scaleX || 1,
         scaleY: product.scaleY || 1,
-        scaleZ: product.scaleZ || 1
+        scaleZ: product.scaleZ || 1,
       }));
 
-      const cameraPosition = cameraRef.current ? JSON.stringify({
-        x: cameraRef.current.position.x,
-        y: cameraRef.current.position.y,
-        z: cameraRef.current.position.z
-      }) : undefined;
+      const cameraPosition = cameraRef.current
+        ? JSON.stringify({
+            x: cameraRef.current.position.x,
+            y: cameraRef.current.position.y,
+            z: cameraRef.current.position.z,
+          })
+        : undefined;
 
       await sceneService.saveCurrentScene(
         currentScene.name,
-        'guest',
+        "guest",
         sceneData,
         cameraPosition,
         undefined,
-        '#0f172a',
+        "#0f172a",
         currentScene.id
       );
 
       setLastSaveTime(new Date());
     } catch (error) {
-      console.error('Failed to auto-save scene:', error);
+      console.error("Failed to auto-save scene:", error);
     } finally {
       setIsAutoSaving(false);
     }
@@ -119,8 +149,13 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }, delay);
   };
 
-  const addProductToScene = (model: ModelItem, position?: [number, number, number]) => {
-    const uniqueId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const addProductToScene = (
+    model: ModelItem,
+    position?: [number, number, number]
+  ) => {
+    const uniqueId = `product_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
     const newProduct: SceneProduct3D = {
       uniqueId,
       productId: model.id,
@@ -134,84 +169,103 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       scaleX: 1,
       scaleY: 1,
       scaleZ: 1,
-      selectedColorId: model.availableColors && model.availableColors.length > 0 ? model.availableColors[0].id : undefined
+      selectedColorId:
+        model.availableColors && model.availableColors.length > 0
+          ? model.availableColors[0].id
+          : undefined,
     };
 
-    setSceneProducts(prev => [...prev, newProduct]);
+    setSceneProducts((prev) => [...prev, newProduct]);
     setSelectedProductId(uniqueId);
     scheduleAutoSave(400);
   };
 
   const removeProductFromScene = (uniqueId: string) => {
-    setSceneProducts(prev => prev.filter(p => p.uniqueId !== uniqueId));
+    setSceneProducts((prev) => prev.filter((p) => p.uniqueId !== uniqueId));
     if (selectedProductId === uniqueId) {
       setSelectedProductId(null);
     }
-    
+
     scheduleAutoSave(400);
   };
 
-  const updateProductPosition = (uniqueId: string, position: [number, number, number]) => {
-    setSceneProducts(prev => 
-      prev.map(product => 
-        product.uniqueId === uniqueId 
-          ? { ...product, positionX: position[0], positionY: position[1], positionZ: position[2] }
+  const updateProductPosition = (
+    uniqueId: string,
+    position: [number, number, number]
+  ) => {
+    setSceneProducts((prev) =>
+      prev.map((product) =>
+        product.uniqueId === uniqueId
+          ? {
+              ...product,
+              positionX: position[0],
+              positionY: position[1],
+              positionZ: position[2],
+            }
           : product
       )
     );
-    
+
     scheduleAutoSave(1000);
   };
 
   const updateProductColor = (uniqueId: string, colorId: number) => {
-    setSceneProducts(prev => 
-      prev.map(product => 
-        product.uniqueId === uniqueId 
+    setSceneProducts((prev) =>
+      prev.map((product) =>
+        product.uniqueId === uniqueId
           ? { ...product, selectedColorId: colorId }
           : product
       )
     );
-    
+
     scheduleAutoSave(400);
   };
 
-  const ensureSelectedProductColors = async (uniqueId: string, productId: number) => {
-    const sp = sceneProducts.find(p => p.uniqueId === uniqueId);
+  const ensureSelectedProductColors = async (
+    uniqueId: string,
+    productId: number
+  ) => {
+    const sp = sceneProducts.find((p) => p.uniqueId === uniqueId);
     if (!sp) return;
-    if (sp.modelItem.availableColors && sp.modelItem.availableColors.length > 0) return;
+    if (sp.modelItem.availableColors && sp.modelItem.availableColors.length > 0)
+      return;
 
     try {
       const colors = await ProductService.getColors(productId);
-      setSceneProducts(prev => prev.map(p => {
-        if (p.uniqueId !== uniqueId) return p;
-        const next = {
-          ...p,
-          modelItem: { ...p.modelItem, availableColors: colors }
-        } as typeof p;
-        if (!p.selectedColorId && colors.length > 0) {
-          next.selectedColorId = colors[0].id;
-        }
-        return next;
-      }));
+      setSceneProducts((prev) =>
+        prev.map((p) => {
+          if (p.uniqueId !== uniqueId) return p;
+          const next = {
+            ...p,
+            modelItem: { ...p.modelItem, availableColors: colors },
+          } as typeof p;
+          if (!p.selectedColorId && colors.length > 0) {
+            next.selectedColorId = colors[0].id;
+          }
+          return next;
+        })
+      );
     } catch (e) {
-      console.error('Failed to load colors for product', productId, e);
+      console.error("Failed to load colors for product", productId, e);
     }
   };
 
   const getSelectedColor = (product: SceneProduct3D): Color | undefined => {
     if (!product.selectedColorId) return undefined;
-    return product.modelItem.availableColors.find(color => color.id === product.selectedColorId);
+    return product.modelItem.availableColors.find(
+      (color) => color.id === product.selectedColorId
+    );
   };
 
   const handleModelSelect = (model: ModelItem) => {
     setSelectedModel(model);
     addProductToScene(model);
 
-    setControls(prev => ({
+    setControls((prev) => ({
       ...prev,
       position: [0, 0, 0],
       rotation: [0, 0, 0],
-      scale: 1
+      scale: 1,
     }));
   };
 
@@ -231,7 +285,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         selectedModel={selectedModel}
       />
 
-      <div className="scene-container" style={{ cursor: isDraggingModel ? 'grabbing' : 'default' }}>
+      <div
+        className="scene-container"
+        style={{ cursor: isDraggingModel ? "grabbing" : "default" }}
+      >
         <Scene3D
           showGrid={controls.showGrid}
           showEnvironment={controls.showEnvironment}
@@ -244,16 +301,26 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             cameraRef.current = camera;
           }}
         >
-          {templateData?.preview && (
-            <ModelLoader
-              url={templateData.preview}
-              position={[0, 0.94, 0]}
-              rotation={[0, 0, 0]}
-              scale={[1, 1, 1]}
-              castShadow={true}
-              receiveShadow={true}
-              onError={(err) => console.error('Failed to load template model:', err)}
+          {customRoomData ? (
+            <Room
+              vertices={customRoomData.vertices}
+              height={customRoomData.height}
+              viewMode="3D"
             />
+          ) : (
+            templateData?.preview && (
+              <ModelLoader
+                url={templateData.preview}
+                position={[0, 0.94, 0]}
+                rotation={[0, 0, 0]}
+                scale={[1, 1, 1]}
+                castShadow={true}
+                receiveShadow={true}
+                onError={(err) =>
+                  console.error("Failed to load template model:", err)
+                }
+              />
+            )
           )}
 
           {sceneProducts.map((product) => {
@@ -266,30 +333,37 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 position={[
                   product.positionX || 0,
                   product.positionY || 0,
-                  product.positionZ || 0
+                  product.positionZ || 0,
                 ]}
                 rotation={[
                   product.rotationX || 0,
                   product.rotationY || 0,
-                  product.rotationZ || 0
+                  product.rotationZ || 0,
                 ]}
                 scale={[
                   product.scaleX || 1,
                   product.scaleY || 1,
-                  product.scaleZ || 1
+                  product.scaleZ || 1,
                 ]}
                 color={selectedColor?.hexCode}
                 selected={selectedProductId === product.uniqueId}
-                onPositionChange={(position) => updateProductPosition(product.uniqueId, position)}
+                onPositionChange={(position) =>
+                  updateProductPosition(product.uniqueId, position)
+                }
                 onClick={() => {
                   setSelectedProductId(product.uniqueId);
-                  ensureSelectedProductColors(product.uniqueId, product.productId);
+                  ensureSelectedProductColors(
+                    product.uniqueId,
+                    product.productId
+                  );
                 }}
                 onDragStart={() => setIsDraggingModel(true)}
                 onDragEnd={() => setIsDraggingModel(false)}
                 onError={(error) => {
-                  console.error('Failed to load model:', error);
-                  alert(`Failed to load model: ${product.modelItem.name}\nError: ${error.message}`);
+                  console.error("Failed to load model:", error);
+                  alert(
+                    `Failed to load model: ${product.modelItem.name}\nError: ${error.message}`
+                  );
                 }}
               />
             );
@@ -300,8 +374,11 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           <div className="scene-header">
             <h4>{currentScene.name}</h4>
             <div className="scene-stats">
-              {sceneProducts.length} product{sceneProducts.length !== 1 ? 's' : ''}
-              {isAutoSaving && <span className="saving-indicator">Saving...</span>}
+              {sceneProducts.length} product
+              {sceneProducts.length !== 1 ? "s" : ""}
+              {isAutoSaving && (
+                <span className="saving-indicator">Saving...</span>
+              )}
               {lastSaveTime && !isAutoSaving && (
                 <span className="last-saved">
                   Saved {lastSaveTime.toLocaleTimeString()}
@@ -314,14 +391,16 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         {selectedProductId && (
           <div className="product-controls-panel">
             {(() => {
-              const selectedProduct = sceneProducts.find(p => p.uniqueId === selectedProductId);
+              const selectedProduct = sceneProducts.find(
+                (p) => p.uniqueId === selectedProductId
+              );
               if (!selectedProduct) return null;
-              
+
               return (
                 <div className="product-controls">
                   <div className="control-header">
                     <h5>{selectedProduct.modelItem.name}</h5>
-                    <button 
+                    <button
                       className="remove-button"
                       onClick={() => removeProductFromScene(selectedProductId)}
                       title="Remove from scene"
@@ -329,29 +408,37 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                       🗑️
                     </button>
                   </div>
-                  
+
                   {selectedProduct.modelItem.availableColors.length > 0 && (
                     <div className="color-selector">
                       <label>Color:</label>
                       <div className="color-options">
-                        {selectedProduct.modelItem.availableColors.map((color) => (
-                          <button
-                            key={color.id}
-                            className={`color-option ${
-                              selectedProduct.selectedColorId === color.id ? 'selected' : ''
-                            }`}
-                            style={{ backgroundColor: color.hexCode }}
-                            onClick={() => updateProductColor(selectedProductId, color.id)}
-                            title={color.name}
-                          />
-                        ))}
+                        {selectedProduct.modelItem.availableColors.map(
+                          (color) => (
+                            <button
+                              key={color.id}
+                              className={`color-option ${
+                                selectedProduct.selectedColorId === color.id
+                                  ? "selected"
+                                  : ""
+                              }`}
+                              style={{ backgroundColor: color.hexCode }}
+                              onClick={() =>
+                                updateProductColor(selectedProductId, color.id)
+                              }
+                              title={color.name}
+                            />
+                          )
+                        )}
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="position-info">
                     <small>
-                      Position: [{(selectedProduct.positionX || 0).toFixed(1)}, {(selectedProduct.positionY || 0).toFixed(1)}, {(selectedProduct.positionZ || 0).toFixed(1)}]
+                      Position: [{(selectedProduct.positionX || 0).toFixed(1)},{" "}
+                      {(selectedProduct.positionY || 0).toFixed(1)},{" "}
+                      {(selectedProduct.positionZ || 0).toFixed(1)}]
                     </small>
                   </div>
                 </div>
@@ -360,16 +447,16 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           </div>
         )}
 
-        {sceneProducts.length === 0 && !templateData?.preview && (
-          <div className="welcome-message">
-            <h3 className="welcome-title">
-              Welcome to BathForge 3D
-            </h3>
-            <p className="welcome-description">
-              Browse and select bathroom fixtures to add them to your scene
-            </p>
-          </div>
-        )}
+        {sceneProducts.length === 0 &&
+          !templateData?.preview &&
+          !customRoomData && (
+            <div className="welcome-message">
+              <h3 className="welcome-title">Welcome to BathForge 3D</h3>
+              <p className="welcome-description">
+                Browse and select bathroom fixtures to add them to your scene
+              </p>
+            </div>
+          )}
       </div>
     </div>
   );

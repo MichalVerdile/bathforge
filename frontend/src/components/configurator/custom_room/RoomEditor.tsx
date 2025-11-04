@@ -120,6 +120,7 @@ interface RoomEditorProps {
 
 export interface RoomEditorRef {
   reset: () => void;
+  getRoomData: () => { vertices: Vertex[]; height: number };
 }
 
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
@@ -149,6 +150,7 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
 
     useImperativeHandle(ref, () => ({
       reset: resetVertices,
+      getRoomData: () => ({ vertices, height }),
     }));
 
     if (viewMode === "2D") {

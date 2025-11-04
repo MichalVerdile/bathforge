@@ -127,7 +127,6 @@ public class ColorService {
                 .orElseThrow(() -> new IllegalArgumentException("Color not found with ID: " + id));
     }
 
-    // Helper methods for conversion
     private ColorDTO convertToDTO(Color color) {
         return new ColorDTO(
                 color.getId(),

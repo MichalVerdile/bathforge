@@ -28,7 +28,7 @@ export default function ModelLoader({
 }: ModelLoaderProps) {
   const meshRef = useRef<THREE.Group>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [setIsLoaded] = useState(false);
   
   const gltf = useGLTF(url);
 
@@ -65,7 +65,6 @@ export default function ModelLoader({
         }
       });
 
-      setIsLoaded(true);
       setError(null);
       
       if (onLoad) {

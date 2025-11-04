@@ -72,15 +72,13 @@ const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => 
 
   return (
     <div className="template-selection">
-      <header className="template-header">
-        <div className="header-content">
-          <h1 className="step-number">Template Selection</h1>
-          <h2 className="step-title">Choose your room shape</h2>
-        </div>
-      </header>
-
       <div className="template-content">
         <div className="template-left">
+          <div className="page-title">
+            <h1 className="step-number">Template Selection</h1>
+            <h2 className="step-title">Choose your room shape</h2>
+          </div>
+          
           <div className="template-grid">
             {templates.map((template) => (
               <div

@@ -150,6 +150,7 @@ public class ProductService {
         existingProduct.setDescription(productDTO.getDescription());
         existingProduct.setPriceRange(productDTO.getPriceRange());
         existingProduct.setModelPath(productDTO.getModelPath());
+        existingProduct.setThumbnail(productDTO.getThumbnail());
         existingProduct.setMountingType(productDTO.getMountingType());
         existingProduct.setCategory(category);
 
@@ -213,7 +214,6 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
-    // Helper methods for conversion
     private ProductDTO convertToDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setId(product.getId());
@@ -221,11 +221,11 @@ public class ProductService {
         dto.setDescription(product.getDescription());
         dto.setPriceRange(product.getPriceRange());
         dto.setModelPath(product.getModelPath());
+        dto.setThumbnail(product.getThumbnail());
         dto.setMountingType(product.getMountingType());
         dto.setCategoryId(product.getCategory().getId());
         dto.setCategoryName(product.getCategory().getName());
 
-        // Load available colors
         List<ColorDTO> colors = productColorRepository.findColorsByProduct(product)
                 .stream()
                 .map(this::convertColorToDTO)
@@ -241,6 +241,7 @@ public class ProductService {
         product.setDescription(productDTO.getDescription());
         product.setPriceRange(productDTO.getPriceRange());
         product.setModelPath(productDTO.getModelPath());
+        product.setThumbnail(productDTO.getThumbnail());
         product.setMountingType(productDTO.getMountingType());
         product.setCategory(category);
         return product;

@@ -5,24 +5,21 @@ import com.bathforge.model.products.Color;
 import com.bathforge.repository.products.CategoryRepository;
 import com.bathforge.repository.products.ColorRepository;
 import com.bathforge.repository.products.ProductRepository;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.nio.file.*;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class DataInitializationService implements CommandLineRunner {
 
-    private static final Logger logger = LoggerFactory.getLogger(DataInitializationService.class);
+    private static final Logger log = LoggerFactory.getLogger(DataInitializationService.class);
 
     private final CategoryRepository categoryRepository;
     private final ColorRepository colorRepository;
@@ -35,7 +32,6 @@ public class DataInitializationService implements CommandLineRunner {
     @Value("${bathforge.auto-import.skip-if-products-exist:true}")
     private boolean skipIfProductsExist;
 
-    @Autowired
     public DataInitializationService(CategoryRepository categoryRepository,
             ColorRepository colorRepository,
             ProductRepository productRepository,
@@ -46,293 +42,199 @@ public class DataInitializationService implements CommandLineRunner {
         this.assetImportService = assetImportService;
     }
 
+    private static final List<String> CATEGORY_NAMES = List.of(
+            "accessoires", "furniture", "basins", "wcs", "bathtubs",
+            "shower", "fittings", "fittings_bathtubs", "towel_radiators", "coverings");
+
+    private static final List<ColorData> PALETTE_WHITE_CONCRETE = List.of(
+            new ColorData("Glacier White", "#ffffff"),
+            new ColorData("Elegant Gray", "#c3b6a5"),
+            new ColorData("Ash Aggregate", "#766f69"),
+            new ColorData("Carbon Concrete", "#5e5751"),
+            new ColorData("Deep Nocturne", "#010101"));
+
+    private static final List<ColorData> PALETTE_GLOSS = List.of(
+            new ColorData("Gloss White", "#e3e3e3"),
+            new ColorData("Gloss Black", "#020202"),
+            new ColorData("Fumo", "#454545"),
+            new ColorData("Talpa", "#6c625f"));
+
+    private static final List<ColorData> PALETTE_FITTINGS = List.of(
+            new ColorData("Chrom", "#a7aab1"),
+            new ColorData("Inox", "#7a7772"),
+            new ColorData("Dark Grey", "#514c49"),
+            new ColorData("Copper", "#856d61"),
+            new ColorData("Gold", "#bfa371"),
+            new ColorData("Pale Gold", "#b7a082"));
+
+    private static final List<ColorData> PALETTE_TOWEL_RADIATORS = List.of(
+            new ColorData("Cold White", "#fcfdfd"),
+            new ColorData("Milk", "#f9f4ea"),
+            new ColorData("Aluminum", "#efeeec"),
+            new ColorData("Cream", "#f9ecd8"),
+            new ColorData("Exotic Orange", "#8a4a24"),
+            new ColorData("Metheor Blue", "#4c5868"),
+            new ColorData("Cold Silver", "#d5d6d0"),
+            new ColorData("Corten", "#5e3a22"),
+            new ColorData("Grafit Grey", "#6c6866"),
+            new ColorData("Cold Iron", "#48493f"),
+            new ColorData("Cold Black", "#1b1d1d"));
+
+    private static final List<ColorData> PALETTE_BATHTUBS = List.of(
+            new ColorData("Black", "#000000"),
+            new ColorData("Rubin", "#9e183d"),
+            new ColorData("Mustard", "#e7b32b"),
+            new ColorData("Lime", "#e7b32b"),
+            new ColorData("Artic", "#005365"),
+            new ColorData("Fucile", "#414640"),
+            new ColorData("Earth", "#958a74"),
+            new ColorData("Pearl", "#a9a8a3"),
+            new ColorData("Gray", "#818586"),
+            new ColorData("Light Grey", "#cbc7bc"),
+            new ColorData("White", "#efeff1"));
+
+    private static final List<ColorData> PALETTE_SHOWER = List.of(
+            new ColorData("White", "#efeff1"),
+            new ColorData("Silver", "#b7b6bc"),
+            new ColorData("Chrom", "#a7aab1"),
+            new ColorData("Black Opac", "#25262a"));
+
     @Override
     @Transactional
-    public void run(String... args) throws Exception {
-        logger.info("🚀 Starting BathForge data initialization...");
+    public void run(String... args) {
+        log.info("Starting BathForge data initialization...");
 
-        // Step 1: Initialize categories
         initializeCategories();
-
-        // Step 2: Initialize colors
         initializeColors();
-
-        // Step 3: Import assets if no products exist
         importAssetsIfNeeded();
 
-        logger.info("✅ BathForge data initialization completed!");
+        log.info("BathForge data initialization completed!");
     }
 
     private void initializeCategories() {
-        List<String> categoryNames = Arrays.asList(
-                "accessoires", "furniture", "basins", "wcs", "bathtubs",
-                "shower", "fittings", "fittings_bathtubs", "towel_radiators", "coverings");
-
-        for (String categoryName : categoryNames) {
-            if (!categoryRepository.existsByNameIgnoreCase(categoryName)) {
-                Category category = new Category(categoryName, "");
-                categoryRepository.save(category);
-                System.out.println("Created category: " + categoryName);
+        for (String name : CATEGORY_NAMES) {
+            if (!categoryRepository.existsByNameIgnoreCase(name)) {
+                categoryRepository.save(new Category(name, ""));
+                log.info("Created category: {}", name);
             }
         }
     }
 
     private void initializeColors() {
-        // Initialize colors for each category
-        initializeAccessoiresColors();
-        initializeFurnitureColors();
-        initializeBasinsColors();
-        initializeWCsColors();
-        initializeBathtubsColors();
-        initializeShowerColors();
-        initializeFittingsColors();
-        initializeFittingsBathtubsColors();
-        initializeTowelRadiatorsColors();
-    }
+        Map<String, List<ColorData>> colorByCategory = Map.of(
+                "accessoires", PALETTE_WHITE_CONCRETE,
+                "furniture", PALETTE_WHITE_CONCRETE,
+                "basins", PALETTE_GLOSS,
+                "wcs", PALETTE_GLOSS,
+                "bathtubs", PALETTE_BATHTUBS,
+                "shower", PALETTE_SHOWER,
+                "fittings", PALETTE_FITTINGS,
+                "fittings_bathtubs", PALETTE_FITTINGS,
+                "towel_radiators", PALETTE_TOWEL_RADIATORS);
 
-    private void initializeAccessoiresColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("accessoires").orElse(null);
-        if (category == null)
-            return;
+        Map<String, Category> categories = categoryRepository.findAll().stream()
+                .collect(Collectors.toMap(c -> c.getName().toLowerCase(Locale.ROOT), c -> c));
 
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Glacier White", "#ffffff"),
-                new ColorData("Elegant Gray", "#c3b6a5"),
-                new ColorData("Ash Aggregate", "#766f69"),
-                new ColorData("Carbon Concrete", "#5e5751"),
-                new ColorData("Deep Nocturne", "#010101"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeFurnitureColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("furniture").orElse(null);
-        if (category == null)
-            return;
-
-        // Same as Accessoires
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Glacier White", "#ffffff"),
-                new ColorData("Elegant Gray", "#c3b6a5"),
-                new ColorData("Ash Aggregate", "#766f69"),
-                new ColorData("Carbon Concrete", "#5e5751"),
-                new ColorData("Deep Nocturne", "#010101"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeBasinsColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("basins").orElse(null);
-        if (category == null)
-            return;
-
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Gloss White", "#e3e3e3"),
-                new ColorData("Gloss Black", "#020202"),
-                new ColorData("Fumo", "#454545"),
-                new ColorData("Talpa", "#6c625f"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeWCsColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("wcs").orElse(null);
-        if (category == null)
-            return;
-
-        // Same as Basins
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Gloss White", "#e3e3e3"),
-                new ColorData("Gloss Black", "#020202"),
-                new ColorData("Fumo", "#454545"),
-                new ColorData("Talpa", "#6c625f"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeBathtubsColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("bathtubs").orElse(null);
-        if (category == null)
-            return;
-
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Black", "#000000"),
-                new ColorData("Rubin", "#9e183d"),
-                new ColorData("Mustard", "#e7b32b"),
-                new ColorData("Lime", "#e7b32b"),
-                new ColorData("Artic", "#005365"),
-                new ColorData("Fucile", "#414640"),
-                new ColorData("Earth", "#958a74"),
-                new ColorData("Pearl", "#a9a8a3"),
-                new ColorData("Gray", "#818586"),
-                new ColorData("Light Grey", "#cbc7bc"),
-                new ColorData("White", "#efeff1"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeShowerColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("shower").orElse(null);
-        if (category == null)
-            return;
-
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("White", "#efeff1"),
-                new ColorData("Silver", "#b7b6bc"),
-                new ColorData("Chrom", "#a7aab1"),
-                new ColorData("Black Opac", "#25262a"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeFittingsColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("fittings").orElse(null);
-        if (category == null)
-            return;
-
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Chrom", "#a7aab1"),
-                new ColorData("Inox", "#7a7772"),
-                new ColorData("Dark Grey", "#514c49"),
-                new ColorData("Copper", "#856d61"),
-                new ColorData("Gold", "#bfa371"),
-                new ColorData("Pale Gold", "#b7a082"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeFittingsBathtubsColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("fittings_bathtubs").orElse(null);
-        if (category == null)
-            return;
-
-        // Same as Fittings
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Chrom", "#a7aab1"),
-                new ColorData("Inox", "#7a7772"),
-                new ColorData("Dark Grey", "#514c49"),
-                new ColorData("Copper", "#856d61"),
-                new ColorData("Gold", "#bfa371"),
-                new ColorData("Pale Gold", "#b7a082"));
-
-        saveColorsForCategory(category, colors);
-    }
-
-    private void initializeTowelRadiatorsColors() {
-        Category category = categoryRepository.findByNameIgnoreCase("towel_radiators").orElse(null);
-        if (category == null)
-            return;
-
-        List<ColorData> colors = Arrays.asList(
-                new ColorData("Cold White", "#fcfdfd"),
-                new ColorData("Milk", "#f9f4ea"),
-                new ColorData("Aluminum", "#efeeec"),
-                new ColorData("Cream", "#f9ecd8"),
-                new ColorData("Exotic Orange", "#8a4a24"),
-                new ColorData("Metheor Blue", "#4c5868"),
-                new ColorData("Cold Silver", "#d5d6d0"),
-                new ColorData("Corten", "#5e3a22"),
-                new ColorData("Grafit Grey", "#6c6866"),
-                new ColorData("Cold Iron", "#48493f"),
-                new ColorData("Cold Black", "#1b1d1d"));
-
-        saveColorsForCategory(category, colors);
+        colorByCategory.forEach((categoryKey, palette) -> {
+            Category category = categories.get(categoryKey);
+            if (category == null) {
+                log.warn("Category '{}' missing in DB while initializing colors", categoryKey);
+                return;
+            }
+            saveColorsForCategory(category, palette);
+        });
     }
 
     private void saveColorsForCategory(Category category, List<ColorData> colorsData) {
-        for (ColorData colorData : colorsData) {
-            if (!colorRepository.existsByNameIgnoreCaseAndCategory(colorData.name, category)) {
-                Color color = new Color(colorData.name, colorData.hexCode, category);
-                colorRepository.save(color);
-                System.out.println("Created color: " + colorData.name + " for category: " + category.getName());
+        for (ColorData data : colorsData) {
+            if (!colorRepository.existsByNameIgnoreCaseAndCategory(data.name, category)) {
+                colorRepository.save(new Color(data.name, data.hexCode, category));
+                log.info("Created color '{}' for category '{}'", data.name, category.getName());
             }
         }
     }
 
     private void importAssetsIfNeeded() {
         try {
-            // Check if auto-import is enabled
             if (!autoImportEnabled) {
-                logger.info("🚫 Automatic asset import is disabled");
+                log.info("Automatic asset import is disabled");
                 return;
             }
 
-            // Check if products already exist and we should skip
             long existingProducts = productRepository.count();
             if (existingProducts > 0 && skipIfProductsExist) {
-                logger.info("📦 Found {} existing products, skipping asset import (skipIfProductsExist=true)",
+                log.info("Found {} existing products, skipping asset import (skipIfProductsExist=true)",
                         existingProducts);
                 return;
             } else if (existingProducts > 0) {
-                logger.info("� Found {} existing products, but auto-import will proceed (skipIfProductsExist=false)",
+                log.info("Found {} existing products, proceeding with auto-import (skipIfProductsExist=false)",
                         existingProducts);
             }
 
-            logger.info("🔍 Starting automatic asset import...");
+            log.info("Starting automatic asset import…");
 
-            // Try to find the assets directory
-            String assetsPath = findAssetsDirectory();
-            if (assetsPath == null) {
-                logger.warn("⚠️  Assets directory not found. Skipping automatic import.");
-                logger.info("💡 You can manually import assets later using: POST /api/admin/import-assets");
+            Optional<Path> assetsDir = findAssetsDirectory();
+            if (assetsDir.isEmpty()) {
+                log.warn("Assets directory not found. Skipping automatic import.");
+                log.info("You can manually import assets later using: POST /api/admin/import-assets");
                 return;
             }
 
-            logger.info("📁 Found assets directory: {}", assetsPath);
+            Path path = assetsDir.get();
+            log.info("Found assets directory: {}", path);
 
-            // Import assets
-            Map<String, Object> result = assetImportService.importAllAssets(assetsPath);
+            Map<String, Object> result = assetImportService.importAllAssets(path.toString());
 
             if ("success".equals(result.get("status"))) {
-                logger.info("🎉 Successfully imported assets!");
-                if (result.get("imported") != null) {
-                    @SuppressWarnings("unchecked")
-                    List<String> imported = (List<String>) result.get("imported");
-                    imported.forEach(item -> logger.info("  ✅ {}", item));
+                log.info("Successfully imported assets!");
+                @SuppressWarnings("unchecked")
+                List<String> imported = (List<String>) result.get("imported");
+                if (imported != null) {
+                    imported.forEach(s -> log.info("{}", s));
                 }
-                logger.info("📊 Total products in database: {}", result.get("totalProducts"));
+                log.info("Total products in database: {}", result.get("totalProducts"));
             } else {
-                logger.error("❌ Asset import failed: {}", result.get("message"));
-                if (result.get("errors") != null) {
-                    @SuppressWarnings("unchecked")
-                    List<String> errors = (List<String>) result.get("errors");
-                    errors.forEach(error -> logger.error("  🔴 {}", error));
+                log.error("Asset import failed: {}", result.get("message"));
+                @SuppressWarnings("unchecked")
+                List<String> errors = (List<String>) result.get("errors");
+                if (errors != null) {
+                    errors.forEach(err -> log.error("{}", err));
                 }
             }
 
         } catch (Exception e) {
-            logger.error("💥 Error during automatic asset import: {}", e.getMessage(), e);
-            logger.info("💡 You can manually import assets later using: POST /api/admin/import-assets");
+            log.error("Error during automatic asset import: {}", e.getMessage(), e);
+            log.info("You can manually import assets later using: POST /api/admin/import-assets");
         }
     }
 
-    private String findAssetsDirectory() {
-        // Try multiple possible paths for the assets directory
-        String[] possiblePaths = {
-                "../frontend/public/assets", // Most common case - backend and frontend siblings
-                "frontend/public/assets", // If running from project root
-                "../../../frontend/public/assets", // If running from build/libs
-                "../../frontend/public/assets", // Alternative structure
-                "./frontend/public/assets" // Current directory
-        };
+    private Optional<Path> findAssetsDirectory() {
+        List<String> candidates = List.of(
+                "../frontend/public/assets",
+                "frontend/public/assets",
+                "../../../frontend/public/assets",
+                "../../frontend/public/assets",
+                "./frontend/public/assets");
 
-        for (String path : possiblePaths) {
-            File assetsDir = new File(path);
-            if (assetsDir.exists() && assetsDir.isDirectory()) {
-                // Check if it contains category directories
-                File[] categoryDirs = assetsDir.listFiles(File::isDirectory);
-                if (categoryDirs != null && categoryDirs.length > 0) {
-                    return assetsDir.getAbsolutePath();
-                }
-            }
-        }
-
-        return null;
+        return candidates.stream()
+                .map(p -> Paths.get(p).toAbsolutePath().normalize())
+                .filter(Files::isDirectory)
+                .filter(this::hasAnySubdirectory)
+                .findFirst();
     }
 
-    private static class ColorData {
-        String name;
-        String hexCode;
+    private boolean hasAnySubdirectory(Path dir) {
+        try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, Files::isDirectory)) {
+            return ds.iterator().hasNext();
+        } catch (Exception e) {
+            log.debug("Failed checking subdirectories for {}: {}", dir, e.getMessage());
+            return false;
+        }
+    }
+
+    private static final class ColorData {
+        final String name;
+        final String hexCode;
 
         ColorData(String name, String hexCode) {
             this.name = name;

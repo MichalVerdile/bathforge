@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useModelData } from '../../../hooks/useModelData';
 import { ModelItem, ModelCategory } from '../../../types/api';
+import './ModelBrowser.css';
 
 interface ModelBrowserProps {
   onModelSelect: (model: ModelItem) => void;
@@ -49,24 +50,20 @@ const getProductIcon = (category: string): string => {
 export default function ModelBrowser({ onModelSelect, selectedModel, style }: ModelBrowserProps) {
   const { categories, loading, error, refresh } = useModelData();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory(categories[0].name);
     }
-  }, [categories, selectedCategory]);
+  }, [categories, selectedCategory, loading, error]);
 
   const currentCategory = categories.find(cat => cat.name === selectedCategory);
-  const filteredModels = currentCategory?.models.filter(model =>
-    model.name.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  const filteredModels = currentCategory?.models || [];
 
   if (loading) {
     return (
       <div className="loading-state" style={style}>
         <div className="loading-content">
-          <div className="state-icon">⚙️</div>
           <div className="state-title">Loading Models</div>
           <div>Please wait while we load your 3D models...</div>
         </div>
@@ -78,7 +75,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     return (
       <div className="error-state" style={style}>
         <div className="error-content">
-          <div className="state-icon">❌</div>
           <div className="state-title">Failed to Load Models</div>
           <div className="state-description">{error}</div>
           <button className="retry-button" onClick={refresh}>
@@ -93,12 +89,11 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     return (
       <div className="empty-state" style={style}>
         <div className="empty-content">
-          <div className="state-icon">📦</div>
           <div className="state-title">No Models Available</div>
           <div className="state-description">
             3D models need to be imported first
           </div>
-          <div style={{ fontSize: '12px', color: '#475569', marginTop: '8px' }}>
+          <div className="empty-hint">
             Use the admin panel to scan assets
           </div>
         </div>
@@ -110,7 +105,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
     <div className="model-browser" style={style}>
       <div className="model-browser-header">
         <div className="model-browser-title">
-          <span>🛁 Product Browser</span>
+          <span>Product Browser</span>
           <button
             className="refresh-button"
             onClick={refresh}
@@ -119,14 +114,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
             🔄
           </button>
         </div>
-        
-        <input
-          className="search-input"
-          type="text"
-          placeholder="Search products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
 
       <div className="category-tabs">
@@ -146,7 +133,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
       <div className="model-list">
         {filteredModels.length === 0 ? (
           <div className="no-models-message">
-            {searchTerm ? 'No products found matching your search.' : 'No products in this category.'}
+            No products in this category.
           </div>
         ) : (
           filteredModels.map((model) => (
@@ -156,49 +143,25 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
               onClick={() => onModelSelect(model)}
             >
               <div className="model-item-preview">
-                {model.thumbnail ? (
-                  <img 
-                    src={model.thumbnail} 
-                    alt={model.name}
-                    className="model-item-image"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                      const placeholder = target.nextElementSibling as HTMLElement;
-                      if (placeholder) placeholder.style.display = 'flex';
-                    }}
-                  />
-                ) : null}
-                <div 
-                  className="model-item-placeholder"
-                  style={{ 
-                    display: model.thumbnail ? 'none' : 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    height: '100%',
-                    background: `linear-gradient(135deg, #1e293b 0%, #0f172a 100%)`
+                <img
+                  src={model.thumbnail ?? ''}
+                  alt={model.name}
+                  className="model-item-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const placeholder = target.nextElementSibling as HTMLElement;
+                    if (placeholder) placeholder.style.display = 'flex';
                   }}
-                >
-                  {getProductIcon(model.category)}
+                />
+                <div className="model-item-placeholder">
+                  <span className="placeholder-icon">{getProductIcon(model.category)}</span>
+                  <span>No image</span>
                 </div>
-                
-                <div style={{
-                  position: 'absolute',
-                  top: '6px',
-                  right: '6px',
-                  background: 'rgba(148, 163, 184, 0.9)',
-                  color: '#0f172a',
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  fontSize: '9px',
-                  fontWeight: '600',
-                  textTransform: 'uppercase'
-                }}>
-                  3D
-                </div>
-                
-                <button 
+
+                <div className="badge-3d">3D</div>
+
+                <button
                   className="add-to-room-button"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -230,8 +193,8 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
       <div className="model-browser-footer">
         {filteredModels.length} product(s) available
         {currentCategory && (
-          <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>{getCategoryIcon(currentCategory.name)}</span>
+          <div className="current-category">
+            <span className="current-category-icon">{getCategoryIcon(currentCategory.name)}</span>
             <span>{currentCategory.displayName}</span>
           </div>
         )}

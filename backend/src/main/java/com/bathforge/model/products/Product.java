@@ -28,6 +28,10 @@ public class Product {
     @Column(nullable = false)
     private String modelPath;
 
+    // Optional URL (relative or absolute) to a thumbnail image for this product
+    @Column(name = "thumbnail", length = 1024)
+    private String thumbnail;
+
     @Enumerated(EnumType.STRING)
     @NotNull(message = "Mounting type is required")
     @Column(nullable = false)
@@ -102,6 +106,14 @@ public class Product {
         this.modelPath = modelPath;
     }
 
+    public String getThumbnail() {
+        return thumbnail;
+    }
+
+    public void setThumbnail(String thumbnail) {
+        this.thumbnail = thumbnail;
+    }
+
     public MountingType getMountingType() {
         return mountingType;
     }
@@ -134,6 +146,7 @@ public class Product {
                 ", description='" + description + '\'' +
                 ", priceRange=" + priceRange +
                 ", modelPath='" + modelPath + '\'' +
+                ", thumbnail='" + thumbnail + '\'' +
                 ", mountingType=" + mountingType +
                 ", category=" + (category != null ? category.getName() : "null") +
                 '}';

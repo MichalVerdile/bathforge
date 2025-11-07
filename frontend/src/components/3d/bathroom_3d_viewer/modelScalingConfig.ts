@@ -24,7 +24,7 @@ export const SCALING_CONFIG: ScalingConfig = {
   categories: {
     accessories: { axis: 'max', targetMeters: 0.14000 },
     accessoires: { axis: 'max', targetMeters: 0.14000 }, // French spelling
-    basins: { axis: 'x', targetMeters: 1.13000 },
+    basins: { axis: 'y', targetMeters: 1 },
     bathtubs: { axis: 'x', targetMeters: 1.15 }, // reduced from 1.70000
     fittings: { axis: 'max', targetMeters: 0.15256 },
     fittingsbathtubs: { axis: 'max', targetMeters: 1 }, // fittings_bathtubs

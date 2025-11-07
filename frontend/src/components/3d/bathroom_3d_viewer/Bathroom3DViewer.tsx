@@ -79,10 +79,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         positionZ: product.positionZ || 0,
         rotationX: product.rotationX || 0,
         rotationY: product.rotationY || 0,
-        rotationZ: product.rotationZ || 0,
-        scaleX: product.scaleX || 1,
-        scaleY: product.scaleY || 1,
-        scaleZ: product.scaleZ || 1
+        rotationZ: product.rotationZ || 0
       }));
 
       const cameraPosition = cameraRef.current ? JSON.stringify({
@@ -131,9 +128,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       rotationX: 0,
       rotationY: 0,
       rotationZ: 0,
-      scaleX: 1,
-      scaleY: 1,
-      scaleZ: 1,
       selectedColorId: model.availableColors && model.availableColors.length > 0 ? model.availableColors[0].id : undefined
     };
 
@@ -247,9 +241,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           {templateData?.preview && (
             <ModelLoader
               url={templateData.preview}
-              position={[0, 0.94, 0]}
+              position={[0, 2.41, 0]}
               rotation={[0, 0, 0]}
-              scale={[1, 1, 1]}
+              scale={[2.2, 2.5, 2.2]}
+              applyUnitDetection={true}
               castShadow={true}
               receiveShadow={true}
               onError={(err) => console.error('Failed to load template model:', err)}
@@ -272,11 +267,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                   product.rotationX || 0,
                   product.rotationY || 0,
                   product.rotationZ || 0
-                ]}
-                scale={[
-                  product.scaleX || 1,
-                  product.scaleY || 1,
-                  product.scaleZ || 1
                 ]}
                 color={selectedColor?.hexCode}
                 selected={selectedProductId === product.uniqueId}

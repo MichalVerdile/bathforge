@@ -98,15 +98,10 @@ function CameraController({ viewType, customPosition, controlsRef }: CameraContr
     let targetPosition: [number, number, number];
     
     if (viewType === '2D') {
-      targetPosition = [0, 10, 0];
+      targetPosition = [0, 6, 0];
       camera.rotation.set(-Math.PI / 2, 0, 0);
       camera.up.set(0, 0, -1);
       camera.position.set(...targetPosition);
-      // Reset controls target for 2D view
-      if (controlsRef.current) {
-        controlsRef.current.target.set(0, 0, 0);
-        controlsRef.current.update();
-      }
     } else if (viewType === '3D-Person') {
       targetPosition = [0, 1.8, 1];
       camera.up.set(0, 1, 0);

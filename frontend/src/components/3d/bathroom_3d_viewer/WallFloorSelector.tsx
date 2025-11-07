@@ -78,7 +78,7 @@ export function WallFloorSelector({ enabled, onSelect }: WallFloorSelectorProps)
 /**
  * Detects if a mesh is a wall or floor based on its properties
  */
-function detectMeshType(mesh: THREE.Mesh): 'wall' | 'floor' | null {
+export function detectMeshType(mesh: THREE.Mesh): 'wall' | 'floor' | null {
   // Exclude background/environment elements
   // Check if mesh uses ShadowMaterial (ground plane)
   if (mesh.material && (mesh.material as any).type === 'ShadowMaterial') {

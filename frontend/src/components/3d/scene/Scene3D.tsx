@@ -2,6 +2,7 @@ import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Html, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
+import { detectMeshType } from '../bathroom_3d_viewer/WallFloorSelector';
 
 export type ViewType = '2D' | '3D-Person' | '3D-Free';
 
@@ -11,9 +12,11 @@ interface WASDControllerProps {
 }
 
 function WASDController({ enabled, controlsRef }: WASDControllerProps) {
-  const { camera } = useThree();
+  const { camera, scene } = useThree();
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const moveSpeed = 0.05;
+  const collisionDistance = 0.3; // Distance to check for walls
+  const raycaster = useRef(new THREE.Raycaster());
 
   useEffect(() => {
     if (!enabled) return;
@@ -44,6 +47,42 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
   useFrame(() => {
     if (!enabled || !controlsRef.current) return;
 
+    // First, check if camera is too close to any walls in all directions and push back if needed
+    const pushBackDirections = [
+      new THREE.Vector3(1, 0, 0),   // Right
+      new THREE.Vector3(-1, 0, 0),  // Left
+      new THREE.Vector3(0, 0, 1),   // Forward
+      new THREE.Vector3(0, 0, -1),  // Back
+      new THREE.Vector3(1, 0, 1).normalize(),   // Diagonal
+      new THREE.Vector3(-1, 0, 1).normalize(),  // Diagonal
+      new THREE.Vector3(1, 0, -1).normalize(),  // Diagonal
+      new THREE.Vector3(-1, 0, -1).normalize(), // Diagonal
+    ];
+
+    for (const dir of pushBackDirections) {
+      raycaster.current.set(camera.position, dir);
+      raycaster.current.far = collisionDistance * 0.8; // Slightly shorter distance for push-back
+      
+      const intersects = raycaster.current.intersectObjects(scene.children, true);
+      
+      for (const intersect of intersects) {
+        if (intersect.object instanceof THREE.Mesh) {
+          const meshType = detectMeshType(intersect.object);
+          if (meshType === 'wall') {
+            // Push camera away from wall
+            const pushDirection = dir.clone().multiplyScalar(-1);
+            const pushAmount = (collisionDistance * 0.8 - intersect.distance) * 0.5;
+            const pushVector = pushDirection.multiplyScalar(pushAmount);
+            
+            camera.position.add(pushVector);
+            controlsRef.current.target.add(pushVector);
+            controlsRef.current.update();
+            break;
+          }
+        }
+      }
+    }
+
     const direction = new THREE.Vector3();
     const sideDirection = new THREE.Vector3();
 
@@ -70,11 +109,32 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
       moveVector.addScaledVector(sideDirection, -moveSpeed);
     }
 
-    // Move both camera and controls target together
+    // Check for wall collision before moving
     if (moveVector.length() > 0) {
-      camera.position.add(moveVector);
-      controlsRef.current.target.add(moveVector);
-      controlsRef.current.update();
+      // Check collision in the movement direction
+      const normalizedMove = moveVector.clone().normalize();
+      raycaster.current.set(camera.position, normalizedMove);
+      raycaster.current.far = collisionDistance;
+      
+      const intersects = raycaster.current.intersectObjects(scene.children, true);
+      
+      let hasWallCollision = false;
+      for (const intersect of intersects) {
+        if (intersect.object instanceof THREE.Mesh) {
+          const meshType = detectMeshType(intersect.object);
+          if (meshType === 'wall') {
+            hasWallCollision = true;
+            break;
+          }
+        }
+      }
+      
+      // Only move if there's no wall collision
+      if (!hasWallCollision) {
+        camera.position.add(moveVector);
+        controlsRef.current.target.add(moveVector);
+        controlsRef.current.update();
+      }
     }
   });
 

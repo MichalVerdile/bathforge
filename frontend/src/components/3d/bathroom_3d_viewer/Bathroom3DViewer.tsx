@@ -25,6 +25,8 @@ interface SceneControlsState {
   showEnvironment: boolean;
 }
 
+export type ViewType = '2D' | '3D-Person' | '3D-Free';
+
 interface Bathroom3DViewerProps {
   style?: React.CSSProperties;
 }
@@ -34,6 +36,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isDraggingModel, setIsDraggingModel] = useState(false);
+  const [viewType, setViewType] = useState<ViewType>('3D-Person');
   const [currentScene, setCurrentScene] = useState<{ id?: number; name: string }>({
     name: `Scene ${new Date().toLocaleString()}`
   });
@@ -123,7 +126,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       productId: model.id,
       modelItem: model,
       positionX: position ? position[0] : 0,
-      positionY: position ? position[1] : 0,
+      positionY: position ? position[1] : 0.3,
       positionZ: position ? position[2] : 0,
       rotationX: 0,
       rotationY: 0,
@@ -220,13 +223,40 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
   return (
     <div className="bathroom-3d-viewer" style={style}>
-      <ModelBrowser
-        onModelSelect={handleModelSelect}
-        selectedModel={selectedModel}
-      />
+      {viewType !== '3D-Person' && (
+        <ModelBrowser
+          onModelSelect={handleModelSelect}
+          selectedModel={selectedModel}
+        />
+      )}
 
       <div className="scene-container" style={{ cursor: isDraggingModel ? 'grabbing' : 'default' }}>
+        <div className="view-type-selector">
+          <button
+            className={`view-type-button ${viewType === '2D' ? 'active' : ''}`}
+            onClick={() => setViewType('2D')}
+            title="2D Top View"
+          >
+            📐 2D View
+          </button>
+          <button
+            className={`view-type-button ${viewType === '3D-Person' ? 'active' : ''}`}
+            onClick={() => setViewType('3D-Person')}
+            title="First Person 3D View"
+          >
+            👤 Person View
+          </button>
+          <button
+            className={`view-type-button ${viewType === '3D-Free' ? 'active' : ''}`}
+            onClick={() => setViewType('3D-Free')}
+            title="Free 3D View"
+          >
+            🌐 Free View
+          </button>
+        </div>
+
         <Scene3D
+          viewType={viewType}
           showGrid={controls.showGrid}
           showEnvironment={controls.showEnvironment}
           controlsEnabled={!isDraggingModel}
@@ -243,7 +273,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
               url={templateData.preview}
               position={[0, 2.41, 0]}
               rotation={[0, 0, 0]}
-              scale={[2.2, 2.5, 2.2]}
+              scale={[2.2, 2.2, 2.2]}
               applyUnitDetection={true}
               castShadow={true}
               receiveShadow={true}
@@ -269,14 +299,29 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                   product.rotationZ || 0
                 ]}
                 color={selectedColor?.hexCode}
-                selected={selectedProductId === product.uniqueId}
-                onPositionChange={(position) => updateProductPosition(product.uniqueId, position)}
-                onClick={() => {
-                  setSelectedProductId(product.uniqueId);
-                  ensureSelectedProductColors(product.uniqueId, product.productId);
+                selected={selectedProductId === product.uniqueId && viewType !== '3D-Person'}
+                disableInteractions={viewType === '3D-Person'}
+                onPositionChange={(position) => {
+                  if (viewType !== '3D-Person') {
+                    updateProductPosition(product.uniqueId, position);
+                  }
                 }}
-                onDragStart={() => setIsDraggingModel(true)}
-                onDragEnd={() => setIsDraggingModel(false)}
+                onClick={() => {
+                  if (viewType !== '3D-Person') {
+                    setSelectedProductId(product.uniqueId);
+                    ensureSelectedProductColors(product.uniqueId, product.productId);
+                  }
+                }}
+                onDragStart={() => {
+                  if (viewType !== '3D-Person') {
+                    setIsDraggingModel(true);
+                  }
+                }}
+                onDragEnd={() => {
+                  if (viewType !== '3D-Person') {
+                    setIsDraggingModel(false);
+                  }
+                }}
                 onError={(error) => {
                   console.error('Failed to load model:', error);
                   alert(`Failed to load model: ${product.modelItem.name}\nError: ${error.message}`);
@@ -286,22 +331,24 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           })}
         </Scene3D>
 
-        <div className="scene-info-panel">
-          <div className="scene-header">
-            <h4>{currentScene.name}</h4>
-            <div className="scene-stats">
-              {sceneProducts.length} product{sceneProducts.length !== 1 ? 's' : ''}
-              {isAutoSaving && <span className="saving-indicator">Saving...</span>}
-              {lastSaveTime && !isAutoSaving && (
-                <span className="last-saved">
-                  Saved {lastSaveTime.toLocaleTimeString()}
-                </span>
-              )}
+        {viewType !== '3D-Person' && (
+          <div className="scene-info-panel">
+            <div className="scene-header">
+              <h4>{currentScene.name}</h4>
+              <div className="scene-stats">
+                {sceneProducts.length} product{sceneProducts.length !== 1 ? 's' : ''}
+                {isAutoSaving && <span className="saving-indicator">Saving...</span>}
+                {lastSaveTime && !isAutoSaving && (
+                  <span className="last-saved">
+                    Saved {lastSaveTime.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {selectedProductId && (
+        {selectedProductId && viewType !== '3D-Person' && (
           <div className="product-controls-panel">
             {(() => {
               const selectedProduct = sceneProducts.find(p => p.uniqueId === selectedProductId);

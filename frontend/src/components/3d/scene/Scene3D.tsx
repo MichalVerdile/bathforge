@@ -1,7 +1,126 @@
-import React, { Suspense, useRef } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React, { Suspense, useRef, useEffect } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Html, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
+
+export type ViewType = '2D' | '3D-Person' | '3D-Free';
+
+interface WASDControllerProps {
+  enabled: boolean;
+  controlsRef: React.RefObject<any>;
+}
+
+function WASDController({ enabled, controlsRef }: WASDControllerProps) {
+  const { camera } = useThree();
+  const keysPressed = useRef<{ [key: string]: boolean }>({});
+  const moveSpeed = 0.05;
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (['w', 'a', 's', 'd'].includes(key)) {
+        keysPressed.current[key] = true;
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (['w', 'a', 's', 'd'].includes(key)) {
+        keysPressed.current[key] = false;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [enabled]);
+
+  useFrame(() => {
+    if (!enabled || !controlsRef.current) return;
+
+    const direction = new THREE.Vector3();
+    const sideDirection = new THREE.Vector3();
+
+    // Get camera's forward direction (ignoring Y component for horizontal movement)
+    camera.getWorldDirection(direction);
+    direction.y = 0;
+    direction.normalize();
+
+    // Get camera's right direction
+    sideDirection.crossVectors(camera.up, direction).normalize();
+
+    const moveVector = new THREE.Vector3();
+
+    if (keysPressed.current['w']) {
+      moveVector.addScaledVector(direction, moveSpeed);
+    }
+    if (keysPressed.current['s']) {
+      moveVector.addScaledVector(direction, -moveSpeed);
+    }
+    if (keysPressed.current['a']) {
+      moveVector.addScaledVector(sideDirection, moveSpeed);
+    }
+    if (keysPressed.current['d']) {
+      moveVector.addScaledVector(sideDirection, -moveSpeed);
+    }
+
+    // Move both camera and controls target together
+    if (moveVector.length() > 0) {
+      camera.position.add(moveVector);
+      controlsRef.current.target.add(moveVector);
+      controlsRef.current.update();
+    }
+  });
+
+  return null;
+}
+
+interface CameraControllerProps {
+  viewType: ViewType;
+  customPosition: [number, number, number];
+  controlsRef: React.RefObject<any>;
+}
+
+function CameraController({ viewType, customPosition, controlsRef }: CameraControllerProps) {
+  const { camera } = useThree();
+  
+  useEffect(() => {
+    let targetPosition: [number, number, number];
+    
+    if (viewType === '2D') {
+      targetPosition = [0, 6, 0];
+      camera.rotation.set(-Math.PI / 2, 0, 0);
+      camera.up.set(0, 0, -1);
+    } else if (viewType === '3D-Person') {
+      targetPosition = [0, 1.8, 1];
+      camera.up.set(0, 1, 0);
+      camera.rotation.set(0, 0, 0);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 1.8, 0);
+        controlsRef.current.update();
+      }
+    } else {
+      targetPosition = customPosition;
+      camera.rotation.set(0, 0, 0);
+      camera.up.set(0, 1, 0);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
+    }
+    
+    camera.position.set(...targetPosition);
+    camera.updateProjectionMatrix();
+  }, [viewType, camera, customPosition, controlsRef]);
+  
+  return null;
+}
 
 function Loader() {
   const { progress } = useProgress();
@@ -85,6 +204,7 @@ interface Scene3DProps {
   onCameraReady?: (camera: THREE.Camera) => void;
   controlsEnabled?: boolean;
   onBackgroundClick?: () => void;
+  viewType?: ViewType;
 }
 
 export default function Scene3D({
@@ -97,8 +217,56 @@ export default function Scene3D({
   onCameraReady,
   controlsEnabled = true,
   onBackgroundClick,
+  viewType = '3D-Free',
 }: Scene3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const controlsRef = useRef<any>(null);
+
+  // Determine camera position based on view type
+  const getCameraPosition = (): [number, number, number] => {
+    if (viewType === '2D') {
+      return [0, 6, 0]; // Top-down view
+    } else if (viewType === '3D-Person') {
+      return [0, 1.8, 0]; // Eye-level view, slightly back
+    } else {
+      return cameraPosition; // Free view with custom position
+    }
+  };
+
+  // Determine if controls should be enabled based on view type
+  const areControlsEnabled = viewType !== '2D' && controlsEnabled;
+  
+  // Determine control settings based on view type
+  const getControlSettings = () => {
+    if (viewType === '2D') {
+      return {
+        enablePan: false,
+        enableZoom: false,
+        enableRotate: false,
+      };
+    } else if (viewType === '3D-Person') {
+      return {
+        enablePan: false,
+        enableZoom: false,
+        enableRotate: true,
+        minDistance: 1,
+        maxDistance: 50,
+        maxPolarAngle: Math.PI / 2.1,
+      };
+    } else {
+      // 3D-Free: full freedom
+      return {
+        enablePan: true,
+        enableZoom: true,
+        enableRotate: true,
+        minDistance: 0.5,
+        maxDistance: 100,
+        maxPolarAngle: Math.PI, // Allow full rotation
+      };
+    }
+  };
+
+  const controlSettings = getControlSettings();
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -106,8 +274,8 @@ export default function Scene3D({
         ref={canvasRef}
         shadows
         camera={{
-          position: cameraPosition,
-          fov: 60,
+          position: getCameraPosition(),
+          fov: viewType === '2D' ? 50 : 60,
           near: 0.1,
           far: 1000
         }}
@@ -126,6 +294,9 @@ export default function Scene3D({
         }}
         onPointerMissed={() => onBackgroundClick?.()}
       >
+        <CameraController viewType={viewType} customPosition={cameraPosition} controlsRef={controlsRef} />
+        <WASDController enabled={viewType === '3D-Person'} controlsRef={controlsRef} />
+        
         <Suspense fallback={<Loader />}>
           <Lights />
           
@@ -140,13 +311,14 @@ export default function Scene3D({
           <Ground />
           
           <OrbitControls
-            enabled={controlsEnabled}
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
-            minDistance={1}
-            maxDistance={50}
-            maxPolarAngle={Math.PI / 2.1}
+            ref={controlsRef}
+            enabled={areControlsEnabled}
+            enablePan={controlSettings.enablePan}
+            enableZoom={controlSettings.enableZoom}
+            enableRotate={controlSettings.enableRotate}
+            minDistance={controlSettings.minDistance}
+            maxDistance={controlSettings.maxDistance}
+            maxPolarAngle={controlSettings.maxPolarAngle}
           />
           
           {children}
@@ -167,7 +339,13 @@ export default function Scene3D({
         border: '1px solid #334155',
         fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
       }}>
-        <div>🖱️ Rotate • 🎲 Zoom • 🖐️ Pan</div>
+        {viewType === '2D' ? (
+          <div>📐 2D Top View - Controls Disabled</div>
+        ) : viewType === '3D-Person' ? (
+          <div>👤 Person View • 🖱️ Click & drag to look around • WASD to move</div>
+        ) : (
+          <div>🌐 Free View • 🖱️ Rotate • 🎲 Zoom • 🖐️ Pan (Full Freedom)</div>
+        )}
       </div>
     </div>
   );

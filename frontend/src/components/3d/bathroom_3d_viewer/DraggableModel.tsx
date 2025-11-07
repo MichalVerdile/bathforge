@@ -23,6 +23,7 @@ interface DraggableModelProps {
   color?: string;
   dragSensitivity?: number;
   highlightColor?: string;
+  disableInteractions?: boolean;
   onClick?: () => void;
   onPositionChange?: (position: [number, number, number]) => void;
   onRotationChange?: (rotation: [number, number, number]) => void;
@@ -45,6 +46,7 @@ export default function DraggableModel({
   color,
   dragSensitivity = 1.1,
   highlightColor = 'white',
+  disableInteractions = false,
   onClick,
   onPositionChange,
   onRotationChange,
@@ -79,6 +81,7 @@ export default function DraggableModel({
   const [highlightModel, setHighlightModel] = useState<THREE.Group | null>(null);
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
+    if (disableInteractions) return;
     event.stopPropagation();
     if (onClick && !isDragging) {
       onClick();
@@ -92,16 +95,19 @@ export default function DraggableModel({
   };
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
+    if (disableInteractions) return;
     event.stopPropagation();
     if (!isDragging) setCursor('grab');
   };
 
   const handlePointerOut = (event: ThreeEvent<PointerEvent>) => {
+    if (disableInteractions) return;
     event.stopPropagation();
     if (!isDragging) setCursor('default');
   };
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
+    if (disableInteractions) return;
     event.stopPropagation();
     if (onClick) onClick();
 
@@ -121,7 +127,7 @@ export default function DraggableModel({
   };
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
-    if (!isDragging || !dragStart || !meshRef.current) return;
+    if (disableInteractions || !isDragging || !dragStart || !meshRef.current) return;
 
     event.stopPropagation();
 
@@ -194,6 +200,7 @@ export default function DraggableModel({
   };
 
   const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
+    if (disableInteractions) return;
     if (isDragging) {
       event.stopPropagation();
       setIsDragging(false);

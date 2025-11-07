@@ -7,6 +7,7 @@ interface ModelBrowserProps {
   onModelSelect: (model: ModelItem) => void;
   selectedModel?: ModelItem | null;
   style?: React.CSSProperties;
+  onCategoryChange?: (categoryName: string) => void;
 }
 
 const getCategoryIcon = (categoryName: string): string => {
@@ -47,7 +48,14 @@ const getProductIcon = (category: string): string => {
   return iconMap[category.toLowerCase()] || '📦';
 };
 
-export default function ModelBrowser({ onModelSelect, selectedModel, style }: ModelBrowserProps) {
+// Helper function to check if a model is an image file (texture/covering)
+const isImageFile = (url: string): boolean => {
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg'];
+  const lowerUrl = url.toLowerCase();
+  return imageExtensions.some(ext => lowerUrl.endsWith(ext));
+};
+
+export default function ModelBrowser({ onModelSelect, selectedModel, style, onCategoryChange }: ModelBrowserProps) {
   const { categories, loading, error, refresh } = useModelData();
   const [selectedCategory, setSelectedCategory] = useState<string>('');
 
@@ -56,6 +64,13 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
       setSelectedCategory(categories[0].name);
     }
   }, [categories, selectedCategory, loading, error]);
+
+  // Notify parent when category changes
+  useEffect(() => {
+    if (selectedCategory && onCategoryChange) {
+      onCategoryChange(selectedCategory);
+    }
+  }, [selectedCategory, onCategoryChange]);
 
   const currentCategory = categories.find(cat => cat.name === selectedCategory);
   const filteredModels = currentCategory?.models || [];
@@ -159,7 +174,11 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style }: Mo
                   <span>No image</span>
                 </div>
 
-                <div className="badge-3d">3D</div>
+                {isImageFile(model.url) ? (
+                  <div className="badge-texture">TEXTURE</div>
+                ) : (
+                  <div className="badge-3d">3D</div>
+                )}
 
                 <button
                   className="add-to-room-button"

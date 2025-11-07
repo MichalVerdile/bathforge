@@ -8,6 +8,8 @@ import { ProductService } from '../../../controllers/api/products/ProductService
 import * as THREE from 'three';
 import './Bathroom3DViewer.css';
 import DraggableModel from './DraggableModel';
+import { WallFloorSelector, applyTextureToMesh } from './WallFloorSelector';
+import { useModelData } from '../../../hooks/useModelData';
 
 interface SceneProduct3D extends SceneProduct {
   uniqueId: string;
@@ -37,6 +39,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isDraggingModel, setIsDraggingModel] = useState(false);
   const [viewType, setViewType] = useState<ViewType>('3D-Person');
+  const [selectedBrowserCategory, setSelectedBrowserCategory] = useState<string>('');
   const [currentScene, setCurrentScene] = useState<{ id?: number; name: string }>({
     name: `Scene ${new Date().toLocaleString()}`
   });
@@ -52,6 +55,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     showGrid: false,
     showEnvironment: false
   });
+
+  // Wall/Floor covering selection state
+  const [selectedSurface, setSelectedSurface] = useState<{
+    mesh: THREE.Mesh;
+    type: 'wall' | 'floor';
+    originalMaterial: THREE.Material;
+    highlightMaterial?: THREE.Material;
+  } | null>(null);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
@@ -200,16 +211,90 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     return product.modelItem.availableColors.find(color => color.id === product.selectedColorId);
   };
 
-  const handleModelSelect = (model: ModelItem) => {
-    setSelectedModel(model);
-    addProductToScene(model);
+  // Helper function to check if a model is a texture/image file (covering)
+  const isImageFile = (url: string): boolean => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg'];
+    const lowerUrl = url.toLowerCase();
+    return imageExtensions.some(ext => lowerUrl.endsWith(ext));
+  };
 
-    setControls(prev => ({
-      ...prev,
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: 1
-    }));
+  const handleModelSelect = async (model: ModelItem) => {
+    // Check if the selected model is an image (covering)
+    const isTexture = isImageFile(model.url);
+    
+    if (isTexture && selectedSurface) {
+      // Apply texture to the selected wall/floor
+      try {
+        await applyTextureToMesh(
+          selectedSurface.mesh,
+          model.thumbnail || model.url,
+          3, // repeatX
+          3  // repeatY
+        );
+      } catch (error) {
+        console.error('Failed to apply covering:', error);
+        alert('Failed to apply texture. Please try again.');
+      }
+    } else if (!isTexture) {
+      // It's a 3D model, add it to the scene
+      setSelectedModel(model);
+      addProductToScene(model);
+
+      setControls(prev => ({
+        ...prev,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: 1
+      }));
+    } else {
+      // It's a texture but no surface is selected
+      alert('Please select a wall or floor first before applying a covering.');
+    }
+  };
+
+  // Handle wall/floor selection
+  const handleSurfaceSelect = (mesh: THREE.Mesh | null, type: 'wall' | 'floor' | null) => {
+    // Clear previous selection highlight
+    if (selectedSurface) {
+      selectedSurface.mesh.material = selectedSurface.originalMaterial;
+      if (selectedSurface.highlightMaterial) {
+        (selectedSurface.highlightMaterial as THREE.Material).dispose();
+      }
+    }
+
+    if (mesh && type) {
+      // Store original material before selecting
+      const originalMaterial = Array.isArray(mesh.material) 
+        ? mesh.material[0] 
+        : mesh.material;
+      
+      // Clone the original material to preserve it
+      const clonedOriginal = originalMaterial.clone();
+      
+      // Create a highlight material with light opaque white overlay
+      const highlightMaterial = originalMaterial.clone();
+      
+      // Apply white tint with opacity
+      if (highlightMaterial instanceof THREE.MeshStandardMaterial) {
+        highlightMaterial.emissive = new THREE.Color(0xffffff);
+        highlightMaterial.emissiveIntensity = 0.3;
+        highlightMaterial.opacity = 0.8;
+        highlightMaterial.transparent = true;
+      }
+      
+      // Apply highlight immediately
+      mesh.material = highlightMaterial;
+      
+      setSelectedSurface({
+        mesh,
+        type,
+        originalMaterial: clonedOriginal,
+        highlightMaterial
+      });
+      setSelectedProductId(null); // Deselect any product
+    } else {
+      setSelectedSurface(null);
+    }
   };
 
   useEffect(() => {
@@ -218,8 +303,22 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
+      // Clean up surface highlight on unmount
+      if (selectedSurface) {
+        selectedSurface.mesh.material = selectedSurface.originalMaterial;
+        if (selectedSurface.highlightMaterial) {
+          (selectedSurface.highlightMaterial as THREE.Material).dispose();
+        }
+      }
     };
   }, []);
+
+  // Clear surface selection when switching away from coverings category
+  useEffect(() => {
+    if (selectedBrowserCategory !== 'coverings' && selectedSurface) {
+      handleSurfaceSelect(null, null);
+    }
+  }, [selectedBrowserCategory]);
 
   return (
     <div className="bathroom-3d-viewer" style={style}>
@@ -227,6 +326,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         <ModelBrowser
           onModelSelect={handleModelSelect}
           selectedModel={selectedModel}
+          onCategoryChange={setSelectedBrowserCategory}
         />
       )}
 
@@ -260,7 +360,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           showGrid={controls.showGrid}
           showEnvironment={controls.showEnvironment}
           controlsEnabled={!isDraggingModel}
-          onBackgroundClick={() => setSelectedProductId(null)}
+          onBackgroundClick={() => {
+            setSelectedProductId(null);
+            handleSurfaceSelect(null, null);
+          }}
           onSceneReady={(scene) => {
             sceneRef.current = scene;
           }}
@@ -268,6 +371,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             cameraRef.current = camera;
           }}
         >
+          {/* Wall/Floor Selector - only active in 2D and Free 3D views AND when coverings category is selected */}
+          {(viewType === '2D' || viewType === '3D-Free') && selectedBrowserCategory === 'coverings' && (
+            <WallFloorSelector
+              enabled={true}
+              onSelect={handleSurfaceSelect}
+            />
+          )}
+
           {templateData?.preview && (
             <ModelLoader
               url={templateData.preview}
@@ -345,6 +456,20 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 )}
               </div>
             </div>
+            {selectedSurface && (
+              <div className="surface-selection-info">
+                <strong>
+                  {selectedSurface.type === 'wall' ? '🧱 Wall' : '⬜ Floor'} Selected
+                </strong>
+                <p>Select a covering from the browser to apply</p>
+                <button 
+                  className="deselect-button"
+                  onClick={() => handleSurfaceSelect(null, null)}
+                >
+                  Deselect
+                </button>
+              </div>
+            )}
           </div>
         )}
 

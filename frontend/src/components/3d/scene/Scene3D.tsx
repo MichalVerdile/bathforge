@@ -89,34 +89,47 @@ interface CameraControllerProps {
 
 function CameraController({ viewType, customPosition, controlsRef }: CameraControllerProps) {
   const { camera } = useThree();
+  const previousViewType = useRef<ViewType | null>(null);
   
   useEffect(() => {
+    // Only update camera when view type actually changes
+    if (previousViewType.current === viewType) return;
+    
     let targetPosition: [number, number, number];
     
     if (viewType === '2D') {
-      targetPosition = [0, 6, 0];
+      targetPosition = [0, 10, 0];
       camera.rotation.set(-Math.PI / 2, 0, 0);
       camera.up.set(0, 0, -1);
+      camera.position.set(...targetPosition);
+      // Reset controls target for 2D view
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
     } else if (viewType === '3D-Person') {
       targetPosition = [0, 1.8, 1];
       camera.up.set(0, 1, 0);
       camera.rotation.set(0, 0, 0);
+      camera.position.set(...targetPosition);
       if (controlsRef.current) {
         controlsRef.current.target.set(0, 1.8, 0);
         controlsRef.current.update();
       }
     } else {
+      // Free view - only set initial position when switching TO this view
       targetPosition = customPosition;
-      camera.rotation.set(0, 0, 0);
       camera.up.set(0, 1, 0);
+      camera.rotation.set(0, 0, 0);
+      camera.position.set(...targetPosition);
       if (controlsRef.current) {
         controlsRef.current.target.set(0, 0, 0);
         controlsRef.current.update();
       }
     }
     
-    camera.position.set(...targetPosition);
     camera.updateProjectionMatrix();
+    previousViewType.current = viewType;
   }, [viewType, camera, customPosition, controlsRef]);
   
   return null;

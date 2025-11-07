@@ -57,8 +57,6 @@ export default function ModelLoader({
         const maxDimension = Math.max(size.x, size.y, size.z);
         const unitScale = detectUnitScale(maxDimension);
         
-        console.log(`[Template ${url}] Raw max dimension: ${maxDimension}, detected unit scale: ${unitScale}`);
-        
         // Apply the unit scale to the scale prop
         if (Array.isArray(scale)) {
           setAppliedScale([scale[0] * unitScale, scale[1] * unitScale, scale[2] * unitScale]);

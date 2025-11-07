@@ -9,6 +9,7 @@ import {
   getCategoryFromUrl, 
   normalizeCategoryName 
 } from './modelScalingConfig';
+import { detectMeshType } from './WallFloorSelector';
 
 interface DraggableModelProps {
   id: string;
@@ -66,7 +67,7 @@ export default function DraggableModel({
       loader.setDRACOLoader(dracoLoader);
     }
   );
-  const { camera, gl } = useThree();
+  const { camera, gl, scene } = useThree();
 
   const [currentPosition, setCurrentPosition] = useState<[number, number, number]>(position);
   const [currentRotation, setCurrentRotation] = useState<[number, number, number]>(rotation);
@@ -79,6 +80,201 @@ export default function DraggableModel({
   } | null>(null);
   const [processedModel, setProcessedModel] = useState<THREE.Group | null>(null);
   const [highlightModel, setHighlightModel] = useState<THREE.Group | null>(null);
+
+  // Collision detection configuration
+  const collisionDistance = 0.1; // Distance from walls to prevent placement
+
+  /**
+   * Check if a position would collide with any walls using the model's bounding box
+   */
+  const checkWallCollision = (testPosition: THREE.Vector3): boolean => {
+    if (!meshRef.current || !processedModel) return false;
+    
+    // Create a temporary group at the test position to calculate bounding box
+    const tempGroup = new THREE.Group();
+    tempGroup.position.copy(testPosition);
+    tempGroup.rotation.set(...currentRotation);
+    tempGroup.scale.set(...scale);
+    
+    // Clone the processed model to the temp group
+    const tempModel = processedModel.clone(true);
+    tempGroup.add(tempModel);
+    
+    // Update matrices to get accurate bounding box
+    tempGroup.updateMatrixWorld(true);
+    
+    // Calculate bounding box
+    const boundingBox = new THREE.Box3().setFromObject(tempGroup);
+    
+    // Get the 8 corners of the bounding box
+    const corners = [
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z),
+    ];
+    
+    // Also add edge midpoints and face centers for more thorough checking
+    const boxCenter = boundingBox.getCenter(new THREE.Vector3());
+    const testPoints = [
+      ...corners,
+      boxCenter, // Center of the box
+      // Face centers
+      new THREE.Vector3(boundingBox.min.x, boxCenter.y, boxCenter.z), // Left face
+      new THREE.Vector3(boundingBox.max.x, boxCenter.y, boxCenter.z), // Right face
+      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.min.z), // Front face
+      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.max.z), // Back face
+      new THREE.Vector3(boxCenter.x, boundingBox.min.y, boxCenter.z), // Bottom face
+      new THREE.Vector3(boxCenter.x, boundingBox.max.y, boxCenter.z), // Top face
+    ];
+    
+    // Directions to check from each test point (both inward and outward)
+    const directions = [
+      new THREE.Vector3(1, 0, 0),   // Right
+      new THREE.Vector3(-1, 0, 0),  // Left
+      new THREE.Vector3(0, 0, 1),   // Forward
+      new THREE.Vector3(0, 0, -1),  // Back
+      new THREE.Vector3(0, 1, 0),   // Up
+      new THREE.Vector3(0, -1, 0),  // Down
+    ];
+    
+    const raycaster = new THREE.Raycaster();
+    
+    // Check each test point in each direction (short distance for nearby walls)
+    for (const point of testPoints) {
+      for (const direction of directions) {
+        raycaster.set(point, direction);
+        raycaster.far = collisionDistance;
+        
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        
+        for (const intersect of intersects) {
+          if (intersect.object instanceof THREE.Mesh) {
+            // Skip if the intersected object is part of this model or the temp group
+            if (meshRef.current && meshRef.current.getObjectById(intersect.object.id)) {
+              continue;
+            }
+            if (tempGroup.getObjectById(intersect.object.id)) {
+              continue;
+            }
+            
+            const meshType = detectMeshType(intersect.object);
+            if (meshType === 'wall') {
+              // Clean up temp group
+              tempGroup.remove(tempModel);
+              return true; // Collision detected
+            }
+          }
+        }
+      }
+    }
+    
+    // Check for walls from the outside looking in (to prevent going outside the room)
+    // Cast rays from far outside toward the model's bounding box edges
+    const boxSize = new THREE.Vector3();
+    boundingBox.getSize(boxSize);
+    const maxDimension = Math.max(boxSize.x, boxSize.y, boxSize.z);
+    const farDistance = maxDimension + 2; // Distance to start rays from outside
+    
+    // Create test points at the edges of the bounding box for each direction
+    // This ensures we check if ANY part of the model is outside, not just the center
+    
+    // Right side check - test multiple points along the right face
+    const rightFacePoints = [
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boxCenter.y, boxCenter.z),
+    ];
+    
+    // Left side check
+    const leftFacePoints = [
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.min.x, boxCenter.y, boxCenter.z),
+    ];
+    
+    // Back side check
+    const backFacePoints = [
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z),
+      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.max.z),
+    ];
+    
+    // Front side check
+    const frontFacePoints = [
+      new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
+      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.min.z),
+    ];
+    
+    // Check each face
+    const facesToCheck = [
+      { points: rightFacePoints, direction: new THREE.Vector3(-1, 0, 0), offset: farDistance }, // From right
+      { points: leftFacePoints, direction: new THREE.Vector3(1, 0, 0), offset: -farDistance }, // From left
+      { points: backFacePoints, direction: new THREE.Vector3(0, 0, -1), offset: farDistance }, // From back
+      { points: frontFacePoints, direction: new THREE.Vector3(0, 0, 1), offset: -farDistance }, // From front
+    ];
+    
+    for (const face of facesToCheck) {
+      // For each point on the face, check if there's a wall between it and outside
+      for (const point of face.points) {
+        // Create outer point based on the face direction
+        const outerPoint = point.clone();
+        if (Math.abs(face.direction.x) > 0) {
+          outerPoint.x += face.offset;
+        } else if (Math.abs(face.direction.z) > 0) {
+          outerPoint.z += face.offset;
+        }
+        
+        raycaster.set(outerPoint, face.direction);
+        raycaster.far = Math.abs(face.offset) + 1;
+        
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        
+        let foundWall = false;
+        for (const intersect of intersects) {
+          if (intersect.object instanceof THREE.Mesh) {
+            // Skip if the intersected object is part of this model or temp group
+            if (meshRef.current && meshRef.current.getObjectById(intersect.object.id)) {
+              continue;
+            }
+            if (tempGroup.getObjectById(intersect.object.id)) {
+              continue;
+            }
+            
+            const meshType = detectMeshType(intersect.object);
+            if (meshType === 'wall') {
+              foundWall = true;
+              break;
+            }
+          }
+        }
+        
+        // If no wall found between outer point and this edge of the model, 
+        // this part of the model is outside the room
+        if (!foundWall) {
+          tempGroup.remove(tempModel);
+          return true; // Outside room boundary
+        }
+      }
+    }
+    
+    // Clean up temp group
+    tempGroup.remove(tempModel);
+    return false; // No collision
+  };
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     if (disableInteractions) return;
@@ -150,8 +346,12 @@ export default function DraggableModel({
         dragStart.position[2]
       ];
 
-      setCurrentPosition(newPosition);
-      if (onPositionChange) onPositionChange(newPosition);
+      // Check for wall collision
+      const testPos = new THREE.Vector3(...newPosition);
+      if (!checkWallCollision(testPos)) {
+        setCurrentPosition(newPosition);
+        if (onPositionChange) onPositionChange(newPosition);
+      }
       return;
     }
 
@@ -169,8 +369,12 @@ export default function DraggableModel({
         dragStart.position[2] + move.z
       ];
 
-      setCurrentPosition(newPosition);
-      if (onPositionChange) onPositionChange(newPosition);
+      // Check for wall collision
+      const testPos = new THREE.Vector3(...newPosition);
+      if (!checkWallCollision(testPos)) {
+        setCurrentPosition(newPosition);
+        if (onPositionChange) onPositionChange(newPosition);
+      }
       return;
     }
 
@@ -194,8 +398,13 @@ export default function DraggableModel({
         dragStart.position[1],
         dragStart.position[2] + deltaZ
       ];
-      setCurrentPosition(newPosition);
-      if (onPositionChange) onPositionChange(newPosition);
+      
+      // Check for wall collision
+      const testPos = new THREE.Vector3(...newPosition);
+      if (!checkWallCollision(testPos)) {
+        setCurrentPosition(newPosition);
+        if (onPositionChange) onPositionChange(newPosition);
+      }
     }
   };
 

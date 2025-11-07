@@ -3,10 +3,17 @@ import { ThreeEvent, useFrame, useThree, useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import * as THREE from 'three';
+import { 
+  SCALING_CONFIG, 
+  detectUnitScale, 
+  getCategoryFromUrl, 
+  normalizeCategoryName 
+} from './modelScalingConfig';
 
 interface DraggableModelProps {
   id: string;
   url: string;
+  category?: string;
   position?: [number, number, number];
   rotation?: [number, number, number];
   scale?: [number, number, number];
@@ -28,6 +35,7 @@ interface DraggableModelProps {
 export default function DraggableModel({
   id,
   url,
+  category,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   scale = [1, 1, 1],
@@ -215,14 +223,72 @@ export default function DraggableModel({
     try {
       const model = gltf.scene.clone(true);
 
+      // Step 1: Get raw bounding box to detect unit system
       let box = new THREE.Box3().setFromObject(model);
       let size = box.getSize(new THREE.Vector3());
       let maxDimension = Math.max(size.x, size.y, size.z);
 
-      const TARGET_MAX = 1.5;
-      const scaleFactor = maxDimension > 0 ? Math.min(1, TARGET_MAX / maxDimension) : 1;
-      if (scaleFactor !== 1) model.scale.multiplyScalar(scaleFactor);
+      // Step 2: Detect and apply unit conversion (mm/cm/inches -> meters)
+      const unitScale = detectUnitScale(maxDimension);
+      model.scale.multiplyScalar(unitScale);
+      
+      // Step 3: Get category configuration
+      const categoryName = category 
+        ? normalizeCategoryName(category)
+        : getCategoryFromUrl(url);
+      
+      const categoryConfig = categoryName 
+        ? SCALING_CONFIG.categories[categoryName]
+        : null;
 
+      if (categoryConfig) {
+        // Step 4: Recalculate bounding box after unit conversion
+        model.updateMatrixWorld(true);
+        box = new THREE.Box3().setFromObject(model);
+        size = box.getSize(new THREE.Vector3());
+
+        // Step 5: Apply category normalization
+        let currentDimension: number;
+        if (categoryConfig.axis === 'max') {
+          currentDimension = Math.max(size.x, size.y, size.z);
+        } else {
+          currentDimension = size[categoryConfig.axis];
+        }
+
+        if (currentDimension > 0) {
+          const categoryScale = categoryConfig.targetMeters;
+          model.scale.multiplyScalar(categoryScale);
+        }
+
+        // Step 6: Check room dimensions and cap if needed (never upscale)
+        model.updateMatrixWorld(true);
+        box = new THREE.Box3().setFromObject(model);
+        size = box.getSize(new THREE.Vector3());
+
+        const roomExceedX = size.x / SCALING_CONFIG.room.x;
+        const roomExceedY = size.y / SCALING_CONFIG.room.y;
+        const roomExceedZ = size.z / SCALING_CONFIG.room.z;
+        const maxExceed = Math.max(roomExceedX, roomExceedY, roomExceedZ);
+
+        if (maxExceed > 1) {
+          // Model exceeds room, shrink to fit
+          const roomCapScale = 1 / maxExceed;
+          model.scale.multiplyScalar(roomCapScale);
+        }
+        
+      } else {
+        // Fallback: simple scaling if no category config found
+        model.updateMatrixWorld(true);
+        box = new THREE.Box3().setFromObject(model);
+        size = box.getSize(new THREE.Vector3());
+        maxDimension = Math.max(size.x, size.y, size.z);
+
+        const TARGET_MAX = 1.5;
+        const scaleFactor = maxDimension > 0 ? Math.min(1, TARGET_MAX / maxDimension) : 1;
+        if (scaleFactor !== 1) model.scale.multiplyScalar(scaleFactor);
+      }
+
+      // Final update and centering
       model.updateMatrixWorld(true);
       box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
@@ -303,7 +369,7 @@ export default function DraggableModel({
       console.error('Model processing error:', err);
       if (onError) onError(err instanceof Error ? err : new Error(errorMessage));
     }
-  }, [gltf, castShadow, receiveShadow, onLoad, onError, color, url, highlightColor]);
+  }, [gltf, castShadow, receiveShadow, onLoad, onError, color, url, highlightColor, category]);
 
   if (error) {
     console.error(`Model error for ${url}:`, error);

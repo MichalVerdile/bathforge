@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { systemController } from "./controllers/configuration";
 import { Bathroom3DViewer } from "./components/3d";
 import BathroomPlanner from "./components/configurator/bathroom_planner/BathroomPlanner";
 import TemplateSelection from "./components/configurator/template_selection/TemplateSelection";
 import "./index.css";
 import CustomRoom from "./components/configurator/custom_room/CustomRoom";
+import Header from "./components/common/Header";
 
 interface ApiStatus {
   message: string;

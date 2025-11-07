@@ -27,22 +27,94 @@ interface Template {
 const templates: Template[] = [
   {
     id: 1,
-    name: 'Empty Room',
-    preview: '/assets/empty_room.glb',
+    name: 'Square Room',
+    preview: '/assets/templates/square.glb',
     roomData: {
       width: 300,
       height: 200,
-      depth: 200,
+      depth: 300,
       fixtures: [
         {
           type: 'door',
-          position: { x: -120, y: 0, z: 70 },
+          position: { x: -150, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0 },
           scale: { x: 1, y: 1, z: 1 }
         },
         {
           type: 'window',
-          position: { x: 120, y: 80, z: -30 },
+          position: { x: 0, y: 80, z: -150 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
+      ]
+    }
+  },
+  {
+    id: 2,
+    name: 'Rectangle Room',
+    preview: '/assets/templates/rectangle.glb',
+    roomData: {
+      width: 400,
+      height: 200,
+      depth: 250,
+      fixtures: [
+        {
+          type: 'door',
+          position: { x: -200, y: 0, z: 0 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        },
+        {
+          type: 'window',
+          position: { x: 0, y: 80, z: -125 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
+      ]
+    }
+  },
+  {
+    id: 3,
+    name: 'L-Shape Room',
+    preview: '/assets/templates/L-shape.glb',
+    roomData: {
+      width: 350,
+      height: 200,
+      depth: 350,
+      fixtures: [
+        {
+          type: 'door',
+          position: { x: -175, y: 0, z: 100 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        },
+        {
+          type: 'window',
+          position: { x: 100, y: 80, z: -175 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        }
+      ]
+    }
+  },
+  {
+    id: 4,
+    name: 'Trapezoid Room',
+    preview: '/assets/templates/trapezoid.glb',
+    roomData: {
+      width: 320,
+      height: 200,
+      depth: 280,
+      fixtures: [
+        {
+          type: 'door',
+          position: { x: -160, y: 0, z: 50 },
+          rotation: { x: 0, y: 0, z: 0 },
+          scale: { x: 1, y: 1, z: 1 }
+        },
+        {
+          type: 'window',
+          position: { x: 80, y: 80, z: -140 },
           rotation: { x: 0, y: 0, z: 0 },
           scale: { x: 1, y: 1, z: 1 }
         }
@@ -51,7 +123,11 @@ const templates: Template[] = [
   }
 ];
 
-useGLTF.preload('/assets/empty_room.glb');
+// Preload all template models
+useGLTF.preload('/assets/templates/square.glb');
+useGLTF.preload('/assets/templates/rectangle.glb');
+useGLTF.preload('/assets/templates/L-shape.glb');
+useGLTF.preload('/assets/templates/trapezoid.glb');
 
 const TemplateSelection: React.FC<TemplateSelectionProps> = ({ onNavigate }) => {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);

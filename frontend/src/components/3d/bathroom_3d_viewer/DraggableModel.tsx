@@ -75,6 +75,7 @@ export default function DraggableModel({
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{
     position: [number, number, number];
+    rotation: [number, number, number];
     mouse: THREE.Vector2;
     client: { x: number; y: number };
   } | null>(null);
@@ -82,7 +83,7 @@ export default function DraggableModel({
   const [highlightModel, setHighlightModel] = useState<THREE.Group | null>(null);
 
   // Collision detection configuration
-  const collisionDistance = 0.1; // Distance from walls to prevent placement
+  const collisionDistance = 0.01; // Distance from walls to prevent placement
 
   /**
    * Check if a position would collide with any walls using the model's bounding box
@@ -312,6 +313,7 @@ export default function DraggableModel({
     setCursor('grabbing');
     setDragStart({
       position: [...currentPosition] as [number, number, number],
+      rotation: [...currentRotation] as [number, number, number],
       mouse: new THREE.Vector2(
         (event.clientX / gl.domElement.clientWidth) * 2 - 1,
         -(event.clientY / gl.domElement.clientHeight) * 2 + 1
@@ -334,6 +336,23 @@ export default function DraggableModel({
 
     const shift = (event as any).shiftKey;
     const alt = (event as any).altKey;
+    const ctrl = (event as any).ctrlKey;
+
+    if (ctrl) {
+      // Rotate around Y-axis based on horizontal mouse movement
+      const pixelDeltaX = event.clientX - dragStart.client.x;
+      const rotationDelta = pixelDeltaX * 0.01; // Adjust sensitivity as needed
+
+      const newRotation: [number, number, number] = [
+        dragStart.rotation[0],
+        dragStart.rotation[1] + rotationDelta,
+        dragStart.rotation[2]
+      ];
+
+      setCurrentRotation(newRotation);
+      if (onRotationChange) onRotationChange(newRotation);
+      return;
+    }
 
     if (shift) {
       const pixelDeltaY = event.clientY - dragStart.client.y;
@@ -426,7 +445,12 @@ export default function DraggableModel({
   }, [position]);
 
   useEffect(() => {
-    setCurrentRotation(rotation);
+    // Only update if rotation prop actually changed (not from our own onChange callback)
+    if (rotation[0] !== currentRotation[0] || 
+        rotation[1] !== currentRotation[1] || 
+        rotation[2] !== currentRotation[2]) {
+      setCurrentRotation(rotation);
+    }
   }, [rotation]);
 
   useEffect(() => {

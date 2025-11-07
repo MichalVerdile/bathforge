@@ -171,6 +171,18 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     scheduleAutoSave(1000);
   };
 
+  const updateProductRotation = (uniqueId: string, rotation: [number, number, number]) => {
+    setSceneProducts(prev => 
+      prev.map(product => 
+        product.uniqueId === uniqueId 
+          ? { ...product, rotationX: rotation[0], rotationY: rotation[1], rotationZ: rotation[2] }
+          : product
+      )
+    );
+    
+    scheduleAutoSave(1000);
+  };
+
   const updateProductColor = (uniqueId: string, colorId: number) => {
     setSceneProducts(prev => 
       prev.map(product => 
@@ -415,6 +427,11 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 onPositionChange={(position) => {
                   if (viewType !== '3D-Person') {
                     updateProductPosition(product.uniqueId, position);
+                  }
+                }}
+                onRotationChange={(rotation) => {
+                  if (viewType !== '3D-Person') {
+                    updateProductRotation(product.uniqueId, rotation);
                   }
                 }}
                 onClick={() => {

@@ -10,8 +10,8 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
   const [viewMode, setViewMode] = useState<"2D" | "3D">("2D");
   const roomEditorRef = useRef<RoomEditorRef>(null);
 
-  const [roomHeight, setRoomHeight] = useState(2.5); // e.g., 2.5 units/meters
-  const MIN_HEIGHT = 1.75;
+  const [roomHeight, setRoomHeight] = useState(2); // 2 meters
+  const MIN_HEIGHT = 1.5;
   const MAX_HEIGHT = 4;
 
   const handleReset = () => {
@@ -138,7 +138,13 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
             </button>
             <button
               className="start-furnishing-button"
-              onClick={() => onNavigate("furnish")}
+              onClick={() => {
+                if (roomEditorRef.current) {
+                  const roomData = roomEditorRef.current.getRoomData();
+                  localStorage.setItem("customRoom", JSON.stringify(roomData));
+                }
+                onNavigate("3d");
+              }}
             >
               Start Furnishing
             </button>

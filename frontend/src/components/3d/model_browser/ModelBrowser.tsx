@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useModelData } from '../../../hooks/useModelData';
 import { ModelItem, ModelCategory } from '../../../types/api';
 import './ModelBrowser.css';
+import './ModelBrowser.css';
 
 interface ModelBrowserProps {
   onModelSelect: (model: ModelItem) => void;
@@ -109,6 +110,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
             3D models need to be imported first
           </div>
           <div className="empty-hint">
+          <div className="empty-hint">
             Use the admin panel to scan assets
           </div>
         </div>
@@ -120,6 +122,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
     <div className="model-browser" style={style}>
       <div className="model-browser-header">
         <div className="model-browser-title">
+          <span>Product Browser</span>
           <span>Product Browser</span>
           <button
             className="refresh-button"
@@ -149,6 +152,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
         {filteredModels.length === 0 ? (
           <div className="no-models-message">
             No products in this category.
+            No products in this category.
           </div>
         ) : (
           filteredModels.map((model) => (
@@ -158,6 +162,20 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
               onClick={() => onModelSelect(model)}
             >
               <div className="model-item-preview">
+                <img
+                  src={model.thumbnail ?? ''}
+                  alt={model.name}
+                  className="model-item-image"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const placeholder = target.nextElementSibling as HTMLElement;
+                    if (placeholder) placeholder.style.display = 'flex';
+                  }}
+                />
+                <div className="model-item-placeholder">
+                  <span className="placeholder-icon">{getProductIcon(model.category)}</span>
+                  <span>No image</span>
                 <img
                   src={model.thumbnail ?? ''}
                   alt={model.name}
@@ -212,6 +230,8 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
       <div className="model-browser-footer">
         {filteredModels.length} product(s) available
         {currentCategory && (
+          <div className="current-category">
+            <span className="current-category-icon">{getCategoryIcon(currentCategory.name)}</span>
           <div className="current-category">
             <span className="current-category-icon">{getCategoryIcon(currentCategory.name)}</span>
             <span>{currentCategory.displayName}</span>

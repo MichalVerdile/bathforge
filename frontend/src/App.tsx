@@ -1,17 +1,23 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { systemController } from "./controllers/configuration";
 import { Bathroom3DViewer } from "./components/3d";
 import BathroomPlanner from "./components/configurator/bathroom_planner/BathroomPlanner";
 import TemplateSelection from "./components/configurator/template_selection/TemplateSelection";
 import "./index.css";
 import CustomRoom from "./components/configurator/custom_room/CustomRoom";
-import Header from "./components/common/Header";
+import { Header } from "./components/common";
 
 interface ApiStatus {
   message: string;
   status: "success" | "error";
 }
 
+type ViewType =
+  | "3d"
+  | "planner"
+  | "template-selection"
+  | "custom-room"
+  | "ai-design";
 type ViewType =
   | "3d"
   | "planner"
@@ -30,9 +36,12 @@ function App() {
         setApiStatus({
           message: result.message,
           status: result.isConnected ? "success" : "error",
+          status: result.isConnected ? "success" : "error",
         });
       } catch (error: any) {
         setApiStatus({
+          message: error.message || "Unexpected error occurred",
+          status: "error",
           message: error.message || "Unexpected error occurred",
           status: "error",
         });
@@ -130,6 +139,7 @@ function App() {
     );
   }
 
+  if (currentView === "3d") {
   if (currentView === "3d") {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>

@@ -352,6 +352,7 @@ export default function Scene3D({
         }}
         style={{ background: backgroundColor }}
         onCreated={({ scene, camera }) => {
+        onCreated={({ scene, camera }) => {
           scene.castShadow = true;
           scene.receiveShadow = true;
           
@@ -362,7 +363,12 @@ export default function Scene3D({
           if (onCameraReady) {
             onCameraReady(camera);
           }
+          
+          if (onCameraReady) {
+            onCameraReady(camera);
+          }
         }}
+        onPointerMissed={() => onBackgroundClick?.()}
         onPointerMissed={() => onBackgroundClick?.()}
       >
         <CameraController viewType={viewType} customPosition={cameraPosition} controlsRef={controlsRef} />

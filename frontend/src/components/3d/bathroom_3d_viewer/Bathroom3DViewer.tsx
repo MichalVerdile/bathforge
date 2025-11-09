@@ -38,7 +38,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isDraggingModel, setIsDraggingModel] = useState(false);
-  const [viewType, setViewType] = useState<ViewType>('3D-Person');
+  const [viewType, setViewType] = useState<ViewType>('2D');
   const [selectedBrowserCategory, setSelectedBrowserCategory] = useState<string>('');
   const [currentScene, setCurrentScene] = useState<{ id?: number; name: string }>({
     name: `Scene ${new Date().toLocaleString()}`
@@ -349,21 +349,21 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             onClick={() => setViewType('2D')}
             title="2D Top View"
           >
-            📐 2D View
+           2D View
           </button>
           <button
             className={`view-type-button ${viewType === '3D-Person' ? 'active' : ''}`}
             onClick={() => setViewType('3D-Person')}
             title="First Person 3D View"
           >
-            👤 Person View
+            Person View
           </button>
           <button
             className={`view-type-button ${viewType === '3D-Free' ? 'active' : ''}`}
             onClick={() => setViewType('3D-Free')}
             title="Free 3D View"
           >
-            🌐 Free View
+            Free View
           </button>
         </div>
 

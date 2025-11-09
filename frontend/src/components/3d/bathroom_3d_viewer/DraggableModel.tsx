@@ -85,10 +85,19 @@ export default function DraggableModel({
   // Collision detection configuration
   const collisionDistance = 0.01; // Distance from walls to prevent placement
 
+  const lastCollisionCheckRef = useRef(0)
+  const COLLISION_CHECK_INTERVAL = 5000
+
   /**
    * Check if a position would collide with any walls using the model's bounding box
    */
   const checkWallCollision = (testPosition: THREE.Vector3): boolean => {
+    let now = performance.now()
+    if (now - lastCollisionCheckRef.current < COLLISION_CHECK_INTERVAL) {
+      lastCollisionCheckRef.current = now;
+      return false;
+    }
+
     if (!meshRef.current || !processedModel) return false;
     
     // Create a temporary group at the test position to calculate bounding box

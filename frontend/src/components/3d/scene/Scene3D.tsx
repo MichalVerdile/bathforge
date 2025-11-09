@@ -285,7 +285,7 @@ export default function Scene3D({
   onCameraReady,
   controlsEnabled = true,
   onBackgroundClick,
-  viewType = '3D-Free',
+  viewType = '2D',
 }: Scene3DProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controlsRef = useRef<any>(null);
@@ -302,15 +302,18 @@ export default function Scene3D({
   };
 
   // Determine if controls should be enabled based on view type
-  const areControlsEnabled = viewType !== '2D' && controlsEnabled;
+  const areControlsEnabled = controlsEnabled;
   
   // Determine control settings based on view type
   const getControlSettings = () => {
     if (viewType === '2D') {
       return {
         enablePan: false,
-        enableZoom: false,
+        enableZoom: true,
         enableRotate: false,
+        minDistance: 1,
+        maxDistance: 50,
+        maxPolarAngle: Math.PI,
       };
     } else if (viewType === '3D-Person') {
       return {

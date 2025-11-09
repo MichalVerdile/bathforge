@@ -18,12 +18,6 @@ type ViewType =
   | "template-selection"
   | "custom-room"
   | "ai-design";
-type ViewType =
-  | "3d"
-  | "planner"
-  | "template-selection"
-  | "custom-room"
-  | "ai-design";
 
 function App() {
   const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
@@ -35,15 +29,12 @@ function App() {
         const result = await systemController.testConnection();
         setApiStatus({
           message: result.message,
-          status: result.isConnected ? "success" : "error",
-          status: result.isConnected ? "success" : "error",
+          status: result.isConnected ? "success" : "error"
         });
       } catch (error: any) {
         setApiStatus({
           message: error.message || "Unexpected error occurred",
-          status: "error",
-          message: error.message || "Unexpected error occurred",
-          status: "error",
+          status: "error"
         });
       }
     };
@@ -139,7 +130,6 @@ function App() {
     );
   }
 
-  if (currentView === "3d") {
   if (currentView === "3d") {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>

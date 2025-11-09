@@ -2,32 +2,20 @@ import React, { useState, useRef, useEffect } from "react";
 import Scene3D from "../scene/Scene3D";
 import ModelLoader from "./ModelLoader";
 import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
-import sceneService, {
-  SceneProduct,
-} from "../../../controllers/api/scenes/SceneService";
+import sceneService, { SceneProduct } from "../../../controllers/api/scenes/SceneService";
 import { Color } from "../../../types/api";
 import { ProductService } from "../../../controllers/api/products/ProductService";
-import sceneService, { SceneProduct } from '../../../controllers/api/scenes/SceneService';
-import { Color } from '../../../types/api';
-import { ProductService } from '../../../controllers/api/products/ProductService';
 import * as THREE from "three";
-import "./Bathroom3DViewerViewer.css";
+import "./Bathroom3DViewer.css";
 import DraggableModel from "./DraggableModel";
 import { Room } from "../../configurator/custom_room/Room";
+import { WallFloorSelector, applyTextureToMesh } from './WallFloorSelector';
+import { useModelData } from '../../../hooks/useModelData';
 
 interface Vertex {
   x: number;
   y: number;
 }
-
-interface SceneProduct3D extends SceneProduct {
-  uniqueId: string;
-  modelItem: ModelItem;
-  selectedColorId?: number;
-}
-import DraggableModel from './DraggableModel';
-import { WallFloorSelector, applyTextureToMesh } from './WallFloorSelector';
-import { useModelData } from '../../../hooks/useModelData';
 
 interface SceneProduct3D extends SceneProduct {
   uniqueId: string;
@@ -68,8 +56,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     vertices: Vertex[];
     height: number;
   } | null>(null);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
@@ -89,8 +75,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   } | null>(null);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const cameraRef = useRef<THREE.Camera | null>(null);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -415,9 +399,6 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           }}
           onSceneReady={(scene) => {
             sceneRef.current = scene;
-          }}
-          onCameraReady={(camera) => {
-            cameraRef.current = camera;
           }}
           onCameraReady={(camera) => {
             cameraRef.current = camera;

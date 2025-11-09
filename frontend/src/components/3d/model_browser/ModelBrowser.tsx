@@ -109,7 +109,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
           <div className="state-description">
             3D models need to be imported first
           </div>
-          <div className="empty-hint">
+          <div className="empty-hint" />
           <div className="empty-hint">
             Use the admin panel to scan assets
           </div>
@@ -185,11 +185,7 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
                     target.style.display = 'none';
                     const placeholder = target.nextElementSibling as HTMLElement;
                     if (placeholder) placeholder.style.display = 'flex';
-                  }}
-                />
-                <div className="model-item-placeholder">
-                  <span className="placeholder-icon">{getProductIcon(model.category)}</span>
-                  <span>No image</span>
+                  }} ></img>
                 </div>
 
                 {isImageFile(model.url) ? (
@@ -230,8 +226,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
       <div className="model-browser-footer">
         {filteredModels.length} product(s) available
         {currentCategory && (
-          <div className="current-category">
-            <span className="current-category-icon">{getCategoryIcon(currentCategory.name)}</span>
           <div className="current-category">
             <span className="current-category-icon">{getCategoryIcon(currentCategory.name)}</span>
             <span>{currentCategory.displayName}</span>

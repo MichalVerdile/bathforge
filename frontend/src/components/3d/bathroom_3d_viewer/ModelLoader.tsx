@@ -12,7 +12,7 @@ interface ModelLoaderProps {
   castShadow?: boolean;
   receiveShadow?: boolean;
   autoRotate?: boolean;
-  applyUnitDetection?: boolean; // New prop to enable 1:1 unit detection for templates
+  applyUnitDetection?: boolean;
   onLoad?: (model: THREE.Group) => void;
   onError?: (error: Error) => void;
 }
@@ -33,7 +33,7 @@ export default function ModelLoader({
   const [error, setError] = useState<string | null>(null);
   const [setIsLoaded] = useState(false);
   const [appliedScale, setAppliedScale] = useState<[number, number, number] | number>(scale);
-  
+
   const gltf = useGLTF(url);
 
   useFrame((state, delta) => {
@@ -49,27 +49,25 @@ export default function ModelLoader({
 
     try {
       const model = gltf.scene.clone();
-      
-      // Apply unit detection if enabled (for room templates)
+
       if (applyUnitDetection) {
         const box = new THREE.Box3().setFromObject(model);
         const size = box.getSize(new THREE.Vector3());
         const maxDimension = Math.max(size.x, size.y, size.z);
         const unitScale = detectUnitScale(maxDimension);
-        
-        // Apply the unit scale to the scale prop
+
         if (Array.isArray(scale)) {
           setAppliedScale([scale[0] * unitScale, scale[1] * unitScale, scale[2] * unitScale]);
         } else {
           setAppliedScale(unitScale * scale);
         }
       }
-      
+
       model.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = castShadow;
           child.receiveShadow = receiveShadow;
-          
+
           if (child.material) {
             if (Array.isArray(child.material)) {
               child.material.forEach((mat) => {
@@ -85,7 +83,7 @@ export default function ModelLoader({
       });
 
       setError(null);
-      
+
       if (onLoad) {
         onLoad(model);
       }
@@ -134,11 +132,11 @@ export function useFitModel(modelRef: React.RefObject<THREE.Group>) {
       const box = new THREE.Box3().setFromObject(modelRef.current);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      
+
       setBounds(box);
       setCenter(center);
       setSize(size);
-      
+
       modelRef.current.position.copy(center.multiplyScalar(-1));
     }
   }, [modelRef]);

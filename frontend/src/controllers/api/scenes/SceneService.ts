@@ -21,6 +21,29 @@ export interface SceneProduct {
   customProperties?: string;
 }
 
+export interface SceneRoomModel {
+  id?: number;
+  sceneId?: number;
+  verticesData: string;
+  roomHeight: number;
+  modelType?: string;
+  templatePath?: string;
+  roomProperties?: string;
+}
+
+export interface SceneCovering {
+  id?: number;
+  sceneId?: number;
+  productId: number;
+  productName?: string;
+  productModelPath?: string;
+  surfaceType: string;
+  surfaceIdentifier?: string;
+  repeatX?: number;
+  repeatY?: number;
+  materialProperties?: string;
+}
+
 export interface Scene {
   id?: number;
   name: string;
@@ -34,6 +57,25 @@ export interface Scene {
   createdAt?: string;
   updatedAt?: string;
   sceneProducts?: SceneProduct[];
+  roomModel?: SceneRoomModel;
+  sceneCoverings?: SceneCovering[];
+}
+
+export interface CreateSceneRoomModelRequest {
+  verticesData: string;
+  roomHeight: number;
+  modelType?: string;
+  templatePath?: string;
+  roomProperties?: string;
+}
+
+export interface CreateSceneCoveringRequest {
+  productId: number;
+  surfaceType: string;
+  surfaceIdentifier?: string;
+  repeatX?: number;
+  repeatY?: number;
+  materialProperties?: string;
 }
 
 export interface CreateSceneRequest {
@@ -46,6 +88,8 @@ export interface CreateSceneRequest {
   backgroundColor?: string;
   isPublic?: boolean;
   products?: Omit<SceneProduct, 'id' | 'sceneId' | 'productName' | 'productModelPath' | 'colorName' | 'colorHexCode'>[];
+  roomModel?: CreateSceneRoomModelRequest;
+  coverings?: CreateSceneCoveringRequest[];
 }
 
 export interface UpdateSceneRequest {
@@ -57,6 +101,8 @@ export interface UpdateSceneRequest {
   backgroundColor?: string;
   isPublic?: boolean;
   products?: Omit<SceneProduct, 'id' | 'sceneId' | 'productName' | 'productModelPath' | 'colorName' | 'colorHexCode'>[];
+  roomModel?: CreateSceneRoomModelRequest;
+  coverings?: CreateSceneCoveringRequest[];
 }
 
 export interface AddProductToSceneRequest {
@@ -77,7 +123,6 @@ export interface AddProductToSceneRequest {
 class SceneService {
   private readonly BASE_PATH = '/scenes';
 
-  // Scene CRUD operations
   async getAllScenes(): Promise<Scene[]> {
     const response = await apiClient.get<Scene[]>(this.BASE_PATH);
     return response.data;
@@ -130,7 +175,6 @@ class SceneService {
     await apiClient.delete(`${this.BASE_PATH}/${id}`);
   }
 
-  // Scene product operations
   async getProductsInScene(sceneId: number): Promise<SceneProduct[]> {
     const response = await apiClient.get<SceneProduct[]>(`${this.BASE_PATH}/${sceneId}/products`);
     return response.data;
@@ -150,7 +194,6 @@ class SceneService {
     await apiClient.delete(`${this.BASE_PATH}/${sceneId}/products/${sceneProductId}`);
   }
 
-  // Utility methods
   async saveCurrentScene(
     name: string, 
     user: string, 
@@ -206,6 +249,110 @@ class SceneService {
     ]);
 
     return { scene, products };
+  }
+
+  async createOrUpdateRoomModel(sceneId: number, roomModel: CreateSceneRoomModelRequest): Promise<SceneRoomModel> {
+    const response = await apiClient.post<SceneRoomModel>(`${this.BASE_PATH}/${sceneId}/room-model`, roomModel);
+    return response.data;
+  }
+
+  async getRoomModel(sceneId: number): Promise<SceneRoomModel | null> {
+    try {
+      const response = await apiClient.get<SceneRoomModel>(`${this.BASE_PATH}/${sceneId}/room-model`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  async deleteRoomModel(sceneId: number): Promise<void> {
+    await apiClient.delete(`${this.BASE_PATH}/${sceneId}/room-model`);
+  }
+
+  async createOrUpdateCovering(sceneId: number, covering: CreateSceneCoveringRequest): Promise<SceneCovering> {
+    const response = await apiClient.post<SceneCovering>(`${this.BASE_PATH}/${sceneId}/coverings`, covering);
+    return response.data;
+  }
+
+  async getCoverings(sceneId: number): Promise<SceneCovering[]> {
+    const response = await apiClient.get<SceneCovering[]>(`${this.BASE_PATH}/${sceneId}/coverings`);
+    return response.data;
+  }
+
+  async deleteCovering(sceneId: number, coveringId: number): Promise<void> {
+    await apiClient.delete(`${this.BASE_PATH}/${sceneId}/coverings/${coveringId}`);
+  }
+
+  async deleteAllCoverings(sceneId: number): Promise<void> {
+    await apiClient.delete(`${this.BASE_PATH}/${sceneId}/coverings`);
+  }
+
+  async saveCurrentSceneWithRoomAndCoverings(
+    name: string,
+    user: string,
+    sceneProducts: SceneProduct[],
+    roomModel?: { vertices: { x: number; y: number }[]; height: number },
+    coverings?: { productId: number; surfaceType: string; surfaceIdentifier?: string; repeatX?: number; repeatY?: number }[],
+    cameraPosition?: string,
+    lightingSettings?: string,
+    backgroundColor?: string,
+    existingSceneId?: number
+  ): Promise<void> {
+    const products = sceneProducts.map(product => ({
+      productId: product.productId,
+      colorId: product.colorId,
+      positionX: product.positionX || 0,
+      positionY: product.positionY || 0,
+      positionZ: product.positionZ || 0,
+      rotationX: product.rotationX || 0,
+      rotationY: product.rotationY || 0,
+      rotationZ: product.rotationZ || 0,
+      scaleX: product.scaleX || 1,
+      scaleY: product.scaleY || 1,
+      scaleZ: product.scaleZ || 1,
+      customProperties: product.customProperties
+    }));
+
+    const roomModelData = roomModel ? {
+      verticesData: JSON.stringify(roomModel.vertices),
+      roomHeight: roomModel.height,
+      modelType: 'CUSTOM'
+    } : undefined;
+
+    const coveringsData = coverings?.map(covering => ({
+      productId: covering.productId,
+      surfaceType: covering.surfaceType,
+      surfaceIdentifier: covering.surfaceIdentifier,
+      repeatX: covering.repeatX || 1,
+      repeatY: covering.repeatY || 1
+    }));
+
+    if (existingSceneId) {
+      await this.updateScene(existingSceneId, {
+        name,
+        products,
+        roomModel: roomModelData,
+        coverings: coveringsData,
+        cameraPosition,
+        lightingSettings,
+        backgroundColor
+      });
+    } else {
+      await this.createScene({
+        name,
+        user,
+        products,
+        roomModel: roomModelData,
+        coverings: coveringsData,
+        cameraPosition,
+        lightingSettings,
+        backgroundColor,
+        isPublic: false
+      });
+    }
   }
 }
 

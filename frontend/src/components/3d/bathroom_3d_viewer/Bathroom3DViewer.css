@@ -49,7 +49,6 @@
   transition: all 0.2s ease;
 }
 
-/* Scene Info Panel */
 .scene-info-panel {
   position: absolute;
   top: 10px;
@@ -63,7 +62,6 @@
   z-index: 10;
 }
 
-/* Surface Selection Info */
 .surface-selection-info {
   margin-top: 12px;
   padding-top: 12px;
@@ -100,7 +98,6 @@
   transform: translateY(-1px);
 }
 
-/* View Type Selector */
 .view-type-selector {
   position: absolute;
   top: 10px;
@@ -178,7 +175,6 @@
   50% { opacity: 0.5; }
 }
 
-/* Product Controls Panel */
 .product-controls-panel {
   position: absolute;
   top: 10px;
@@ -268,7 +264,6 @@
   margin-top: 8px;
 }
 
-/* Welcome Message Updates */
 .welcome-features {
   font-size: 14px;
   color: #94a3b8;

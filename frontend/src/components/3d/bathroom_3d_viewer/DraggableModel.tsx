@@ -3,11 +3,11 @@ import { ThreeEvent, useFrame, useThree, useLoader } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import * as THREE from 'three';
-import { 
-  SCALING_CONFIG, 
-  detectUnitScale, 
-  getCategoryFromUrl, 
-  normalizeCategoryName 
+import {
+  SCALING_CONFIG,
+  detectUnitScale,
+  getCategoryFromUrl,
+  normalizeCategoryName
 } from './modelScalingConfig';
 import { detectMeshType } from './WallFloorSelector';
 
@@ -82,15 +82,11 @@ export default function DraggableModel({
   const [processedModel, setProcessedModel] = useState<THREE.Group | null>(null);
   const [highlightModel, setHighlightModel] = useState<THREE.Group | null>(null);
 
-  // Collision detection configuration
-  const collisionDistance = 0.01; // Distance from walls to prevent placement
+  const collisionDistance = 0.01;
 
   const lastCollisionCheckRef = useRef(0)
   const COLLISION_CHECK_INTERVAL = 5000
 
-  /**
-   * Check if a position would collide with any walls using the model's bounding box
-   */
   const checkWallCollision = (testPosition: THREE.Vector3): boolean => {
     let now = performance.now()
     if (now - lastCollisionCheckRef.current < COLLISION_CHECK_INTERVAL) {
@@ -99,24 +95,18 @@ export default function DraggableModel({
     }
 
     if (!meshRef.current || !processedModel) return false;
-    
-    // Create a temporary group at the test position to calculate bounding box
     const tempGroup = new THREE.Group();
     tempGroup.position.copy(testPosition);
     tempGroup.rotation.set(...currentRotation);
     tempGroup.scale.set(...scale);
-    
-    // Clone the processed model to the temp group
+
     const tempModel = processedModel.clone(true);
     tempGroup.add(tempModel);
-    
-    // Update matrices to get accurate bounding box
+
     tempGroup.updateMatrixWorld(true);
-    
-    // Calculate bounding box
+
     const boundingBox = new THREE.Box3().setFromObject(tempGroup);
-    
-    // Get the 8 corners of the bounding box
+
     const corners = [
       new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
       new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
@@ -127,73 +117,61 @@ export default function DraggableModel({
       new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
       new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z),
     ];
-    
-    // Also add edge midpoints and face centers for more thorough checking
+
     const boxCenter = boundingBox.getCenter(new THREE.Vector3());
     const testPoints = [
       ...corners,
-      boxCenter, // Center of the box
-      // Face centers
-      new THREE.Vector3(boundingBox.min.x, boxCenter.y, boxCenter.z), // Left face
-      new THREE.Vector3(boundingBox.max.x, boxCenter.y, boxCenter.z), // Right face
-      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.min.z), // Front face
-      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.max.z), // Back face
-      new THREE.Vector3(boxCenter.x, boundingBox.min.y, boxCenter.z), // Bottom face
-      new THREE.Vector3(boxCenter.x, boundingBox.max.y, boxCenter.z), // Top face
+      boxCenter,
+      new THREE.Vector3(boundingBox.min.x, boxCenter.y, boxCenter.z),
+      new THREE.Vector3(boundingBox.max.x, boxCenter.y, boxCenter.z),
+      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.min.z),
+      new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.max.z),
+      new THREE.Vector3(boxCenter.x, boundingBox.min.y, boxCenter.z),
+      new THREE.Vector3(boxCenter.x, boundingBox.max.y, boxCenter.z),
     ];
-    
-    // Directions to check from each test point (both inward and outward)
+
     const directions = [
-      new THREE.Vector3(1, 0, 0),   // Right
-      new THREE.Vector3(-1, 0, 0),  // Left
-      new THREE.Vector3(0, 0, 1),   // Forward
-      new THREE.Vector3(0, 0, -1),  // Back
-      new THREE.Vector3(0, 1, 0),   // Up
-      new THREE.Vector3(0, -1, 0),  // Down
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(0, 1, 0),
+      new THREE.Vector3(0, -1, 0),
     ];
-    
+
     const raycaster = new THREE.Raycaster();
-    
-    // Check each test point in each direction (short distance for nearby walls)
+
     for (const point of testPoints) {
       for (const direction of directions) {
         raycaster.set(point, direction);
         raycaster.far = collisionDistance;
-        
+
         const intersects = raycaster.intersectObjects(scene.children, true);
-        
+
         for (const intersect of intersects) {
           if (intersect.object instanceof THREE.Mesh) {
-            // Skip if the intersected object is part of this model or the temp group
             if (meshRef.current && meshRef.current.getObjectById(intersect.object.id)) {
               continue;
             }
             if (tempGroup.getObjectById(intersect.object.id)) {
               continue;
             }
-            
+
             const meshType = detectMeshType(intersect.object);
             if (meshType === 'wall') {
-              // Clean up temp group
               tempGroup.remove(tempModel);
-              return true; // Collision detected
+              return true;
             }
           }
         }
       }
     }
-    
-    // Check for walls from the outside looking in (to prevent going outside the room)
-    // Cast rays from far outside toward the model's bounding box edges
+
     const boxSize = new THREE.Vector3();
     boundingBox.getSize(boxSize);
     const maxDimension = Math.max(boxSize.x, boxSize.y, boxSize.z);
-    const farDistance = maxDimension + 2; // Distance to start rays from outside
-    
-    // Create test points at the edges of the bounding box for each direction
-    // This ensures we check if ANY part of the model is outside, not just the center
-    
-    // Right side check - test multiple points along the right face
+    const farDistance = maxDimension + 2;
+
     const rightFacePoints = [
       new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
       new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
@@ -201,8 +179,7 @@ export default function DraggableModel({
       new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z),
       new THREE.Vector3(boundingBox.max.x, boxCenter.y, boxCenter.z),
     ];
-    
-    // Left side check
+
     const leftFacePoints = [
       new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
       new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.min.z),
@@ -210,8 +187,7 @@ export default function DraggableModel({
       new THREE.Vector3(boundingBox.min.x, boundingBox.max.y, boundingBox.max.z),
       new THREE.Vector3(boundingBox.min.x, boxCenter.y, boxCenter.z),
     ];
-    
-    // Back side check
+
     const backFacePoints = [
       new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.max.z),
       new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.max.z),
@@ -219,8 +195,7 @@ export default function DraggableModel({
       new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.max.z),
       new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.max.z),
     ];
-    
-    // Front side check
+
     const frontFacePoints = [
       new THREE.Vector3(boundingBox.min.x, boundingBox.min.y, boundingBox.min.z),
       new THREE.Vector3(boundingBox.max.x, boundingBox.min.y, boundingBox.min.z),
@@ -228,42 +203,38 @@ export default function DraggableModel({
       new THREE.Vector3(boundingBox.max.x, boundingBox.max.y, boundingBox.min.z),
       new THREE.Vector3(boxCenter.x, boxCenter.y, boundingBox.min.z),
     ];
-    
-    // Check each face
+
     const facesToCheck = [
-      { points: rightFacePoints, direction: new THREE.Vector3(-1, 0, 0), offset: farDistance }, // From right
-      { points: leftFacePoints, direction: new THREE.Vector3(1, 0, 0), offset: -farDistance }, // From left
-      { points: backFacePoints, direction: new THREE.Vector3(0, 0, -1), offset: farDistance }, // From back
-      { points: frontFacePoints, direction: new THREE.Vector3(0, 0, 1), offset: -farDistance }, // From front
+      { points: rightFacePoints, direction: new THREE.Vector3(-1, 0, 0), offset: farDistance },
+      { points: leftFacePoints, direction: new THREE.Vector3(1, 0, 0), offset: -farDistance },
+      { points: backFacePoints, direction: new THREE.Vector3(0, 0, -1), offset: farDistance },
+      { points: frontFacePoints, direction: new THREE.Vector3(0, 0, 1), offset: -farDistance },
     ];
-    
+
     for (const face of facesToCheck) {
-      // For each point on the face, check if there's a wall between it and outside
       for (const point of face.points) {
-        // Create outer point based on the face direction
         const outerPoint = point.clone();
         if (Math.abs(face.direction.x) > 0) {
           outerPoint.x += face.offset;
         } else if (Math.abs(face.direction.z) > 0) {
           outerPoint.z += face.offset;
         }
-        
+
         raycaster.set(outerPoint, face.direction);
         raycaster.far = Math.abs(face.offset) + 1;
-        
+
         const intersects = raycaster.intersectObjects(scene.children, true);
-        
+
         let foundWall = false;
         for (const intersect of intersects) {
           if (intersect.object instanceof THREE.Mesh) {
-            // Skip if the intersected object is part of this model or temp group
             if (meshRef.current && meshRef.current.getObjectById(intersect.object.id)) {
               continue;
             }
             if (tempGroup.getObjectById(intersect.object.id)) {
               continue;
             }
-            
+
             const meshType = detectMeshType(intersect.object);
             if (meshType === 'wall') {
               foundWall = true;
@@ -271,19 +242,16 @@ export default function DraggableModel({
             }
           }
         }
-        
-        // If no wall found between outer point and this edge of the model, 
-        // this part of the model is outside the room
+
         if (!foundWall) {
           tempGroup.remove(tempModel);
-          return true; // Outside room boundary
+          return true;
         }
       }
     }
-    
-    // Clean up temp group
+
     tempGroup.remove(tempModel);
-    return false; // No collision
+    return false;
   };
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
@@ -348,9 +316,8 @@ export default function DraggableModel({
     const ctrl = (event as any).ctrlKey;
 
     if (ctrl) {
-      // Rotate around Y-axis based on horizontal mouse movement
       const pixelDeltaX = event.clientX - dragStart.client.x;
-      const rotationDelta = pixelDeltaX * 0.01; // Adjust sensitivity as needed
+      const rotationDelta = pixelDeltaX * 0.01;
 
       const newRotation: [number, number, number] = [
         dragStart.rotation[0],
@@ -374,7 +341,6 @@ export default function DraggableModel({
         dragStart.position[2]
       ];
 
-      // Check for wall collision
       const testPos = new THREE.Vector3(...newPosition);
       if (!checkWallCollision(testPos)) {
         setCurrentPosition(newPosition);
@@ -397,7 +363,6 @@ export default function DraggableModel({
         dragStart.position[2] + move.z
       ];
 
-      // Check for wall collision
       const testPos = new THREE.Vector3(...newPosition);
       if (!checkWallCollision(testPos)) {
         setCurrentPosition(newPosition);
@@ -426,8 +391,7 @@ export default function DraggableModel({
         dragStart.position[1],
         dragStart.position[2] + deltaZ
       ];
-      
-      // Check for wall collision
+
       const testPos = new THREE.Vector3(...newPosition);
       if (!checkWallCollision(testPos)) {
         setCurrentPosition(newPosition);
@@ -454,10 +418,9 @@ export default function DraggableModel({
   }, [position]);
 
   useEffect(() => {
-    // Only update if rotation prop actually changed (not from our own onChange callback)
-    if (rotation[0] !== currentRotation[0] || 
-        rotation[1] !== currentRotation[1] || 
-        rotation[2] !== currentRotation[2]) {
+    if (rotation[0] !== currentRotation[0] ||
+      rotation[1] !== currentRotation[1] ||
+      rotation[2] !== currentRotation[2]) {
       setCurrentRotation(rotation);
     }
   }, [rotation]);
@@ -472,31 +435,26 @@ export default function DraggableModel({
     try {
       const model = gltf.scene.clone(true);
 
-      // Step 1: Get raw bounding box to detect unit system
       let box = new THREE.Box3().setFromObject(model);
       let size = box.getSize(new THREE.Vector3());
       let maxDimension = Math.max(size.x, size.y, size.z);
 
-      // Step 2: Detect and apply unit conversion (mm/cm/inches -> meters)
       const unitScale = detectUnitScale(maxDimension);
       model.scale.multiplyScalar(unitScale);
-      
-      // Step 3: Get category configuration
-      const categoryName = category 
+
+      const categoryName = category
         ? normalizeCategoryName(category)
         : getCategoryFromUrl(url);
-      
-      const categoryConfig = categoryName 
+
+      const categoryConfig = categoryName
         ? SCALING_CONFIG.categories[categoryName]
         : null;
 
       if (categoryConfig) {
-        // Step 4: Recalculate bounding box after unit conversion
         model.updateMatrixWorld(true);
         box = new THREE.Box3().setFromObject(model);
         size = box.getSize(new THREE.Vector3());
 
-        // Step 5: Apply category normalization
         let currentDimension: number;
         if (categoryConfig.axis === 'max') {
           currentDimension = Math.max(size.x, size.y, size.z);
@@ -509,7 +467,6 @@ export default function DraggableModel({
           model.scale.multiplyScalar(categoryScale);
         }
 
-        // Step 6: Check room dimensions and cap if needed (never upscale)
         model.updateMatrixWorld(true);
         box = new THREE.Box3().setFromObject(model);
         size = box.getSize(new THREE.Vector3());
@@ -520,13 +477,11 @@ export default function DraggableModel({
         const maxExceed = Math.max(roomExceedX, roomExceedY, roomExceedZ);
 
         if (maxExceed > 1) {
-          // Model exceeds room, shrink to fit
           const roomCapScale = 1 / maxExceed;
           model.scale.multiplyScalar(roomCapScale);
         }
-        
+
       } else {
-        // Fallback: simple scaling if no category config found
         model.updateMatrixWorld(true);
         box = new THREE.Box3().setFromObject(model);
         size = box.getSize(new THREE.Vector3());
@@ -537,7 +492,6 @@ export default function DraggableModel({
         if (scaleFactor !== 1) model.scale.multiplyScalar(scaleFactor);
       }
 
-      // Final update and centering
       model.updateMatrixWorld(true);
       box = new THREE.Box3().setFromObject(model);
       const center = box.getCenter(new THREE.Vector3());
@@ -570,7 +524,7 @@ export default function DraggableModel({
                   mat.color.set(color);
                 } catch { }
               }
-              
+
               if (typeof mat.roughness === 'number') mat.roughness = Math.min(1, Math.max(0, mat.roughness ?? 0.6));
               if (typeof mat.metalness === 'number') mat.metalness = Math.min(1, Math.max(0, mat.metalness ?? 0.1));
             }

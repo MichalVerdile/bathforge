@@ -123,7 +123,6 @@ const templates: Template[] = [
   }
 ];
 
-// Preload all template models
 useGLTF.preload('/assets/templates/square.glb');
 useGLTF.preload('/assets/templates/rectangle.glb');
 useGLTF.preload('/assets/templates/L-shape.glb');

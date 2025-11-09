@@ -49,7 +49,6 @@ const getProductIcon = (category: string): string => {
   return iconMap[category.toLowerCase()] || '📦';
 };
 
-// Helper function to check if a model is an image file (texture/covering)
 const isImageFile = (url: string): boolean => {
   const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg'];
   const lowerUrl = url.toLowerCase();
@@ -66,7 +65,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
     }
   }, [categories, selectedCategory, loading, error]);
 
-  // Notify parent when category changes
   useEffect(() => {
     if (selectedCategory && onCategoryChange) {
       onCategoryChange(selectedCategory);
@@ -122,7 +120,6 @@ export default function ModelBrowser({ onModelSelect, selectedModel, style, onCa
     <div className="model-browser" style={style}>
       <div className="model-browser-header">
         <div className="model-browser-title">
-          <span>Product Browser</span>
           <span>Product Browser</span>
           <button
             className="refresh-button"

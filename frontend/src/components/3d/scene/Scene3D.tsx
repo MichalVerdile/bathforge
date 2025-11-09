@@ -15,7 +15,7 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
   const { camera, scene } = useThree();
   const keysPressed = useRef<{ [key: string]: boolean }>({});
   const moveSpeed = 0.05;
-  const collisionDistance = 0.3; // Distance to check for walls
+  const collisionDistance = 0.3;
   const raycaster = useRef(new THREE.Raycaster());
 
   useEffect(() => {
@@ -47,33 +47,31 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
   useFrame(() => {
     if (!enabled || !controlsRef.current) return;
 
-    // First, check if camera is too close to any walls in all directions and push back if needed
     const pushBackDirections = [
-      new THREE.Vector3(1, 0, 0),   // Right
-      new THREE.Vector3(-1, 0, 0),  // Left
-      new THREE.Vector3(0, 0, 1),   // Forward
-      new THREE.Vector3(0, 0, -1),  // Back
-      new THREE.Vector3(1, 0, 1).normalize(),   // Diagonal
-      new THREE.Vector3(-1, 0, 1).normalize(),  // Diagonal
-      new THREE.Vector3(1, 0, -1).normalize(),  // Diagonal
-      new THREE.Vector3(-1, 0, -1).normalize(), // Diagonal
+      new THREE.Vector3(1, 0, 0),
+      new THREE.Vector3(-1, 0, 0),
+      new THREE.Vector3(0, 0, 1),
+      new THREE.Vector3(0, 0, -1),
+      new THREE.Vector3(1, 0, 1).normalize(),
+      new THREE.Vector3(-1, 0, 1).normalize(),
+      new THREE.Vector3(1, 0, -1).normalize(),
+      new THREE.Vector3(-1, 0, -1).normalize(),
     ];
 
     for (const dir of pushBackDirections) {
       raycaster.current.set(camera.position, dir);
-      raycaster.current.far = collisionDistance * 0.8; // Slightly shorter distance for push-back
-      
+      raycaster.current.far = collisionDistance * 0.8;
+
       const intersects = raycaster.current.intersectObjects(scene.children, true);
-      
+
       for (const intersect of intersects) {
         if (intersect.object instanceof THREE.Mesh) {
           const meshType = detectMeshType(intersect.object);
           if (meshType === 'wall') {
-            // Push camera away from wall
             const pushDirection = dir.clone().multiplyScalar(-1);
             const pushAmount = (collisionDistance * 0.8 - intersect.distance) * 0.5;
             const pushVector = pushDirection.multiplyScalar(pushAmount);
-            
+
             camera.position.add(pushVector);
             controlsRef.current.target.add(pushVector);
             controlsRef.current.update();
@@ -86,12 +84,10 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
     const direction = new THREE.Vector3();
     const sideDirection = new THREE.Vector3();
 
-    // Get camera's forward direction (ignoring Y component for horizontal movement)
     camera.getWorldDirection(direction);
     direction.y = 0;
     direction.normalize();
 
-    // Get camera's right direction
     sideDirection.crossVectors(camera.up, direction).normalize();
 
     const moveVector = new THREE.Vector3();
@@ -109,15 +105,13 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
       moveVector.addScaledVector(sideDirection, -moveSpeed);
     }
 
-    // Check for wall collision before moving
     if (moveVector.length() > 0) {
-      // Check collision in the movement direction
       const normalizedMove = moveVector.clone().normalize();
       raycaster.current.set(camera.position, normalizedMove);
       raycaster.current.far = collisionDistance;
-      
+
       const intersects = raycaster.current.intersectObjects(scene.children, true);
-      
+
       let hasWallCollision = false;
       for (const intersect of intersects) {
         if (intersect.object instanceof THREE.Mesh) {
@@ -128,8 +122,7 @@ function WASDController({ enabled, controlsRef }: WASDControllerProps) {
           }
         }
       }
-      
-      // Only move if there's no wall collision
+
       if (!hasWallCollision) {
         camera.position.add(moveVector);
         controlsRef.current.target.add(moveVector);
@@ -150,13 +143,12 @@ interface CameraControllerProps {
 function CameraController({ viewType, customPosition, controlsRef }: CameraControllerProps) {
   const { camera } = useThree();
   const previousViewType = useRef<ViewType | null>(null);
-  
+
   useEffect(() => {
-    // Only update camera when view type actually changes
     if (previousViewType.current === viewType) return;
-    
+
     let targetPosition: [number, number, number];
-    
+
     if (viewType === '2D') {
       targetPosition = [0, 6, 0];
       camera.rotation.set(-Math.PI / 2, 0, 0);
@@ -172,7 +164,6 @@ function CameraController({ viewType, customPosition, controlsRef }: CameraContr
         controlsRef.current.update();
       }
     } else {
-      // Free view - only set initial position when switching TO this view
       targetPosition = customPosition;
       camera.up.set(0, 1, 0);
       camera.rotation.set(0, 0, 0);
@@ -182,11 +173,11 @@ function CameraController({ viewType, customPosition, controlsRef }: CameraContr
         controlsRef.current.update();
       }
     }
-    
+
     camera.updateProjectionMatrix();
     previousViewType.current = viewType;
   }, [viewType, camera, customPosition, controlsRef]);
-  
+
   return null;
 }
 
@@ -219,7 +210,7 @@ function Lights() {
   return (
     <>
       <ambientLight intensity={0.4} />
-      
+
       <directionalLight
         position={[10, 10, 5]}
         intensity={1}
@@ -232,12 +223,12 @@ function Lights() {
         shadow-camera-top={10}
         shadow-camera-bottom={-10}
       />
-      
+
       <directionalLight
         position={[-5, 5, -5]}
         intensity={0.3}
       />
-      
+
       <spotLight
         position={[0, 15, 0]}
         intensity={0.5}
@@ -251,9 +242,9 @@ function Lights() {
 
 function Ground() {
   return (
-    <mesh 
-      rotation={[-Math.PI / 2, 0, 0]} 
-      position={[0, -0.1, 0]} 
+    <mesh
+      rotation={[-Math.PI / 2, 0, 0]}
+      position={[0, -0.1, 0]}
       receiveShadow
     >
       <planeGeometry args={[50, 50]} />
@@ -290,21 +281,18 @@ export default function Scene3D({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const controlsRef = useRef<any>(null);
 
-  // Determine camera position based on view type
   const getCameraPosition = (): [number, number, number] => {
     if (viewType === '2D') {
-      return [0, 6, 0]; // Top-down view
+      return [0, 6, 0];
     } else if (viewType === '3D-Person') {
-      return [0, 1.8, 0]; // Eye-level view, slightly back
+      return [0, 1.8, 0];
     } else {
-      return cameraPosition; // Free view with custom position
+      return cameraPosition;
     }
   };
 
-  // Determine if controls should be enabled based on view type
   const areControlsEnabled = controlsEnabled;
-  
-  // Determine control settings based on view type
+
   const getControlSettings = () => {
     if (viewType === '2D') {
       return {
@@ -325,14 +313,13 @@ export default function Scene3D({
         maxPolarAngle: Math.PI / 2.1,
       };
     } else {
-      // 3D-Free: full freedom
       return {
         enablePan: true,
         enableZoom: true,
         enableRotate: true,
         minDistance: 0.5,
         maxDistance: 100,
-        maxPolarAngle: Math.PI, // Allow full rotation
+        maxPolarAngle: Math.PI
       };
     }
   };
@@ -354,11 +341,11 @@ export default function Scene3D({
         onCreated={({ scene, camera }) => {
           scene.castShadow = true;
           scene.receiveShadow = true;
-          
+
           if (onSceneReady) {
             onSceneReady(scene);
           }
-          
+
           if (onCameraReady) {
             onCameraReady(camera);
           }
@@ -367,20 +354,20 @@ export default function Scene3D({
       >
         <CameraController viewType={viewType} customPosition={cameraPosition} controlsRef={controlsRef} />
         <WASDController enabled={viewType === '3D-Person'} controlsRef={controlsRef} />
-        
+
         <Suspense fallback={<Loader />}>
           <Lights />
-          
+
           {showEnvironment && (
             <Environment preset="apartment" background={false} />
           )}
-          
+
           {showGrid && (
             <Grid infiniteGrid />
           )}
-          
+
           <Ground />
-          
+
           <OrbitControls
             ref={controlsRef}
             enabled={areControlsEnabled}
@@ -391,33 +378,10 @@ export default function Scene3D({
             maxDistance={controlSettings.maxDistance}
             maxPolarAngle={controlSettings.maxPolarAngle}
           />
-          
+
           {children}
         </Suspense>
       </Canvas>
-      
-      <div style={{
-        position: 'absolute',
-        bottom: '10px',
-        left: '10px',
-        background: 'rgba(30, 41, 59, 0.95)',
-        backdropFilter: 'blur(10px)',
-        padding: '8px 12px',
-        borderRadius: '8px',
-        fontSize: '11px',
-        color: '#94a3b8',
-        pointerEvents: 'none',
-        border: '1px solid #334155',
-        fontFamily: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif'
-      }}>
-        {viewType === '2D' ? (
-          <div>📐 2D Top View - Controls Disabled</div>
-        ) : viewType === '3D-Person' ? (
-          <div>👤 Person View • 🖱️ Click & drag to look around • WASD to move</div>
-        ) : (
-          <div>🌐 Free View • 🖱️ Rotate • 🎲 Zoom • 🖐️ Pan (Full Freedom)</div>
-        )}
-      </div>
     </div>
   );
 }

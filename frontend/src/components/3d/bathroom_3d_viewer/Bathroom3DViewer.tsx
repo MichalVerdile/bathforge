@@ -2,15 +2,13 @@ import React, { useState, useRef, useEffect } from "react";
 import Scene3D from "../scene/Scene3D";
 import ModelLoader from "./ModelLoader";
 import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
-import sceneService, {
-  SceneProduct,
-} from "../../../controllers/api/scenes/SceneService";
+import sceneService, { SceneProduct } from "../../../controllers/api/scenes/SceneService";
 import { Color } from "../../../types/api";
 import { ProductService } from "../../../controllers/api/products/ProductService";
 import * as THREE from "three";
 import "./Bathroom3DViewer.css";
 import DraggableModel from "./DraggableModel";
-import { Room } from "../../configurator/custom_room/Room";
+import { WallFloorSelector, applyTextureToMesh } from './WallFloorSelector';
 
 interface Vertex {
   x: number;
@@ -33,6 +31,8 @@ interface SceneControlsState {
   showEnvironment: boolean;
 }
 
+export type ViewType = '2D' | '3D-Person' | '3D-Free';
+
 interface Bathroom3DViewerProps {
   style?: React.CSSProperties;
 }
@@ -40,23 +40,20 @@ interface Bathroom3DViewerProps {
 export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [selectedModel, setSelectedModel] = useState<ModelItem | null>(null);
   const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null
-  );
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [isDraggingModel, setIsDraggingModel] = useState(false);
-  const [currentScene, setCurrentScene] = useState<{
-    id?: number;
-    name: string;
-  }>({
-    name: `Scene ${new Date().toLocaleString()}`,
+  const [viewType, setViewType] = useState<ViewType>('2D');
+  const [selectedBrowserCategory, setSelectedBrowserCategory] = useState<string>('');
+  const [currentScene, setCurrentScene] = useState<{ id?: number; name: string }>({
+    name: `Scene ${new Date().toLocaleString()}`
   });
   const [templateData, setTemplateData] = useState<any>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [customRoomData, setCustomRoomData] = useState<{
     vertices: Vertex[];
     height: number;
   } | null>(null);
-  const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
@@ -67,9 +64,35 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     showEnvironment: false,
   });
 
+  const [selectedSurface, setSelectedSurface] = useState<{
+    mesh: THREE.Mesh;
+    type: 'wall' | 'floor';
+    originalMaterial: THREE.Material;
+    highlightMaterial?: THREE.Material;
+  } | null>(null);
+
+  const [appliedCoverings, setAppliedCoverings] = useState<{
+    [surfaceIdentifier: string]: {
+      productId: number;
+      surfaceType: 'wall' | 'floor';
+      repeatX: number;
+      repeatY: number;
+    };
+  }>({});
+
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const getSurfaceIdentifier = (mesh: THREE.Mesh, type: 'wall' | 'floor'): string => {
+    const position = mesh.position;
+    const rounded = {
+      x: Math.round(position.x * 100) / 100,
+      y: Math.round(position.y * 100) / 100,
+      z: Math.round(position.z * 100) / 100
+    };
+    return `${type}-${rounded.x}-${rounded.y}-${rounded.z}`;
+  };
 
   useEffect(() => {
     const storedTemplate = localStorage.getItem("selectedTemplate");
@@ -77,6 +100,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       try {
         const template = JSON.parse(storedTemplate);
         setTemplateData(template);
+        setCurrentScene({ name: `Template Scene ${new Date().toLocaleString()}` });
+        console.log("Loaded template from localStorage:", template);
       } catch (error) {
         console.error("Error parsing template data:", error);
       }
@@ -87,6 +112,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       try {
         const customRoom = JSON.parse(storedCustomRoom);
         setCustomRoomData(customRoom);
+        setCurrentScene({ name: `Custom Scene ${new Date().toLocaleString()}` });
+        console.log("Loaded custom room from localStorage:", customRoom);
         localStorage.removeItem("customRoom");
       } catch (error) {
         console.error("Error parsing custom room data:", error);
@@ -95,11 +122,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   }, []);
 
   const autoSaveScene = async () => {
-    if (sceneProducts.length === 0) return;
+    if (sceneProducts.length === 0 && !customRoomData && !templateData && Object.keys(appliedCoverings).length === 0) {
+      console.log('No data to save - skipping auto-save');
+      return;
+    }
 
     setIsAutoSaving(true);
     try {
-      const sceneData = sceneProducts.map((product) => ({
+      const sceneData = sceneProducts.map(product => ({
         productId: product.productId,
         colorId: product.selectedColorId,
         positionX: product.positionX || 0,
@@ -111,29 +141,107 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         scaleX: product.scaleX || 1,
         scaleY: product.scaleY || 1,
         scaleZ: product.scaleZ || 1,
+        customProperties: product.customProperties
       }));
 
-      const cameraPosition = cameraRef.current
-        ? JSON.stringify({
-            x: cameraRef.current.position.x,
-            y: cameraRef.current.position.y,
-            z: cameraRef.current.position.z,
-          })
-        : undefined;
+      const cameraPosition = cameraRef.current ? JSON.stringify({
+        x: cameraRef.current.position.x,
+        y: cameraRef.current.position.y,
+        z: cameraRef.current.position.z
+      }) : undefined;
 
-      await sceneService.saveCurrentScene(
-        currentScene.name,
-        "guest",
-        sceneData,
-        cameraPosition,
-        undefined,
-        "#0f172a",
-        currentScene.id
-      );
+      let roomModelData = undefined;
+
+      if (customRoomData) {
+        roomModelData = {
+          vertices: customRoomData.vertices,
+          height: customRoomData.height
+        };
+        console.log('Saving custom room model:', roomModelData);
+      } else if (templateData) {
+        roomModelData = {
+          vertices: [
+            { x: -templateData.roomData.width / 2, y: -templateData.roomData.depth / 2 },
+            { x: templateData.roomData.width / 2, y: -templateData.roomData.depth / 2 },
+            { x: templateData.roomData.width / 2, y: templateData.roomData.depth / 2 },
+            { x: -templateData.roomData.width / 2, y: templateData.roomData.depth / 2 }
+          ],
+          height: templateData.roomData.height / 100
+        };
+        console.log('Saving template room model:', roomModelData);
+      }
+
+      if (!roomModelData) {
+        console.log('No room model data to save (neither custom nor template)');
+      }
+
+      const coveringsData = Object.entries(appliedCoverings).map(([surfaceIdentifier, covering]) => ({
+        productId: covering.productId,
+        surfaceType: covering.surfaceType,
+        surfaceIdentifier,
+        repeatX: covering.repeatX,
+        repeatY: covering.repeatY
+      }));
+
+      console.log('Auto-saving scene with data:', {
+        sceneProducts: sceneData.length,
+        roomModel: roomModelData,
+        coverings: coveringsData.length,
+        currentScene: currentScene
+      });
+
+      if (currentScene.id) {
+        console.log('Updating existing scene with ID:', currentScene.id);
+        await sceneService.saveCurrentSceneWithRoomAndCoverings(
+          currentScene.name,
+          'guest',
+          sceneData,
+          roomModelData,
+          coveringsData.length > 0 ? coveringsData : undefined,
+          cameraPosition,
+          undefined,
+          '#0f172a',
+          currentScene.id
+        );
+      } else {
+        console.log('Creating new scene');
+        const newScene = await sceneService.createScene({
+          name: currentScene.name,
+          user: 'guest',
+          products: sceneData.map(product => ({
+            productId: product.productId,
+            colorId: product.colorId,
+            positionX: product.positionX || 0,
+            positionY: product.positionY || 0,
+            positionZ: product.positionZ || 0,
+            rotationX: product.rotationX || 0,
+            rotationY: product.rotationY || 0,
+            rotationZ: product.rotationZ || 0,
+            scaleX: product.scaleX || 1,
+            scaleY: product.scaleY || 1,
+            scaleZ: product.scaleZ || 1,
+            customProperties: product.customProperties
+          })),
+          roomModel: roomModelData ? {
+            verticesData: JSON.stringify(roomModelData.vertices),
+            roomHeight: roomModelData.height,
+            modelType: templateData ? 'TEMPLATE' : 'CUSTOM',
+            templatePath: templateData?.preview
+          } : undefined,
+          coverings: coveringsData.length > 0 ? coveringsData : undefined,
+          cameraPosition,
+          lightingSettings: undefined,
+          backgroundColor: '#0f172a',
+          isPublic: false
+        });
+
+        setCurrentScene(prev => ({ ...prev, id: newScene.id }));
+        console.log('Created new scene with ID:', newScene.id);
+      }
 
       setLastSaveTime(new Date());
     } catch (error) {
-      console.error("Failed to auto-save scene:", error);
+      console.error('Failed to auto-save scene:', error);
     } finally {
       setIsAutoSaving(false);
     }
@@ -149,39 +257,28 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     }, delay);
   };
 
-  const addProductToScene = (
-    model: ModelItem,
-    position?: [number, number, number]
-  ) => {
-    const uniqueId = `product_${Date.now()}_${Math.random()
-      .toString(36)
-      .substr(2, 9)}`;
+  const addProductToScene = (model: ModelItem, position?: [number, number, number]) => {
+    const uniqueId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const newProduct: SceneProduct3D = {
       uniqueId,
       productId: model.id,
       modelItem: model,
       positionX: position ? position[0] : 0,
-      positionY: position ? position[1] : 0,
+      positionY: position ? position[1] : 0.3,
       positionZ: position ? position[2] : 0,
       rotationX: 0,
       rotationY: 0,
       rotationZ: 0,
-      scaleX: 1,
-      scaleY: 1,
-      scaleZ: 1,
-      selectedColorId:
-        model.availableColors && model.availableColors.length > 0
-          ? model.availableColors[0].id
-          : undefined,
+      selectedColorId: model.availableColors && model.availableColors.length > 0 ? model.availableColors[0].id : undefined
     };
 
-    setSceneProducts((prev) => [...prev, newProduct]);
+    setSceneProducts(prev => [...prev, newProduct]);
     setSelectedProductId(uniqueId);
     scheduleAutoSave(400);
   };
 
   const removeProductFromScene = (uniqueId: string) => {
-    setSceneProducts((prev) => prev.filter((p) => p.uniqueId !== uniqueId));
+    setSceneProducts(prev => prev.filter(p => p.uniqueId !== uniqueId));
     if (selectedProductId === uniqueId) {
       setSelectedProductId(null);
     }
@@ -189,19 +286,23 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     scheduleAutoSave(400);
   };
 
-  const updateProductPosition = (
-    uniqueId: string,
-    position: [number, number, number]
-  ) => {
-    setSceneProducts((prev) =>
-      prev.map((product) =>
+  const updateProductPosition = (uniqueId: string, position: [number, number, number]) => {
+    setSceneProducts(prev =>
+      prev.map(product =>
         product.uniqueId === uniqueId
-          ? {
-              ...product,
-              positionX: position[0],
-              positionY: position[1],
-              positionZ: position[2],
-            }
+          ? { ...product, positionX: position[0], positionY: position[1], positionZ: position[2] }
+          : product
+      )
+    );
+
+    scheduleAutoSave(1000);
+  };
+
+  const updateProductRotation = (uniqueId: string, rotation: [number, number, number]) => {
+    setSceneProducts(prev =>
+      prev.map(product =>
+        product.uniqueId === uniqueId
+          ? { ...product, rotationX: rotation[0], rotationY: rotation[1], rotationZ: rotation[2] }
           : product
       )
     );
@@ -210,8 +311,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   };
 
   const updateProductColor = (uniqueId: string, colorId: number) => {
-    setSceneProducts((prev) =>
-      prev.map((product) =>
+    setSceneProducts(prev =>
+      prev.map(product =>
         product.uniqueId === uniqueId
           ? { ...product, selectedColorId: colorId }
           : product
@@ -221,52 +322,121 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     scheduleAutoSave(400);
   };
 
-  const ensureSelectedProductColors = async (
-    uniqueId: string,
-    productId: number
-  ) => {
-    const sp = sceneProducts.find((p) => p.uniqueId === uniqueId);
+  const ensureSelectedProductColors = async (uniqueId: string, productId: number) => {
+    const sp = sceneProducts.find(p => p.uniqueId === uniqueId);
     if (!sp) return;
-    if (sp.modelItem.availableColors && sp.modelItem.availableColors.length > 0)
-      return;
+    if (sp.modelItem.availableColors && sp.modelItem.availableColors.length > 0) return;
 
     try {
       const colors = await ProductService.getColors(productId);
-      setSceneProducts((prev) =>
-        prev.map((p) => {
-          if (p.uniqueId !== uniqueId) return p;
-          const next = {
-            ...p,
-            modelItem: { ...p.modelItem, availableColors: colors },
-          } as typeof p;
-          if (!p.selectedColorId && colors.length > 0) {
-            next.selectedColorId = colors[0].id;
-          }
-          return next;
-        })
-      );
+      setSceneProducts(prev => prev.map(p => {
+        if (p.uniqueId !== uniqueId) return p;
+        const next = {
+          ...p,
+          modelItem: { ...p.modelItem, availableColors: colors }
+        } as typeof p;
+        if (!p.selectedColorId && colors.length > 0) {
+          next.selectedColorId = colors[0].id;
+        }
+        return next;
+      }));
     } catch (e) {
-      console.error("Failed to load colors for product", productId, e);
+      console.error('Failed to load colors for product', productId, e);
     }
   };
 
   const getSelectedColor = (product: SceneProduct3D): Color | undefined => {
     if (!product.selectedColorId) return undefined;
-    return product.modelItem.availableColors.find(
-      (color) => color.id === product.selectedColorId
-    );
+    return product.modelItem.availableColors.find(color => color.id === product.selectedColorId);
   };
 
-  const handleModelSelect = (model: ModelItem) => {
-    setSelectedModel(model);
-    addProductToScene(model);
+  const isImageFile = (url: string): boolean => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.tiff', '.svg'];
+    const lowerUrl = url.toLowerCase();
+    return imageExtensions.some(ext => lowerUrl.endsWith(ext));
+  };
 
-    setControls((prev) => ({
-      ...prev,
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: 1,
-    }));
+  const handleModelSelect = async (model: ModelItem) => {
+    const isTexture = isImageFile(model.url);
+
+    if (isTexture && selectedSurface) {
+      try {
+        await applyTextureToMesh(
+          selectedSurface.mesh,
+          model.thumbnail || model.url,
+          3,
+          3
+        );
+
+        const surfaceIdentifier = getSurfaceIdentifier(selectedSurface.mesh, selectedSurface.type);
+
+        setAppliedCoverings(prev => ({
+          ...prev,
+          [surfaceIdentifier]: {
+            productId: model.id,
+            surfaceType: selectedSurface.type,
+            texturePath: model.thumbnail || model.url,
+            repeatX: 3,
+            repeatY: 3
+          }
+        }));
+
+        scheduleAutoSave();
+      } catch (error) {
+        console.error('Failed to apply covering:', error);
+        alert('Failed to apply texture. Please try again.');
+      }
+    } else if (!isTexture) {
+      setSelectedModel(model);
+      addProductToScene(model);
+
+      setControls(prev => ({
+        ...prev,
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: 1
+      }));
+    } else {
+      alert('Please select a wall or floor first before applying a covering.');
+    }
+  };
+
+  const handleSurfaceSelect = (mesh: THREE.Mesh | null, type: 'wall' | 'floor' | null) => {
+    if (selectedSurface) {
+      selectedSurface.mesh.material = selectedSurface.originalMaterial;
+      if (selectedSurface.highlightMaterial) {
+        (selectedSurface.highlightMaterial as THREE.Material).dispose();
+      }
+    }
+
+    if (mesh && type) {
+      const originalMaterial = Array.isArray(mesh.material)
+        ? mesh.material[0]
+        : mesh.material;
+
+      const clonedOriginal = originalMaterial.clone();
+
+      const highlightMaterial = originalMaterial.clone();
+
+      if (highlightMaterial instanceof THREE.MeshStandardMaterial) {
+        highlightMaterial.emissive = new THREE.Color(0xffffff);
+        highlightMaterial.emissiveIntensity = 0.3;
+        highlightMaterial.opacity = 0.8;
+        highlightMaterial.transparent = true;
+      }
+
+      mesh.material = highlightMaterial;
+
+      setSelectedSurface({
+        mesh,
+        type,
+        originalMaterial: clonedOriginal,
+        highlightMaterial
+      });
+      setSelectedProductId(null);
+    } else {
+      setSelectedSurface(null);
+    }
   };
 
   useEffect(() => {
@@ -275,25 +445,65 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         clearTimeout(saveTimerRef.current);
         saveTimerRef.current = null;
       }
+      if (selectedSurface) {
+        selectedSurface.mesh.material = selectedSurface.originalMaterial;
+        if (selectedSurface.highlightMaterial) {
+          (selectedSurface.highlightMaterial as THREE.Material).dispose();
+        }
+      }
     };
   }, []);
 
+  useEffect(() => {
+    if (selectedBrowserCategory !== 'coverings' && selectedSurface) {
+      handleSurfaceSelect(null, null);
+    }
+  }, [selectedBrowserCategory]);
+
   return (
     <div className="bathroom-3d-viewer" style={style}>
-      <ModelBrowser
-        onModelSelect={handleModelSelect}
-        selectedModel={selectedModel}
-      />
+      {viewType !== '3D-Person' && (
+        <ModelBrowser
+          onModelSelect={handleModelSelect}
+          selectedModel={selectedModel}
+          onCategoryChange={setSelectedBrowserCategory}
+        />
+      )}
 
-      <div
-        className="scene-container"
-        style={{ cursor: isDraggingModel ? "grabbing" : "default" }}
-      >
+      <div className="scene-container" style={{ cursor: isDraggingModel ? 'grabbing' : 'default' }}>
+        <div className="view-type-selector">
+          <button
+            className={`view-type-button ${viewType === '2D' ? 'active' : ''}`}
+            onClick={() => setViewType('2D')}
+            title="2D Top View"
+          >
+            2D View
+          </button>
+          <button
+            className={`view-type-button ${viewType === '3D-Person' ? 'active' : ''}`}
+            onClick={() => setViewType('3D-Person')}
+            title="First Person 3D View"
+          >
+            Person View
+          </button>
+          <button
+            className={`view-type-button ${viewType === '3D-Free' ? 'active' : ''}`}
+            onClick={() => setViewType('3D-Free')}
+            title="Free 3D View"
+          >
+            Free View
+          </button>
+        </div>
+
         <Scene3D
+          viewType={viewType}
           showGrid={controls.showGrid}
           showEnvironment={controls.showEnvironment}
           controlsEnabled={!isDraggingModel}
-          onBackgroundClick={() => setSelectedProductId(null)}
+          onBackgroundClick={() => {
+            setSelectedProductId(null);
+            handleSurfaceSelect(null, null);
+          }}
           onSceneReady={(scene) => {
             sceneRef.current = scene;
           }}
@@ -301,26 +511,24 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             cameraRef.current = camera;
           }}
         >
-          {customRoomData ? (
-            <Room
-              vertices={customRoomData.vertices}
-              height={customRoomData.height}
-              viewMode="3D"
+          {(viewType === '2D' || viewType === '3D-Free') && selectedBrowserCategory === 'coverings' && (
+            <WallFloorSelector
+              enabled={true}
+              onSelect={handleSurfaceSelect}
             />
-          ) : (
-            templateData?.preview && (
-              <ModelLoader
-                url={templateData.preview}
-                position={[0, 0.94, 0]}
-                rotation={[0, 0, 0]}
-                scale={[1, 1, 1]}
-                castShadow={true}
-                receiveShadow={true}
-                onError={(err) =>
-                  console.error("Failed to load template model:", err)
-                }
-              />
-            )
+          )}
+
+          {templateData?.preview && (
+            <ModelLoader
+              url={templateData.preview}
+              position={[0, 2.41, 0]}
+              rotation={[0, 0, 0]}
+              scale={[2.2, 2.2, 2.2]}
+              applyUnitDetection={true}
+              castShadow={true}
+              receiveShadow={true}
+              onError={(err) => console.error('Failed to load template model:', err)}
+            />
           )}
 
           {sceneProducts.map((product) => {
@@ -333,67 +541,86 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 position={[
                   product.positionX || 0,
                   product.positionY || 0,
-                  product.positionZ || 0,
+                  product.positionZ || 0
                 ]}
                 rotation={[
                   product.rotationX || 0,
                   product.rotationY || 0,
-                  product.rotationZ || 0,
-                ]}
-                scale={[
-                  product.scaleX || 1,
-                  product.scaleY || 1,
-                  product.scaleZ || 1,
+                  product.rotationZ || 0
                 ]}
                 color={selectedColor?.hexCode}
-                selected={selectedProductId === product.uniqueId}
-                onPositionChange={(position) =>
-                  updateProductPosition(product.uniqueId, position)
-                }
-                onClick={() => {
-                  setSelectedProductId(product.uniqueId);
-                  ensureSelectedProductColors(
-                    product.uniqueId,
-                    product.productId
-                  );
+                selected={selectedProductId === product.uniqueId && viewType !== '3D-Person'}
+                disableInteractions={viewType === '3D-Person'}
+                onPositionChange={(position) => {
+                  if (viewType !== '3D-Person') {
+                    updateProductPosition(product.uniqueId, position);
+                  }
                 }}
-                onDragStart={() => setIsDraggingModel(true)}
-                onDragEnd={() => setIsDraggingModel(false)}
+                onRotationChange={(rotation) => {
+                  if (viewType !== '3D-Person') {
+                    updateProductRotation(product.uniqueId, rotation);
+                  }
+                }}
+                onClick={() => {
+                  if (viewType !== '3D-Person') {
+                    setSelectedProductId(product.uniqueId);
+                    ensureSelectedProductColors(product.uniqueId, product.productId);
+                  }
+                }}
+                onDragStart={() => {
+                  if (viewType !== '3D-Person') {
+                    setIsDraggingModel(true);
+                  }
+                }}
+                onDragEnd={() => {
+                  if (viewType !== '3D-Person') {
+                    setIsDraggingModel(false);
+                  }
+                }}
                 onError={(error) => {
-                  console.error("Failed to load model:", error);
-                  alert(
-                    `Failed to load model: ${product.modelItem.name}\nError: ${error.message}`
-                  );
+                  console.error('Failed to load model:', error);
+                  alert(`Failed to load model: ${product.modelItem.name}\nError: ${error.message}`);
                 }}
               />
             );
           })}
         </Scene3D>
 
-        <div className="scene-info-panel">
-          <div className="scene-header">
-            <h4>{currentScene.name}</h4>
-            <div className="scene-stats">
-              {sceneProducts.length} product
-              {sceneProducts.length !== 1 ? "s" : ""}
-              {isAutoSaving && (
-                <span className="saving-indicator">Saving...</span>
-              )}
-              {lastSaveTime && !isAutoSaving && (
-                <span className="last-saved">
-                  Saved {lastSaveTime.toLocaleTimeString()}
-                </span>
-              )}
+        {viewType !== '3D-Person' && (
+          <div className="scene-info-panel">
+            <div className="scene-header">
+              <h4>{currentScene.name}</h4>
+              <div className="scene-stats">
+                {sceneProducts.length} product{sceneProducts.length !== 1 ? 's' : ''}
+                {isAutoSaving && <span className="saving-indicator">Saving...</span>}
+                {lastSaveTime && !isAutoSaving && (
+                  <span className="last-saved">
+                    Saved {lastSaveTime.toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
             </div>
+            {selectedSurface && (
+              <div className="surface-selection-info">
+                <strong>
+                  {selectedSurface.type === 'wall' ? '🧱 Wall' : '⬜ Floor'} Selected
+                </strong>
+                <p>Select a covering from the browser to apply</p>
+                <button
+                  className="deselect-button"
+                  onClick={() => handleSurfaceSelect(null, null)}
+                >
+                  Deselect
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+        )}
 
-        {selectedProductId && (
+        {selectedProductId && viewType !== '3D-Person' && (
           <div className="product-controls-panel">
             {(() => {
-              const selectedProduct = sceneProducts.find(
-                (p) => p.uniqueId === selectedProductId
-              );
+              const selectedProduct = sceneProducts.find(p => p.uniqueId === selectedProductId);
               if (!selectedProduct) return null;
 
               return (
@@ -413,32 +640,23 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                     <div className="color-selector">
                       <label>Color:</label>
                       <div className="color-options">
-                        {selectedProduct.modelItem.availableColors.map(
-                          (color) => (
-                            <button
-                              key={color.id}
-                              className={`color-option ${
-                                selectedProduct.selectedColorId === color.id
-                                  ? "selected"
-                                  : ""
+                        {selectedProduct.modelItem.availableColors.map((color) => (
+                          <button
+                            key={color.id}
+                            className={`color-option ${selectedProduct.selectedColorId === color.id ? 'selected' : ''
                               }`}
-                              style={{ backgroundColor: color.hexCode }}
-                              onClick={() =>
-                                updateProductColor(selectedProductId, color.id)
-                              }
-                              title={color.name}
-                            />
-                          )
-                        )}
+                            style={{ backgroundColor: color.hexCode }}
+                            onClick={() => updateProductColor(selectedProductId, color.id)}
+                            title={color.name}
+                          />
+                        ))}
                       </div>
                     </div>
                   )}
 
                   <div className="position-info">
                     <small>
-                      Position: [{(selectedProduct.positionX || 0).toFixed(1)},{" "}
-                      {(selectedProduct.positionY || 0).toFixed(1)},{" "}
-                      {(selectedProduct.positionZ || 0).toFixed(1)}]
+                      Position: [{(selectedProduct.positionX || 0).toFixed(1)}, {(selectedProduct.positionY || 0).toFixed(1)}, {(selectedProduct.positionZ || 0).toFixed(1)}]
                     </small>
                   </div>
                 </div>
@@ -447,16 +665,16 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           </div>
         )}
 
-        {sceneProducts.length === 0 &&
-          !templateData?.preview &&
-          !customRoomData && (
-            <div className="welcome-message">
-              <h3 className="welcome-title">Welcome to BathForge 3D</h3>
-              <p className="welcome-description">
-                Browse and select bathroom fixtures to add them to your scene
-              </p>
-            </div>
-          )}
+        {sceneProducts.length === 0 && !templateData?.preview && (
+          <div className="welcome-message">
+            <h3 className="welcome-title">
+              Welcome to BathForge 3D
+            </h3>
+            <p className="welcome-description">
+              Browse and select bathroom fixtures to add them to your scene
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

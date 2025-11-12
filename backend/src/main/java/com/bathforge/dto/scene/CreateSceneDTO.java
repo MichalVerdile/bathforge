@@ -24,6 +24,10 @@ public class CreateSceneDTO {
 
     private List<CreateSceneProductDTO> products;
 
+    private CreateSceneRoomModelDTO roomModel;
+
+    private List<CreateSceneCoveringDTO> coverings;
+
     public CreateSceneDTO() {
     }
 
@@ -103,6 +107,22 @@ public class CreateSceneDTO {
 
     public void setProducts(List<CreateSceneProductDTO> products) {
         this.products = products;
+    }
+
+    public CreateSceneRoomModelDTO getRoomModel() {
+        return roomModel;
+    }
+
+    public void setRoomModel(CreateSceneRoomModelDTO roomModel) {
+        this.roomModel = roomModel;
+    }
+
+    public List<CreateSceneCoveringDTO> getCoverings() {
+        return coverings;
+    }
+
+    public void setCoverings(List<CreateSceneCoveringDTO> coverings) {
+        this.coverings = coverings;
     }
 
     @Override

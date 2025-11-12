@@ -51,6 +51,12 @@ public class Scene {
     @OneToMany(mappedBy = "scene", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<SceneProduct> sceneProducts;
 
+    @OneToOne(mappedBy = "scene", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private SceneRoomModel roomModel;
+
+    @OneToMany(mappedBy = "scene", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private Set<SceneCovering> sceneCoverings;
+
     public Scene() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
@@ -162,6 +168,22 @@ public class Scene {
 
     public void setSceneProducts(Set<SceneProduct> sceneProducts) {
         this.sceneProducts = sceneProducts;
+    }
+
+    public SceneRoomModel getRoomModel() {
+        return roomModel;
+    }
+
+    public void setRoomModel(SceneRoomModel roomModel) {
+        this.roomModel = roomModel;
+    }
+
+    public Set<SceneCovering> getSceneCoverings() {
+        return sceneCoverings;
+    }
+
+    public void setSceneCoverings(Set<SceneCovering> sceneCoverings) {
+        this.sceneCoverings = sceneCoverings;
     }
 
     @Override

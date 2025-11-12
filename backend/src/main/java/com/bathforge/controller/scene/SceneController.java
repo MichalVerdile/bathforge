@@ -186,4 +186,90 @@ public class SceneController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /**
+     * Create or update room model for a scene
+     */
+    @PostMapping("/{sceneId}/room-model")
+    public ResponseEntity<SceneRoomModelDTO> createOrUpdateRoomModel(@PathVariable Long sceneId,
+            @Valid @RequestBody CreateSceneRoomModelDTO roomModelDTO) {
+        try {
+            SceneRoomModelDTO savedRoomModel = sceneService.createOrUpdateRoomModel(sceneId, roomModelDTO);
+            return ResponseEntity.ok(savedRoomModel);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Get room model for a scene
+     */
+    @GetMapping("/{sceneId}/room-model")
+    public ResponseEntity<SceneRoomModelDTO> getRoomModel(@PathVariable Long sceneId) {
+        SceneRoomModelDTO roomModel = sceneService.getRoomModelBySceneId(sceneId);
+        return roomModel != null ? ResponseEntity.ok(roomModel) : ResponseEntity.notFound().build();
+    }
+
+    /**
+     * Delete room model from scene
+     */
+    @DeleteMapping("/{sceneId}/room-model")
+    public ResponseEntity<Void> deleteRoomModel(@PathVariable Long sceneId) {
+        try {
+            sceneService.deleteRoomModel(sceneId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Create or update covering for a scene
+     */
+    @PostMapping("/{sceneId}/coverings")
+    public ResponseEntity<SceneCoveringDTO> createOrUpdateCovering(@PathVariable Long sceneId,
+            @Valid @RequestBody CreateSceneCoveringDTO coveringDTO) {
+        try {
+            SceneCoveringDTO savedCovering = sceneService.createOrUpdateCovering(sceneId, coveringDTO);
+            return ResponseEntity.ok(savedCovering);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /**
+     * Get all coverings for a scene
+     */
+    @GetMapping("/{sceneId}/coverings")
+    public ResponseEntity<List<SceneCoveringDTO>> getCoverings(@PathVariable Long sceneId) {
+        List<SceneCoveringDTO> coverings = sceneService.getCoveringsBySceneId(sceneId);
+        return ResponseEntity.ok(coverings);
+    }
+
+    /**
+     * Delete covering from scene
+     */
+    @DeleteMapping("/{sceneId}/coverings/{coveringId}")
+    public ResponseEntity<Void> deleteCovering(@PathVariable Long sceneId,
+            @PathVariable Long coveringId) {
+        try {
+            sceneService.deleteCovering(coveringId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * Delete all coverings from scene
+     */
+    @DeleteMapping("/{sceneId}/coverings")
+    public ResponseEntity<Void> deleteAllCoverings(@PathVariable Long sceneId) {
+        try {
+            sceneService.deleteCoveringsBySceneId(sceneId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

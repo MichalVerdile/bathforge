@@ -30,12 +30,12 @@ function App() {
         const result = await systemController.testConnection();
         setApiStatus({
           message: result.message,
-          status: result.isConnected ? "success" : "error",
+          status: result.isConnected ? "success" : "error"
         });
       } catch (error: any) {
         setApiStatus({
           message: error.message || "Unexpected error occurred",
-          status: "error",
+          status: "error"
         });
       }
     };
@@ -48,24 +48,60 @@ function App() {
   };
 
   const handleNavigateHome = () => {
-    setCurrentView("planner");
+    setCurrentView('planner');
   };
 
   const handleNavigateLogin = () => {
     // Login functionality to be implemented later
-    console.log("Login clicked - not yet implemented");
+    console.log('Login clicked - not yet implemented');
   };
 
   if (currentView === "planner") {
-    return <BathroomPlanner onNavigate={handleNavigate} />;
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          title="Home"
+        />
+        <div style={{ flex: 1 }}>
+          <BathroomPlanner onNavigate={handleNavigate} />
+        </div>
+      </div>
+    );
   }
 
   if (currentView === "template-selection") {
-    return <TemplateSelection onNavigate={handleNavigate} />;
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="Template Selection"
+        />
+        <div style={{ flex: 1 }}>
+          <TemplateSelection onNavigate={handleNavigate} />
+        </div>
+      </div>
+    );
   }
 
+
   if (currentView === "custom-room") {
-    return <CustomRoom onNavigate={handleNavigate} />;
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="Custom Room"
+        />
+        <CustomRoom onNavigate={handleNavigate} />;
+      </div>
+    );
   }
 
   if (currentView === "ai-design") {
@@ -74,38 +110,15 @@ function App() {
 
   if (currentView === "3d") {
     return (
-      <div
-        style={{ height: "100vh", display: "flex", flexDirection: "column" }}
-      >
-        <header
-          style={{
-            background: "#2c3e50",
-            color: "white",
-            padding: "10px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexShrink: 0,
-          }}
-        >
-          <h1 style={{ margin: 0, fontSize: "24px" }}>🛁 BathForge 3D</h1>
-          <button
-            onClick={() => handleNavigate("planner")}
-            style={{
-              background: "#3498db",
-              color: "white",
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-            }}
-          >
-            ← Back to Planner
-          </button>
-        </header>
-
-        <div style={{ flex: 1, overflow: "hidden" }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <Header 
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title="3D Designer"
+        />
+        <div style={{ flex: 1, overflow: 'hidden' }}>
           <Bathroom3DViewer />
         </div>
       </div>
@@ -113,10 +126,8 @@ function App() {
   }
 
   return (
-    <div
-      style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}
-    >
-      <Header
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Header 
         onNavigateHome={handleNavigateHome}
         onNavigateLogin={handleNavigateLogin}
         title="Home"

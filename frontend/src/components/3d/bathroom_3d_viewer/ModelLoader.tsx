@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { detectUnitScale } from './modelScalingConfig';
 
 interface ModelLoaderProps {
   url: string;
@@ -11,6 +12,7 @@ interface ModelLoaderProps {
   castShadow?: boolean;
   receiveShadow?: boolean;
   autoRotate?: boolean;
+  applyUnitDetection?: boolean;
   onLoad?: (model: THREE.Group) => void;
   onError?: (error: Error) => void;
 }
@@ -23,13 +25,15 @@ export default function ModelLoader({
   castShadow = true,
   receiveShadow = true,
   autoRotate = false,
+  applyUnitDetection = false,
   onLoad,
   onError
 }: ModelLoaderProps) {
   const meshRef = useRef<THREE.Group>(null);
   const [error, setError] = useState<string | null>(null);
   const [setIsLoaded] = useState(false);
-  
+  const [appliedScale, setAppliedScale] = useState<[number, number, number] | number>(scale);
+
   const gltf = useGLTF(url);
 
   useFrame((state, delta) => {
@@ -45,12 +49,25 @@ export default function ModelLoader({
 
     try {
       const model = gltf.scene.clone();
-      
+
+      if (applyUnitDetection) {
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDimension = Math.max(size.x, size.y, size.z);
+        const unitScale = detectUnitScale(maxDimension);
+
+        if (Array.isArray(scale)) {
+          setAppliedScale([scale[0] * unitScale, scale[1] * unitScale, scale[2] * unitScale]);
+        } else {
+          setAppliedScale(unitScale * scale);
+        }
+      }
+
       model.traverse((child: THREE.Object3D) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = castShadow;
           child.receiveShadow = receiveShadow;
-          
+
           if (child.material) {
             if (Array.isArray(child.material)) {
               child.material.forEach((mat) => {
@@ -66,7 +83,7 @@ export default function ModelLoader({
       });
 
       setError(null);
-      
+
       if (onLoad) {
         onLoad(model);
       }
@@ -78,7 +95,7 @@ export default function ModelLoader({
         onError(err instanceof Error ? err : new Error(errorMessage));
       }
     }
-  }, [gltf, castShadow, receiveShadow, onLoad, onError]);
+  }, [gltf, castShadow, receiveShadow, onLoad, onError, applyUnitDetection, scale, url]);
 
   if (error) {
     return (
@@ -99,7 +116,7 @@ export default function ModelLoader({
   }
 
   return (
-    <group ref={meshRef} position={position} rotation={rotation} scale={scale}>
+    <group ref={meshRef} position={position} rotation={rotation} scale={appliedScale}>
       <primitive object={gltf.scene} />
     </group>
   );
@@ -115,11 +132,11 @@ export function useFitModel(modelRef: React.RefObject<THREE.Group>) {
       const box = new THREE.Box3().setFromObject(modelRef.current);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      
+
       setBounds(box);
       setCenter(center);
       setSize(size);
-      
+
       modelRef.current.position.copy(center.multiplyScalar(-1));
     }
   }, [modelRef]);

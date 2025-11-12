@@ -57,13 +57,14 @@ function App() {
 
   if (currentView === "planner") {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
           title="Home"
+          disableHomeButton={true}
         />
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
           <BathroomPlanner onNavigate={handleNavigate} />
         </div>
       </div>
@@ -72,7 +73,7 @@ function App() {
 
   if (currentView === "template-selection") {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
@@ -80,7 +81,7 @@ function App() {
           onNavigateBack={() => handleNavigate('planner')}
           title="Template Selection"
         />
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
           <TemplateSelection onNavigate={handleNavigate} />
         </div>
       </div>
@@ -90,7 +91,7 @@ function App() {
 
   if (currentView === "custom-room") {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
@@ -98,14 +99,16 @@ function App() {
           onNavigateBack={() => handleNavigate('planner')}
           title="Custom Room"
         />
-        <CustomRoom onNavigate={handleNavigate} />;
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <CustomRoom onNavigate={handleNavigate} />
+        </div>
       </div>
     );
   }
 
   if (currentView === "ai-design") {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
@@ -113,7 +116,7 @@ function App() {
           onNavigateBack={() => handleNavigate('planner')}
           title="AI Designer"
         />
-        <div style={{ flex: 1, padding: "2rem", textAlign: "center" }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: "2rem", textAlign: "center" }}>
           <h1>AI Bathroom Designer</h1>
           <p>Let our AI create the perfect bathroom for you</p>
           <button onClick={() => handleNavigate("planner")}>
@@ -132,7 +135,7 @@ function App() {
 
   if (currentView === "3d") {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
@@ -148,13 +151,13 @@ function App() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <Header 
         onNavigateHome={handleNavigateHome}
         onNavigateLogin={handleNavigateLogin}
         title="Home"
       />
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, overflow: 'hidden' }}>
         <BathroomPlanner onNavigate={handleNavigate} />
       </div>
     </div>

@@ -1,7 +1,8 @@
 .template-selection {
-  min-height: 100vh;
+  height: 100%;
   background: #0f172a;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
 .page-title {
@@ -47,7 +48,7 @@
 .template-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
+  height: 100%;
   gap: 0;
 }
 

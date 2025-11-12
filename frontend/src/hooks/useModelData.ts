@@ -39,7 +39,7 @@ export function useModelData(): UseModelDataResult {
       'basins': 'Basins & Sinks',
       'wcs': 'WCs & Toilets',
       'bathtubs': 'Bathtubs',
-      'shower': 'Shower',
+      'shower': 'Showers',
       'fittings': 'Fittings',
       'fittings_bathtubs': 'Bathtub Fittings',
       'towel_radiators': 'Towel Radiators',

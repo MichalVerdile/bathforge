@@ -48,15 +48,17 @@ export const Room: React.FC<RoomProps> = ({ vertices, height, viewMode }) => {
   const cornerRefs = useRef<(THREE.Mesh | null)[]>([]);
 
   useEffect(() => {
+    if (!vertices || vertices.length === 0) {
+      return;
+    }
     wallRefs.current = wallRefs.current.slice(0, vertices.length);
     cornerRefs.current = cornerRefs.current.slice(0, vertices.length);
-  }, [vertices.length]);
-
-  const centroid = calculateCentroid(vertices);
+  }, [vertices.length, height, viewMode]);
 
   useFrame(() => {
     if (
       viewMode !== "3D" ||
+      !vertices ||
       vertices.length < 3 ||
       wallRefs.current.length === 0
     )
@@ -113,9 +115,11 @@ export const Room: React.FC<RoomProps> = ({ vertices, height, viewMode }) => {
     });
   });
 
-  if (vertices.length < 3) {
+  if (!vertices || vertices.length < 3) {
     return null;
   }
+
+  const centroid = calculateCentroid(vertices);
 
   const floor3DVerts = vertices.map((v) => {
     const pos3D = convert2DTo3D(v, centroid);

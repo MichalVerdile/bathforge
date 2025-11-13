@@ -159,12 +159,12 @@ function CameraController({ viewType, customPosition, controlsRef }: CameraContr
         controlsRef.current.update();
       }
     } else if (viewType === '3D-Person') {
-      targetPosition = [0, 1.8, 1];
+      targetPosition = [0, 1.5, 1];
       camera.up.set(0, 1, 0);
       camera.rotation.set(0, 0, 0);
       camera.position.set(...targetPosition);
       if (controlsRef.current) {
-        controlsRef.current.target.set(0, 1.8, 0);
+        controlsRef.current.target.set(0, 1.5, 0);
         controlsRef.current.update();
       }
     } else {
@@ -289,7 +289,7 @@ export default function Scene3D({
     if (viewType === '2D') {
       return [0, 6, 0];
     } else if (viewType === '3D-Person') {
-      return [0, 1.8, 0];
+      return [0, 1.5, 0];
     } else {
       return cameraPosition;
     }

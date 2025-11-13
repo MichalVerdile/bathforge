@@ -303,6 +303,7 @@ export default function Scene3D({
         enablePan: false,
         enableZoom: true,
         enableRotate: false,
+        enableDamping: false,
         minDistance: 1,
         maxDistance: 50,
         maxPolarAngle: Math.PI,
@@ -313,6 +314,7 @@ export default function Scene3D({
         enablePan: false,
         enableZoom: false,
         enableRotate: true,
+        enableDamping: false,
         minDistance: 1,
         maxDistance: 50,
         maxPolarAngle: Math.PI / 2.1,
@@ -323,6 +325,8 @@ export default function Scene3D({
         enablePan: true,
         enableZoom: true,
         enableRotate: true,
+        enableDamping: true,
+        dampingFactor: 0.05,
         minDistance: 0.5,
         maxDistance: 100,
         maxPolarAngle: Math.PI / 1.8,
@@ -381,6 +385,8 @@ export default function Scene3D({
             enablePan={controlSettings.enablePan}
             enableZoom={controlSettings.enableZoom}
             enableRotate={controlSettings.enableRotate}
+            enableDamping={controlSettings.enableDamping}
+            dampingFactor={controlSettings.dampingFactor}
             minDistance={controlSettings.minDistance}
             maxDistance={controlSettings.maxDistance}
             maxPolarAngle={controlSettings.maxPolarAngle}

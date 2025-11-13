@@ -154,6 +154,10 @@ function CameraController({ viewType, customPosition, controlsRef }: CameraContr
       camera.rotation.set(-Math.PI / 2, 0, 0);
       camera.up.set(0, 0, -1);
       camera.position.set(...targetPosition);
+      if (controlsRef.current) {
+        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.update();
+      }
     } else if (viewType === '3D-Person') {
       targetPosition = [0, 1.8, 1];
       camera.up.set(0, 1, 0);
@@ -169,7 +173,7 @@ function CameraController({ viewType, customPosition, controlsRef }: CameraContr
       camera.rotation.set(0, 0, 0);
       camera.position.set(...targetPosition);
       if (controlsRef.current) {
-        controlsRef.current.target.set(0, 0, 0);
+        controlsRef.current.target.set(0, 1.25, 0);
         controlsRef.current.update();
       }
     }
@@ -302,6 +306,7 @@ export default function Scene3D({
         minDistance: 1,
         maxDistance: 50,
         maxPolarAngle: Math.PI,
+        minPolarAngle: 0,
       };
     } else if (viewType === '3D-Person') {
       return {
@@ -311,6 +316,7 @@ export default function Scene3D({
         minDistance: 1,
         maxDistance: 50,
         maxPolarAngle: Math.PI / 2.1,
+        minPolarAngle: 0,
       };
     } else {
       return {
@@ -319,7 +325,8 @@ export default function Scene3D({
         enableRotate: true,
         minDistance: 0.5,
         maxDistance: 100,
-        maxPolarAngle: Math.PI
+        maxPolarAngle: Math.PI / 1.8,
+        minPolarAngle: 0,
       };
     }
   };
@@ -377,6 +384,7 @@ export default function Scene3D({
             minDistance={controlSettings.minDistance}
             maxDistance={controlSettings.maxDistance}
             maxPolarAngle={controlSettings.maxPolarAngle}
+            minPolarAngle={controlSettings.minPolarAngle}
           />
 
           {children}

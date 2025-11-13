@@ -5,6 +5,7 @@ import BathroomPlanner from "./components/configurator/bathroom_planner/Bathroom
 import TemplateSelection from "./components/configurator/template_selection/TemplateSelection";
 import "./index.css";
 import CustomRoom from "./components/configurator/custom_room/CustomRoom";
+import AIDesigner from "./components/configurator/ai_designer/AIDesigner";
 import { Header } from "./components/common";
 
 interface ApiStatus {
@@ -107,30 +108,7 @@ function App() {
   }
 
   if (currentView === "ai-design") {
-    return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header 
-          onNavigateHome={handleNavigateHome}
-          onNavigateLogin={handleNavigateLogin}
-          showBackButton={true}
-          onNavigateBack={() => handleNavigate('planner')}
-          title="AI Designer"
-        />
-        <div style={{ flex: 1, overflow: 'auto', padding: "2rem", textAlign: "center" }}>
-          <h1>AI Bathroom Designer</h1>
-          <p>Let our AI create the perfect bathroom for you</p>
-          <button onClick={() => handleNavigate("planner")}>
-          Back to Planner
-        </button>
-          <button
-          onClick={() => handleNavigate("3d")}
-          style={{ marginLeft: "1rem" }}
-        >
-          Continue to 3D Designer
-        </button>
-        </div>
-      </div>
-    );
+    return <AIDesigner onNavigate={handleNavigate} />;
   }
 
   if (currentView === "3d") {

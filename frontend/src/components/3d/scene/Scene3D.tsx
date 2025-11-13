@@ -249,7 +249,7 @@ function Ground() {
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, -0.1, 0]}
-      receiveShadow
+      receiveShadow={false}
     >
       <planeGeometry args={[50, 50]} />
       <shadowMaterial opacity={0.3} />

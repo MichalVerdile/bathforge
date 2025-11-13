@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import Scene3D from "../scene/Scene3D";
-import ModelLoader from "./ModelLoader";
 import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
 import sceneService, {
   SceneProduct,
@@ -184,24 +183,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         console.log("Saving custom room model:", roomModelData);
       } else if (templateData) {
         roomModelData = {
-          vertices: [
-            {
-              x: -templateData.roomData.width / 2,
-              y: -templateData.roomData.depth / 2,
-            },
-            {
-              x: templateData.roomData.width / 2,
-              y: -templateData.roomData.depth / 2,
-            },
-            {
-              x: templateData.roomData.width / 2,
-              y: templateData.roomData.depth / 2,
-            },
-            {
-              x: -templateData.roomData.width / 2,
-              y: templateData.roomData.depth / 2,
-            },
-          ],
+          vertices: templateData.roomData.vertices,
           height: templateData.roomData.height / 100,
         };
         console.log("Saving template room model:", roomModelData);
@@ -613,22 +595,15 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
               />
             )}
 
-          {templateData?.preview && (
-            <ModelLoader
-              url={templateData.preview}
-              position={[0, 2.41, 0]}
-              rotation={[0, 0, 0]}
-              scale={[2.2, 2.2, 2.2]}
-              applyUnitDetection={true}
-              castShadow={true}
-              receiveShadow={true}
-              onError={(err) =>
-                console.error("Failed to load template model:", err)
-              }
+          {templateData && (
+            <Room
+              vertices={templateData.roomData.vertices}
+              height={templateData.roomData.height / 100}
+              viewMode="3D"
             />
           )}
 
-          {customRoomData && !templateData?.preview && (
+          {customRoomData && !templateData && (
             <Room
               vertices={customRoomData.vertices}
               height={customRoomData.height}
@@ -794,7 +769,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         )}
 
         {sceneProducts.length === 0 &&
-          !templateData?.preview &&
+          !templateData &&
           !customRoomData && (
             <div className="welcome-message">
               <h3 className="welcome-title">Welcome to BathForge 3D</h3>

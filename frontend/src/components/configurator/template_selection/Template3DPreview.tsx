@@ -2,25 +2,13 @@ import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
 
-interface Template {
-  id: number;
-  name: string;
-  preview: string;
-  roomData: {
-    width: number;
-    height: number;
-    depth: number;
-    fixtures: Array<{
-      type: 'bathtub' | 'sink' | 'toilet' | 'shower' | 'window' | 'door';
-      position: { x: number; y: number; z: number };
-      rotation: { x: number; y: number; z: number };
-      scale: { x: number; y: number; z: number };
-    }>;
-  };
-}
-
 interface Template3DPreviewProps {
-  template: Template;
+  template: {
+    id: number;
+    name: string;
+    preview: string;
+    roomData?: unknown; 
+  };
 }
 
 const RoomModel: React.FC<{ modelPath: string }> = ({ modelPath }) => {

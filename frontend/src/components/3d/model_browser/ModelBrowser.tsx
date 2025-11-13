@@ -2,14 +2,13 @@ import React, { useState, useEffect } from "react";
 import {
   MdBathtub,
   MdWash,
-  MdWc,
   MdShower,
   MdLayers,
   MdLocalFireDepartment,
   MdSpa,
   MdPlumbing,
 } from "react-icons/md";
-import { FaChair, FaSync, FaFaucet } from "react-icons/fa";
+import { FaChair, FaSync, FaFaucet, FaToilet } from "react-icons/fa";
 import { useModelData } from "../../../hooks/useModelData";
 import { ModelItem, ModelCategory } from "../../../types/api";
 import "./ModelBrowser.css";
@@ -28,7 +27,7 @@ const getCategoryIcon = (
   const iconMap: { [key: string]: JSX.Element } = {
     bathtubs: <MdBathtub size={size} />,
     basins: <MdWash size={size} />,
-    wcs: <MdWc size={size} />,
+    wcs: <FaToilet size={size} />,
     shower: <MdShower size={size} />,
     furniture: <FaChair size={size} />,
     accessories: <MdSpa size={size} />,
@@ -46,8 +45,8 @@ const getProductIcon = (category: string, size: number = 18): JSX.Element => {
     bathtubs: <MdBathtub size={size} />,
     basin: <MdWash size={size} />,
     basins: <MdWash size={size} />,
-    toilet: <MdWc size={size} />,
-    wcs: <MdWc size={size} />,
+    toilet: <FaToilet size={size} />,
+    wcs: <FaToilet size={size} />,
     shower: <MdShower size={size} />,
     furniture: <FaChair size={size} />,
     accessoire: <MdSpa size={size} />,
@@ -164,27 +163,39 @@ export default function ModelBrowser({
       </div>
 
       <div className="category-tabs">
-        {categories.map((category) => (
-          <button
-            key={category.name}
-            className={`category-tab ${
-              selectedCategory === category.name ? "active" : ""
-            }`}
-            onClick={() => setSelectedCategory(category.name)}
-            data-tooltip={category.displayName}
-          >
-            <span className="category-icon">
-              {getCategoryIcon(category.name)}
-            </span>
-          </button>
-        ))}
+        {(() => {
+          const regularCategories = categories.filter(
+            (cat) => cat.name.toLowerCase() !== "coverings"
+          );
+          const coveringsCategory = categories.find(
+            (cat) => cat.name.toLowerCase() === "coverings"
+          );
+          const sortedCategories = coveringsCategory
+            ? [...regularCategories, coveringsCategory]
+            : regularCategories;
+
+          return sortedCategories.map((category) => (
+            <button
+              key={category.name}
+              className={`category-tab ${
+                category.name.toLowerCase() === "coverings"
+                  ? "coverings-tab"
+                  : ""
+              } ${selectedCategory === category.name ? "active" : ""}`}
+              onClick={() => setSelectedCategory(category.name)}
+              data-tooltip={category.displayName}
+            >
+              <span className="category-icon">
+                {getCategoryIcon(category.name)}
+              </span>
+            </button>
+          ));
+        })()}
       </div>
 
       <div className="model-list">
         {filteredModels.length === 0 ? (
-          <div className="no-models-message">
-            No products in this category. No products in this category.
-          </div>
+          <div className="no-models-message">No products in this category.</div>
         ) : (
           filteredModels.map((model) => (
             <div

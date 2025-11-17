@@ -613,6 +613,13 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
           {sceneProducts.map((product) => {
             const selectedColor = getSelectedColor(product);
+            // Get room data from either custom room or template
+            const roomData = customRoomData
+              ? { vertices: customRoomData.vertices, height: customRoomData.height }
+              : templateData
+              ? { vertices: templateData.roomData.vertices, height: templateData.roomData.height / 100 }
+              : undefined;
+
             return (
               <DraggableModel
                 key={product.uniqueId}
@@ -634,6 +641,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                   viewType !== "3D-Person"
                 }
                 disableInteractions={viewType === "3D-Person"}
+                roomVertices={roomData?.vertices}
+                roomHeight={roomData?.height}
                 onPositionChange={(position) => {
                   if (viewType !== "3D-Person") {
                     updateProductPosition(product.uniqueId, position);

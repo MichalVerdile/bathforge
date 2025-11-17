@@ -291,7 +291,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       productId: model.id,
       modelItem: model,
       positionX: position ? position[0] : 0,
-      positionY: position ? position[1] : 0.3,
+      positionY: position ? position[1] : 0.1,
       positionZ: position ? position[2] : 0,
       rotationX: 0,
       rotationY: 0,
@@ -615,9 +615,15 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             const selectedColor = getSelectedColor(product);
             // Get room data from either custom room or template
             const roomData = customRoomData
-              ? { vertices: customRoomData.vertices, height: customRoomData.height }
+              ? {
+                  vertices: customRoomData.vertices,
+                  height: customRoomData.height,
+                }
               : templateData
-              ? { vertices: templateData.roomData.vertices, height: templateData.roomData.height / 100 }
+              ? {
+                  vertices: templateData.roomData.vertices,
+                  height: templateData.roomData.height / 100,
+                }
               : undefined;
 
             return (
@@ -764,12 +770,60 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                     </div>
                   )}
 
-                  <div className="position-info">
-                    <small>
-                      Position: [{(selectedProduct.positionX || 0).toFixed(1)},{" "}
-                      {(selectedProduct.positionY || 0).toFixed(1)},{" "}
-                      {(selectedProduct.positionZ || 0).toFixed(1)}]
-                    </small>
+                  <div className="slider-control">
+                    <label>
+                      Rotation:{" "}
+                      {Math.round(
+                        (selectedProduct.rotationY || 0) * (180 / Math.PI)
+                      )}
+                      °
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      step="15"
+                      value={Math.round(
+                        (selectedProduct.rotationY || 0) * (180 / Math.PI)
+                      )}
+                      onChange={(e) => {
+                        const degrees = parseFloat(e.target.value);
+                        const radians = degrees * (Math.PI / 180);
+                        updateProductRotation(selectedProductId, [
+                          selectedProduct.rotationX || 0,
+                          radians,
+                          selectedProduct.rotationZ || 0,
+                        ]);
+                      }}
+                      className="slider"
+                    />
+                  </div>
+
+                  <div className="slider-control">
+                    <label>
+                      Height: {(selectedProduct.positionY || 0).toFixed(2)}m
+                    </label>
+                    <input
+                      type="range"
+                      min="0.10"
+                      max={Math.max(
+                        0.2,
+                        (customRoomData?.height ||
+                          templateData?.roomData?.height / 100 ||
+                          2.5) - 0.2
+                      )}
+                      step="0.01"
+                      value={selectedProduct.positionY || 0.1}
+                      onChange={(e) => {
+                        const height = parseFloat(e.target.value);
+                        updateProductPosition(selectedProductId, [
+                          selectedProduct.positionX || 0,
+                          height,
+                          selectedProduct.positionZ || 0,
+                        ]);
+                      }}
+                      className="slider"
+                    />
                   </div>
                 </div>
               );
@@ -777,16 +831,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           </div>
         )}
 
-        {sceneProducts.length === 0 &&
-          !templateData &&
-          !customRoomData && (
-            <div className="welcome-message">
-              <h3 className="welcome-title">Welcome to BathForge 3D</h3>
-              <p className="welcome-description">
-                Browse and select bathroom fixtures to add them to your scene
-              </p>
-            </div>
-          )}
+        {sceneProducts.length === 0 && !templateData && !customRoomData && (
+          <div className="welcome-message">
+            <h3 className="welcome-title">Welcome to BathForge 3D</h3>
+            <p className="welcome-description">
+              Browse and select bathroom fixtures to add them to your scene
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

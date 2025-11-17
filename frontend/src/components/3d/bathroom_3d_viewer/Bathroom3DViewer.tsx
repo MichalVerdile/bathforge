@@ -286,12 +286,20 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     const uniqueId = `product_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
+
+    let defaultHeight = 0.08;
+    if (model.mountingType === "WALL") {
+      defaultHeight = 0.38;
+    } else if (model.mountingType === "FREESTANDING") {
+      defaultHeight = 0.08;
+    }
+
     const newProduct: SceneProduct3D = {
       uniqueId,
       productId: model.id,
       modelItem: model,
       positionX: position ? position[0] : 0,
-      positionY: position ? position[1] : 0.1,
+      positionY: position ? position[1] : defaultHeight,
       positionZ: position ? position[2] : 0,
       rotationX: 0,
       rotationY: 0,
@@ -801,24 +809,28 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
                   <div className="slider-control">
                     <label>
-                      Height: {(selectedProduct.positionY || 0).toFixed(2)}m
+                      Height:{" "}
+                      {Math.max(
+                        0,
+                        (selectedProduct.positionY || 0.08) - 0.08
+                      ).toFixed(2)}
+                      m
                     </label>
                     <input
                       type="range"
-                      min="0.10"
-                      max={Math.max(
-                        0.2,
-                        (customRoomData?.height ||
-                          templateData?.roomData?.height / 100 ||
-                          2.5) - 0.2
-                      )}
+                      min="0"
+                      max="1.30"
                       step="0.01"
-                      value={selectedProduct.positionY || 0.1}
+                      value={Math.max(
+                        0,
+                        (selectedProduct.positionY || 0.08) - 0.08
+                      )}
                       onChange={(e) => {
-                        const height = parseFloat(e.target.value);
+                        const relativeHeight = parseFloat(e.target.value);
+                        const actualHeight = relativeHeight + 0.08;
                         updateProductPosition(selectedProductId, [
                           selectedProduct.positionX || 0,
-                          height,
+                          actualHeight,
                           selectedProduct.positionZ || 0,
                         ]);
                       }}

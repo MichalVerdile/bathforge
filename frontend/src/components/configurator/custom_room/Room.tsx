@@ -125,6 +125,8 @@ export const Room: React.FC<RoomProps> = ({
   const { camera } = useThree();
   const wallRefs = useRef<(THREE.Mesh | null)[]>([]);
   const cornerRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const doorRefs = useRef<(THREE.Group | null)[]>([]);
+  const windowRefs = useRef<(THREE.Group | null)[]>([]);
 
   useEffect(() => {
     if (!vertices || vertices.length === 0) {
@@ -190,6 +192,22 @@ export const Room: React.FC<RoomProps> = ({
         cornerRef.visible = false;
       } else {
         cornerRef.visible = true;
+      }
+    });
+
+    // Hide doors on hidden walls
+    openings?.doors.forEach((door, index) => {
+      const doorRef = doorRefs.current[index];
+      if (doorRef) {
+        doorRef.visible = !hiddenWalls.has(door.wallIndex);
+      }
+    });
+
+    // Hide windows on hidden walls
+    openings?.windows.forEach((window, index) => {
+      const windowRef = windowRefs.current[index];
+      if (windowRef) {
+        windowRef.visible = !hiddenWalls.has(window.wallIndex);
       }
     });
   });
@@ -273,7 +291,7 @@ export const Room: React.FC<RoomProps> = ({
       })}
 
       {/* Render doors */}
-      {openings?.doors.map((door) => {
+      {openings?.doors.map((door, index) => {
         const { position, rotation } = calculateOpeningPosition(
           door.wallIndex,
           door.position,
@@ -283,30 +301,31 @@ export const Room: React.FC<RoomProps> = ({
         );
 
         return (
-          <Door3D
-            key={door.id}
-            width={door.width}
-            height={door.height}
-            position={position}
-            rotation={rotation}
-            selected={selectedOpeningId === door.id}
-            onClick={
-              isInteractive
-                ? () => onOpeningClick?.(door.id, "door")
-                : undefined
-            }
-            onPointerOver={
-              isInteractive ? () => onOpeningHover?.(door.id) : undefined
-            }
-            onPointerOut={
-              isInteractive ? () => onOpeningHover?.(null) : undefined
-            }
-          />
+          <group key={door.id} ref={(el) => (doorRefs.current[index] = el)}>
+            <Door3D
+              width={door.width}
+              height={door.height}
+              position={position}
+              rotation={rotation}
+              selected={selectedOpeningId === door.id}
+              onClick={
+                isInteractive
+                  ? () => onOpeningClick?.(door.id, "door")
+                  : undefined
+              }
+              onPointerOver={
+                isInteractive ? () => onOpeningHover?.(door.id) : undefined
+              }
+              onPointerOut={
+                isInteractive ? () => onOpeningHover?.(null) : undefined
+              }
+            />
+          </group>
         );
       })}
 
       {/* Render windows */}
-      {openings?.windows.map((window) => {
+      {openings?.windows.map((window, index) => {
         const { position, rotation } = calculateOpeningPosition(
           window.wallIndex,
           window.position,
@@ -316,25 +335,26 @@ export const Room: React.FC<RoomProps> = ({
         );
 
         return (
-          <Window3D
-            key={window.id}
-            width={window.width}
-            height={window.height}
-            position={position}
-            rotation={rotation}
-            selected={selectedOpeningId === window.id}
-            onClick={
-              isInteractive
-                ? () => onOpeningClick?.(window.id, "window")
-                : undefined
-            }
-            onPointerOver={
-              isInteractive ? () => onOpeningHover?.(window.id) : undefined
-            }
-            onPointerOut={
-              isInteractive ? () => onOpeningHover?.(null) : undefined
-            }
-          />
+          <group key={window.id} ref={(el) => (windowRefs.current[index] = el)}>
+            <Window3D
+              width={window.width}
+              height={window.height}
+              position={position}
+              rotation={rotation}
+              selected={selectedOpeningId === window.id}
+              onClick={
+                isInteractive
+                  ? () => onOpeningClick?.(window.id, "window")
+                  : undefined
+              }
+              onPointerOver={
+                isInteractive ? () => onOpeningHover?.(window.id) : undefined
+              }
+              onPointerOut={
+                isInteractive ? () => onOpeningHover?.(null) : undefined
+              }
+            />
+          </group>
         );
       })}
     </group>

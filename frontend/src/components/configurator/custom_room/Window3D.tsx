@@ -13,8 +13,8 @@ interface Window3DProps {
 }
 
 const FRAME_WIDTH = 0.04; // Window frame width
-const FRAME_DEPTH = 0.06; // Frame depth
-const GLASS_DEPTH = 0.01; // Glass thickness
+const FRAME_DEPTH = 0.12; // Frame depth (slightly more than wall thickness of 0.075)
+const GLASS_DEPTH = 0.076; // Glass thickness
 const DIVIDER_WIDTH = 0.02; // Width of window dividers
 
 // Materials
@@ -25,11 +25,9 @@ const frameMaterial = new THREE.MeshStandardMaterial({
 });
 
 const glassMaterial = new THREE.MeshStandardMaterial({
-  color: "#87CEEB", // Light blue glass
+  color: "#B5E3FA", // Lighter blue glass
   roughness: 0.1,
   metalness: 0.2,
-  transparent: true,
-  opacity: 0.4,
 });
 
 const selectedFrameMaterial = new THREE.MeshStandardMaterial({
@@ -75,7 +73,6 @@ export const Window3D: React.FC<Window3DProps> = ({
       <mesh
         position={[-width / 2 + FRAME_WIDTH / 2, 0, 0]}
         material={currentFrameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[FRAME_WIDTH, height, FRAME_DEPTH]} />
@@ -85,7 +82,6 @@ export const Window3D: React.FC<Window3DProps> = ({
       <mesh
         position={[width / 2 - FRAME_WIDTH / 2, 0, 0]}
         material={currentFrameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[FRAME_WIDTH, height, FRAME_DEPTH]} />
@@ -95,7 +91,6 @@ export const Window3D: React.FC<Window3DProps> = ({
       <mesh
         position={[0, height / 2 - FRAME_WIDTH / 2, 0]}
         material={currentFrameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[width, FRAME_WIDTH, FRAME_DEPTH]} />
@@ -105,29 +100,18 @@ export const Window3D: React.FC<Window3DProps> = ({
       <mesh
         position={[0, -height / 2 + FRAME_WIDTH / 2, 0]}
         material={currentFrameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[width, FRAME_WIDTH, FRAME_DEPTH]} />
       </mesh>
 
       {/* Horizontal divider (middle) */}
-      <mesh
-        position={[0, 0, 0]}
-        material={currentFrameMaterial}
-        castShadow
-        receiveShadow
-      >
+      <mesh position={[0, 0, 0]} material={currentFrameMaterial} receiveShadow>
         <boxGeometry args={[innerWidth, DIVIDER_WIDTH, FRAME_DEPTH * 0.8]} />
       </mesh>
 
       {/* Vertical divider (middle) */}
-      <mesh
-        position={[0, 0, 0]}
-        material={currentFrameMaterial}
-        castShadow
-        receiveShadow
-      >
+      <mesh position={[0, 0, 0]} material={currentFrameMaterial} receiveShadow>
         <boxGeometry args={[DIVIDER_WIDTH, innerHeight, FRAME_DEPTH * 0.8]} />
       </mesh>
 
@@ -189,19 +173,20 @@ export const Window3D: React.FC<Window3DProps> = ({
       </mesh>
 
       {/* Window sill */}
-      <mesh
+      {/* <mesh
         position={[0, -height / 2 - 0.02, FRAME_DEPTH / 2 + 0.02]}
         material={currentFrameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[width + 0.04, 0.03, 0.08]} />
-      </mesh>
+      </mesh> */}
 
       {/* Selection highlight outline */}
       {selected && (
         <mesh position={[0, 0, 0]}>
-          <boxGeometry args={[width + 0.02, height + 0.02, FRAME_DEPTH + 0.02]} />
+          <boxGeometry
+            args={[width + 0.02, height + 0.02, FRAME_DEPTH + 0.02]}
+          />
           <meshBasicMaterial color="#4A90D9" wireframe />
         </mesh>
       )}

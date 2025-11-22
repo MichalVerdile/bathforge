@@ -29,7 +29,7 @@ export interface RoomOpenings {
 
 // Default dimensions
 export const DEFAULT_DOOR_WIDTH = 0.9; // 90cm
-export const DEFAULT_DOOR_HEIGHT = 2.0; // 200cm
+export const DEFAULT_DOOR_HEIGHT = 1.9; // 190cm
 export const DEFAULT_WINDOW_WIDTH = 1.0; // 100cm
 export const DEFAULT_WINDOW_HEIGHT = 1.0; // 100cm
 export const DEFAULT_WINDOW_ELEVATION = 0.9; // 90cm from floor

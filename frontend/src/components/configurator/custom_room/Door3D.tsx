@@ -81,7 +81,6 @@ export const Door3D: React.FC<Door3DProps> = ({
       <mesh
         position={[-width / 2 + FRAME_WIDTH / 2, height / 2, 0]}
         material={selected ? selectedMaterial : frameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[FRAME_WIDTH, height, FRAME_DEPTH]} />
@@ -91,7 +90,6 @@ export const Door3D: React.FC<Door3DProps> = ({
       <mesh
         position={[width / 2 - FRAME_WIDTH / 2, height / 2, 0]}
         material={selected ? selectedMaterial : frameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[FRAME_WIDTH, height, FRAME_DEPTH]} />
@@ -101,7 +99,6 @@ export const Door3D: React.FC<Door3DProps> = ({
       <mesh
         position={[0, height - FRAME_WIDTH / 2, 0]}
         material={selected ? selectedMaterial : frameMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[width, FRAME_WIDTH, FRAME_DEPTH]} />
@@ -111,7 +108,6 @@ export const Door3D: React.FC<Door3DProps> = ({
       <mesh
         position={[0, innerHeight / 2 + 0.01, DOOR_DEPTH / 2]}
         material={selected ? selectedMaterial : doorMaterial}
-        castShadow
         receiveShadow
       >
         <boxGeometry args={[innerWidth, innerHeight - 0.02, DOOR_DEPTH]} />
@@ -121,7 +117,6 @@ export const Door3D: React.FC<Door3DProps> = ({
       <mesh
         position={[handleOffset, handleHeight, DOOR_DEPTH + 0.02]}
         material={handleMaterial}
-        castShadow
       >
         <cylinderGeometry args={[0.015, 0.015, 0.1, 8]} />
       </mesh>
@@ -130,7 +125,6 @@ export const Door3D: React.FC<Door3DProps> = ({
       <mesh
         position={[handleOffset, handleHeight, DOOR_DEPTH + 0.005]}
         material={handleMaterial}
-        castShadow
       >
         <boxGeometry args={[0.03, 0.08, 0.01]} />
       </mesh>

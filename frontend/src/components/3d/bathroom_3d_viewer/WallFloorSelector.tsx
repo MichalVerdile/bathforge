@@ -7,6 +7,16 @@ interface WallFloorSelectorProps {
   onSelect: (mesh: THREE.Mesh | null, type: 'wall' | 'floor' | null) => void;
 }
 
+// Helper to check if a mesh or any of its ancestors is hidden
+function isVisibleInHierarchy(object: THREE.Object3D): boolean {
+  let current: THREE.Object3D | null = object;
+  while (current) {
+    if (!current.visible) return false;
+    current = current.parent;
+  }
+  return true;
+}
+
 export function WallFloorSelector({ enabled, onSelect }: WallFloorSelectorProps) {
   const { scene, camera, raycaster, pointer } = useThree();
   const [hoveredMesh, setHoveredMesh] = useState<THREE.Mesh | null>(null);
@@ -32,8 +42,12 @@ export function WallFloorSelector({ enabled, onSelect }: WallFloorSelectorProps)
       for (const intersect of intersects) {
         if (intersect.object instanceof THREE.Mesh) {
           const mesh = intersect.object;
+
+          // Skip meshes that are hidden or have hidden ancestors
+          if (!isVisibleInHierarchy(mesh)) continue;
+
           const meshType = detectMeshType(mesh);
-          
+
           if (meshType) {
             setHoveredMesh(mesh);
             document.body.style.cursor = 'pointer';
@@ -47,7 +61,8 @@ export function WallFloorSelector({ enabled, onSelect }: WallFloorSelectorProps)
     };
 
     const handleClick = (event: MouseEvent) => {
-      if (hoveredMesh) {
+      // Only select if hovered mesh is still visible
+      if (hoveredMesh && isVisibleInHierarchy(hoveredMesh)) {
         const meshType = detectMeshType(hoveredMesh);
         onSelect(hoveredMesh, meshType);
       } else {

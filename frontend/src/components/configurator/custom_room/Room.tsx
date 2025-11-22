@@ -24,6 +24,26 @@ interface RoomProps {
 const WALL_THICKNESS = 0.075;
 const FLOOR_THICKNESS = 0.075;
 
+// Store original raycast functions to restore later
+const originalRaycastMap = new WeakMap<THREE.Object3D, typeof THREE.Object3D.prototype.raycast>();
+const noopRaycast = () => {};
+
+// Helper to disable/enable raycasting on an object and its children
+const setRaycastEnabled = (object: THREE.Object3D, enabled: boolean) => {
+  if (enabled) {
+    const original = originalRaycastMap.get(object);
+    if (original) {
+      object.raycast = original;
+    }
+  } else {
+    if (!originalRaycastMap.has(object)) {
+      originalRaycastMap.set(object, object.raycast.bind(object));
+    }
+    object.raycast = noopRaycast;
+  }
+  object.children.forEach(child => setRaycastEnabled(child, enabled));
+};
+
 const wallMaterial = new THREE.MeshStandardMaterial({ color: "#f1f5f9" });
 const floorMaterial = new THREE.MeshStandardMaterial({ color: "#7b7e81ff" });
 const cornerMaterial = new THREE.MeshStandardMaterial({ color: "#f1f5f9" });
@@ -174,11 +194,11 @@ export const Room: React.FC<RoomProps> = ({
         .normalize();
 
       const dotProduct = normal.dot(toWall);
-      if (dotProduct > 0) {
-        wallRef.visible = false;
+      const isHidden = dotProduct > 0;
+      wallRef.visible = !isHidden;
+      setRaycastEnabled(wallRef, !isHidden);
+      if (isHidden) {
         hiddenWalls.add(index);
-      } else {
-        wallRef.visible = true;
       }
     });
 
@@ -188,26 +208,27 @@ export const Room: React.FC<RoomProps> = ({
       const prevIndex = (index - 1 + vertices.length) % vertices.length;
       const isHidden = hiddenWalls.has(prevIndex) || hiddenWalls.has(index);
 
-      if (isHidden) {
-        cornerRef.visible = false;
-      } else {
-        cornerRef.visible = true;
-      }
+      cornerRef.visible = !isHidden;
+      setRaycastEnabled(cornerRef, !isHidden);
     });
 
-    // Hide doors on hidden walls
+    // Hide doors on hidden walls and disable raycasting
     openings?.doors.forEach((door, index) => {
       const doorRef = doorRefs.current[index];
       if (doorRef) {
-        doorRef.visible = !hiddenWalls.has(door.wallIndex);
+        const isHidden = hiddenWalls.has(door.wallIndex);
+        doorRef.visible = !isHidden;
+        setRaycastEnabled(doorRef, !isHidden);
       }
     });
 
-    // Hide windows on hidden walls
+    // Hide windows on hidden walls and disable raycasting
     openings?.windows.forEach((window, index) => {
       const windowRef = windowRefs.current[index];
       if (windowRef) {
-        windowRef.visible = !hiddenWalls.has(window.wallIndex);
+        const isHidden = hiddenWalls.has(window.wallIndex);
+        windowRef.visible = !isHidden;
+        setRaycastEnabled(windowRef, !isHidden);
       }
     });
   });

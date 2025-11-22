@@ -1,5 +1,5 @@
 .planner-page {
-  height: 100vh;
+  height: 100%;
   background: #0f172a;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: #f1f5f9;
@@ -37,6 +37,8 @@
   flex-grow: 1;
   position: relative;
   background: #0f172a;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .viewer-placeholder {
@@ -49,6 +51,9 @@
   font-size: 2rem;
   font-weight: 500;
   user-select: none;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 100px; /* Space for bottom buttons */
 }
 
 .info-popup-container {
@@ -233,12 +238,11 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 2rem;
-  z-index: 20;
+  padding: 1.5rem 2rem;
+  z-index: 30;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(to top, rgba(15, 23, 42, 0.7), transparent);
 }
 
 .go-back-button,

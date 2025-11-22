@@ -1,6 +1,7 @@
 import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Grid, Html, useProgress } from '@react-three/drei';
+import { FaSpinner } from 'react-icons/fa';
 import * as THREE from 'three';
 import { detectMeshType } from '../bathroom_3d_viewer/WallFloorSelector';
 
@@ -198,7 +199,9 @@ function Loader() {
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
         minWidth: '120px'
       }}>
-        <div style={{ marginBottom: '8px', fontSize: '16px' }}>⚙️</div>
+        <div style={{ marginBottom: '8px', fontSize: '16px', display: 'flex', justifyContent: 'center' }}>
+          <FaSpinner size={16} style={{ animation: 'spin 1s linear infinite' }} />
+        </div>
         <div style={{ fontWeight: '600', marginBottom: '4px' }}>Loading 3D Model</div>
         <div style={{ fontSize: '12px', color: '#94a3b8' }}>{progress.toFixed(0)}% complete</div>
       </div>

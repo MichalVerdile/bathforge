@@ -23,11 +23,6 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
   return (
     <>
       <div className="planner-page">
-        <header className="planner-header">
-          <h1 className="step-number">Step 2/3</h1>
-          <h2 className="step-title">Define Your Room Shape</h2>
-        </header>
-
         <div className="viewer-container">
           <div className="viewer-placeholder">
             <RoomEditor

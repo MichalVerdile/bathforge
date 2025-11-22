@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Product, ModelItem, ModelCategory, ProductFilter } from '../types/api';
-import { CategoryService } from '../controllers/api/products/CategoryService';
-import { ProductService } from '../controllers/api/products/ProductService';
+import { useState, useEffect, useCallback } from "react";
+import { Product, ModelItem, ModelCategory, ProductFilter } from "../types/api";
+import { CategoryService } from "../controllers/api/products/CategoryService";
+import { ProductService } from "../controllers/api/products/ProductService";
 
 export interface UseModelDataResult {
   categories: ModelCategory[];
@@ -18,7 +18,8 @@ export function useModelData(): UseModelDataResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const normalizeUrl = (u?: string) => u ? (u.startsWith('/') ? u : `/${u}`) : undefined;
+  const normalizeUrl = (u?: string) =>
+    u ? (u.startsWith("/") ? u : `/${u}`) : undefined;
 
   const convertProductToModelItem = (product: Product): ModelItem => ({
     id: product.id,
@@ -29,24 +30,27 @@ export function useModelData(): UseModelDataResult {
     priceRange: product.priceRange,
     mountingType: product.mountingType,
     availableColors: product.availableColors || [],
-    thumbnail: normalizeUrl(product.thumbnail)
+    thumbnail: normalizeUrl(product.thumbnail),
   });
 
   const formatCategoryDisplayName = (categoryName: string): string => {
     const displayNames: { [key: string]: string } = {
-      'accessoires': 'Accessories',
-      'furniture': 'Furniture',
-      'basins': 'Basins & Sinks',
-      'wcs': 'WCs & Toilets',
-      'bathtubs': 'Bathtubs',
-      'shower': 'Shower',
-      'fittings': 'Fittings',
-      'fittings_bathtubs': 'Bathtub Fittings',
-      'towel_radiators': 'Towel Radiators',
-      'coverings': 'Wall & Floor Coverings'
+      accessoires: "Accessories",
+      furniture: "Furniture",
+      basins: "Basins & Sinks",
+      wcs: "Toilets",
+      bathtubs: "Bathtubs",
+      shower: "Showers",
+      fittings: "Fittings",
+      fittings_bathtubs: "Bathtub Fittings",
+      towel_radiators: "Radiators",
+      coverings: "Walls & Floors",
     };
-    
-    return displayNames[categoryName] || categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
+
+    return (
+      displayNames[categoryName] ||
+      categoryName.charAt(0).toUpperCase() + categoryName.slice(1)
+    );
   };
 
   const loadData = useCallback(async () => {
@@ -56,24 +60,24 @@ export function useModelData(): UseModelDataResult {
 
       const [categoriesData, productsData] = await Promise.all([
         CategoryService.getAll(),
-        ProductService.getAll()
+        ProductService.getAll(),
       ]);
 
       setAllProducts(productsData);
 
       const categoryMap = new Map<number, ModelCategory>();
 
-      categoriesData.forEach(category => {
+      categoriesData.forEach((category) => {
         categoryMap.set(category.id, {
           id: category.id,
           name: category.name,
           displayName: formatCategoryDisplayName(category.name),
           description: category.description,
-          models: []
+          models: [],
         });
       });
 
-      productsData.forEach(product => {
+      productsData.forEach((product) => {
         const category = categoryMap.get(product.categoryId);
         if (category) {
           const modelItem = convertProductToModelItem(product);
@@ -82,30 +86,37 @@ export function useModelData(): UseModelDataResult {
       });
 
       const categoriesWithModels = Array.from(categoryMap.values())
-        .filter(category => category.models.length > 0)
+        .filter((category) => category.models.length > 0)
         .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
       setCategories(categoriesWithModels);
     } catch (err) {
-      console.error('Failed to load model data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load data from the backend');
+      console.error("Failed to load model data:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to load data from the backend"
+      );
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const filterProducts = useCallback(async (filters: ProductFilter): Promise<Product[]> => {
-    try {
-      if (filters.searchTerm) {
-        return await ProductService.search(filters.searchTerm);
-      } else {
-        return await ProductService.getWithFilters(filters);
+  const filterProducts = useCallback(
+    async (filters: ProductFilter): Promise<Product[]> => {
+      try {
+        if (filters.searchTerm) {
+          return await ProductService.search(filters.searchTerm);
+        } else {
+          return await ProductService.getWithFilters(filters);
+        }
+      } catch (err) {
+        console.error("Failed to filter products:", err);
+        throw err;
       }
-    } catch (err) {
-      console.error('Failed to filter products:', err);
-      throw err;
-    }
-  }, []);
+    },
+    []
+  );
 
   useEffect(() => {
     loadData();
@@ -117,7 +128,7 @@ export function useModelData(): UseModelDataResult {
     loading,
     error,
     refresh: loadData,
-    filterProducts
+    filterProducts,
   };
 }
 
@@ -138,8 +149,8 @@ export function useProductsByCategory(categoryId?: number) {
       const data = await ProductService.getByCategoryId(categoryId);
       setProducts(data);
     } catch (err) {
-      console.error('Failed to load products by category:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load products');
+      console.error("Failed to load products by category:", err);
+      setError(err instanceof Error ? err.message : "Failed to load products");
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,8 @@
 .bathroom-planner {
-  min-height: 100vh;
+  height: 100%;
   background: #0f172a;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
 .page-title {
@@ -26,7 +27,7 @@
 .planner-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  min-height: 100vh;
+  height: 100%;
   gap: 0;
 }
 
@@ -198,16 +199,16 @@
   .planner-content {
     grid-template-columns: 1fr;
   }
-  
+
   .planner-right {
     order: -1;
     padding: 2rem;
   }
-  
+
   .preview-container {
     height: 300px;
   }
-  
+
   .room-preview {
     padding: 15px;
   }
@@ -217,23 +218,23 @@
   .planner-header {
     padding: 1rem;
   }
-  
+
   .back-button {
     left: 1rem;
   }
-  
+
   .planner-subtitle {
     font-size: 1.5rem;
   }
-  
+
   .planner-left {
     padding: 2rem 1rem;
   }
-  
+
   .option-card {
     padding: 1rem;
   }
-  
+
   .option-icon {
     width: 50px;
     height: 50px;

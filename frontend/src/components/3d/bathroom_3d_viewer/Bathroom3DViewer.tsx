@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Scene3D from "../scene/Scene3D";
 import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
 import sceneService, {
@@ -11,6 +11,12 @@ import "./Bathroom3DViewer.css";
 import DraggableModel from "./DraggableModel";
 import { WallFloorSelector, applyTextureToMesh } from "./WallFloorSelector";
 import { Room } from "../../configurator/custom_room/Room";
+import {
+  RoomOpenings,
+  DoorData,
+  WindowData,
+  createDefaultOpenings,
+} from "../../configurator/custom_room/DoorWindowTypes";
 
 interface Vertex {
   x: number;
@@ -61,7 +67,11 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [customRoomData, setCustomRoomData] = useState<{
     vertices: Vertex[];
     height: number;
+    openings?: RoomOpenings;
   } | null>(null);
+  const [roomOpenings, setRoomOpenings] = useState<RoomOpenings | null>(null);
+  const [selectedOpeningId, setSelectedOpeningId] = useState<string | null>(null);
+  const [selectedOpeningType, setSelectedOpeningType] = useState<"door" | "window" | null>(null);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
@@ -111,6 +121,17 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       try {
         const customRoom = JSON.parse(storedCustomRoom);
         setCustomRoomData(customRoom);
+        // Initialize openings from stored data or create default ones
+        if (customRoom.openings) {
+          setRoomOpenings(customRoom.openings);
+        } else {
+          // Generate default openings for custom room
+          const defaultOpenings = createDefaultOpenings(
+            customRoom.vertices,
+            customRoom.height
+          );
+          setRoomOpenings(defaultOpenings);
+        }
         setCurrentScene({
           name: `Custom Scene ${new Date().toLocaleString()}`,
         });
@@ -128,6 +149,17 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       try {
         const template = JSON.parse(storedTemplate);
         setTemplateData(template);
+        // Initialize openings from template
+        if (template.roomData?.openings) {
+          setRoomOpenings(template.roomData.openings);
+        } else {
+          // Generate default openings if template doesn't have them
+          const defaultOpenings = createDefaultOpenings(
+            template.roomData.vertices,
+            template.roomData.height / 100
+          );
+          setRoomOpenings(defaultOpenings);
+        }
         setCurrentScene({
           name: `Template Scene ${new Date().toLocaleString()}`,
         });
@@ -376,6 +408,99 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     scheduleAutoSave(400);
   };
 
+  // Handle opening (door/window) click
+  const handleOpeningClick = useCallback(
+    (id: string, type: "door" | "window") => {
+      if (viewType === "3D-Person") return;
+      setSelectedOpeningId(id);
+      setSelectedOpeningType(type);
+      setSelectedProductId(null); // Deselect any product
+      handleSurfaceSelect(null, null); // Deselect any surface
+    },
+    [viewType]
+  );
+
+  // Update opening position along wall
+  const updateOpeningPosition = useCallback(
+    (openingId: string, newPosition: number) => {
+      if (!roomOpenings) return;
+
+      // Clamp position between 0.1 and 0.9 to keep opening on wall
+      const clampedPosition = Math.max(0.1, Math.min(0.9, newPosition));
+
+      setRoomOpenings((prev) => {
+        if (!prev) return prev;
+
+        const newDoors = prev.doors.map((door) =>
+          door.id === openingId
+            ? { ...door, position: clampedPosition }
+            : door
+        );
+
+        const newWindows = prev.windows.map((window) =>
+          window.id === openingId
+            ? { ...window, position: clampedPosition }
+            : window
+        );
+
+        return { doors: newDoors, windows: newWindows };
+      });
+
+      scheduleAutoSave(1000);
+    },
+    [roomOpenings]
+  );
+
+  // Move opening to a different wall
+  const moveOpeningToWall = useCallback(
+    (openingId: string, newWallIndex: number) => {
+      if (!roomOpenings) return;
+
+      setRoomOpenings((prev) => {
+        if (!prev) return prev;
+
+        const newDoors = prev.doors.map((door) =>
+          door.id === openingId
+            ? { ...door, wallIndex: newWallIndex, position: 0.5 }
+            : door
+        );
+
+        const newWindows = prev.windows.map((window) =>
+          window.id === openingId
+            ? { ...window, wallIndex: newWallIndex, position: 0.5 }
+            : window
+        );
+
+        return { doors: newDoors, windows: newWindows };
+      });
+
+      scheduleAutoSave(400);
+    },
+    [roomOpenings]
+  );
+
+  // Get currently selected opening data
+  const getSelectedOpening = useCallback((): DoorData | WindowData | null => {
+    if (!selectedOpeningId || !roomOpenings) return null;
+
+    const door = roomOpenings.doors.find((d) => d.id === selectedOpeningId);
+    if (door) return door;
+
+    const window = roomOpenings.windows.find((w) => w.id === selectedOpeningId);
+    return window || null;
+  }, [selectedOpeningId, roomOpenings]);
+
+  // Get number of walls for current room
+  const getWallCount = useCallback((): number => {
+    if (customRoomData) {
+      return customRoomData.vertices.length;
+    }
+    if (templateData) {
+      return templateData.roomData.vertices.length;
+    }
+    return 0;
+  }, [customRoomData, templateData]);
+
   const ensureSelectedProductColors = async (
     uniqueId: string,
     productId: number
@@ -586,6 +711,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           controlsEnabled={!isDraggingModel}
           onBackgroundClick={() => {
             setSelectedProductId(null);
+            setSelectedOpeningId(null);
+            setSelectedOpeningType(null);
             handleSurfaceSelect(null, null);
           }}
           onSceneReady={(scene) => {
@@ -608,6 +735,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
               vertices={templateData.roomData.vertices}
               height={templateData.roomData.height / 100}
               viewMode="3D"
+              openings={roomOpenings || undefined}
+              selectedOpeningId={selectedOpeningId}
+              onOpeningClick={handleOpeningClick}
+              isInteractive={viewType !== "3D-Person"}
             />
           )}
 
@@ -616,6 +747,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
               vertices={customRoomData.vertices}
               height={customRoomData.height}
               viewMode="3D"
+              openings={roomOpenings || undefined}
+              selectedOpeningId={selectedOpeningId}
+              onOpeningClick={handleOpeningClick}
+              isInteractive={viewType !== "3D-Person"}
             />
           )}
 
@@ -836,6 +971,90 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                       }}
                       className="slider"
                     />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* Opening (Door/Window) controls panel */}
+        {selectedOpeningId && viewType !== "3D-Person" && (
+          <div className="product-controls-panel opening-controls-panel">
+            {(() => {
+              const selectedOpening = getSelectedOpening();
+              if (!selectedOpening) return null;
+
+              const wallCount = getWallCount();
+
+              return (
+                <div className="product-controls">
+                  <div className="control-header">
+                    <h5>
+                      {selectedOpeningType === "door" ? "Door" : "Window"}
+                    </h5>
+                    <button
+                      className="deselect-button"
+                      onClick={() => {
+                        setSelectedOpeningId(null);
+                        setSelectedOpeningType(null);
+                      }}
+                      title="Deselect"
+                    >
+                      x
+                    </button>
+                  </div>
+
+                  <div className="slider-control">
+                    <label>
+                      Position along wall:{" "}
+                      {Math.round(selectedOpening.position * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="0.9"
+                      step="0.05"
+                      value={selectedOpening.position}
+                      onChange={(e) => {
+                        updateOpeningPosition(
+                          selectedOpeningId,
+                          parseFloat(e.target.value)
+                        );
+                      }}
+                      className="slider"
+                    />
+                  </div>
+
+                  <div className="wall-selector">
+                    <label>Wall:</label>
+                    <div className="wall-buttons">
+                      {Array.from({ length: wallCount }, (_, i) => (
+                        <button
+                          key={i}
+                          className={`wall-button ${
+                            selectedOpening.wallIndex === i ? "active" : ""
+                          }`}
+                          onClick={() => moveOpeningToWall(selectedOpeningId, i)}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="opening-info">
+                    <p>
+                      Size: {selectedOpening.width.toFixed(2)}m x{" "}
+                      {selectedOpening.height.toFixed(2)}m
+                    </p>
+                    {selectedOpeningType === "window" &&
+                      "elevation" in selectedOpening && (
+                        <p>
+                          Height from floor:{" "}
+                          {(selectedOpening as WindowData).elevation.toFixed(2)}m
+                        </p>
+                      )}
                   </div>
                 </div>
               );

@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { useGLTF } from '@react-three/drei';
 import Template3DPreview from './Template3DPreview';
 import './TemplateSelection.css';
+import {
+  RoomOpenings,
+  DEFAULT_DOOR_WIDTH,
+  DEFAULT_DOOR_HEIGHT,
+  DEFAULT_WINDOW_WIDTH,
+  DEFAULT_WINDOW_HEIGHT,
+  DEFAULT_WINDOW_ELEVATION,
+} from '../custom_room/DoorWindowTypes';
 
 interface TemplateSelectionProps {
   onNavigate: (view: string) => void;
@@ -14,6 +22,7 @@ interface Template {
   roomData: {
     height: number;
     vertices: Array<{ x: number; y: number }>;
+    openings: RoomOpenings;
   };
 }
 
@@ -29,7 +38,28 @@ const templates: Template[] = [
         { x: 300, y: 0 },
         { x: 300, y: 300 },
         { x: 0, y: 300 }
-      ]
+      ],
+      openings: {
+        doors: [
+          {
+            id: 'door_square_1',
+            wallIndex: 0, // Bottom wall
+            position: 0.5, // Center
+            width: DEFAULT_DOOR_WIDTH,
+            height: DEFAULT_DOOR_HEIGHT,
+          },
+        ],
+        windows: [
+          {
+            id: 'window_square_1',
+            wallIndex: 1, // Right wall
+            position: 0.5,
+            width: DEFAULT_WINDOW_WIDTH,
+            height: DEFAULT_WINDOW_HEIGHT,
+            elevation: DEFAULT_WINDOW_ELEVATION,
+          },
+        ],
+      },
     }
   },
   {
@@ -43,7 +73,28 @@ const templates: Template[] = [
         { x: 400, y: 0 },
         { x: 400, y: 250 },
         { x: 0, y: 250 }
-      ]
+      ],
+      openings: {
+        doors: [
+          {
+            id: 'door_rect_1',
+            wallIndex: 0, // Bottom wall (longest)
+            position: 0.3, // Offset left
+            width: DEFAULT_DOOR_WIDTH,
+            height: DEFAULT_DOOR_HEIGHT,
+          },
+        ],
+        windows: [
+          {
+            id: 'window_rect_1',
+            wallIndex: 2, // Top wall
+            position: 0.5,
+            width: DEFAULT_WINDOW_WIDTH,
+            height: DEFAULT_WINDOW_HEIGHT,
+            elevation: DEFAULT_WINDOW_ELEVATION,
+          },
+        ],
+      },
     }
   },
   {
@@ -59,7 +110,28 @@ const templates: Template[] = [
         { x: 175, y: 175 },
         { x: 175, y: 350 },
         { x: 0, y: 350 }
-      ]
+      ],
+      openings: {
+        doors: [
+          {
+            id: 'door_lshape_1',
+            wallIndex: 0, // Bottom wall (longest)
+            position: 0.5,
+            width: DEFAULT_DOOR_WIDTH,
+            height: DEFAULT_DOOR_HEIGHT,
+          },
+        ],
+        windows: [
+          {
+            id: 'window_lshape_1',
+            wallIndex: 5, // Left wall
+            position: 0.5,
+            width: DEFAULT_WINDOW_WIDTH,
+            height: DEFAULT_WINDOW_HEIGHT,
+            elevation: DEFAULT_WINDOW_ELEVATION,
+          },
+        ],
+      },
     }
   },
   {
@@ -74,7 +146,28 @@ const templates: Template[] = [
         { x: 320, y: 200 },
         { x: 240, y: 280 },
         { x: 0, y: 280 }
-      ]
+      ],
+      openings: {
+        doors: [
+          {
+            id: 'door_trap_1',
+            wallIndex: 0, // Bottom wall
+            position: 0.5,
+            width: DEFAULT_DOOR_WIDTH,
+            height: DEFAULT_DOOR_HEIGHT,
+          },
+        ],
+        windows: [
+          {
+            id: 'window_trap_1',
+            wallIndex: 1, // Right wall
+            position: 0.5,
+            width: DEFAULT_WINDOW_WIDTH,
+            height: DEFAULT_WINDOW_HEIGHT,
+            elevation: DEFAULT_WINDOW_ELEVATION,
+          },
+        ],
+      },
     }
   }
 ];

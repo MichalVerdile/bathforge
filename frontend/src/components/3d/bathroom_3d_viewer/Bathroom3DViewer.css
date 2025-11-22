@@ -878,3 +878,79 @@
     font-size: 14px;
   }
 }
+
+/* Opening (Door/Window) Controls */
+.opening-controls-panel {
+  top: 10px;
+  right: 10px;
+}
+
+.opening-controls-panel .control-header .deselect-button {
+  background: #475569;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: bold;
+  width: auto;
+}
+
+.wall-selector {
+  margin-bottom: 16px;
+}
+
+.wall-selector label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.wall-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wall-button {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.wall-button:hover {
+  background: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+.wall-button.active {
+  background: #94a3b8;
+  color: #0f172a;
+  border-color: #94a3b8;
+  font-weight: 600;
+}
+
+.opening-info {
+  background: #0f172a;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+
+.opening-info p {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.opening-info p:last-child {
+  margin-bottom: 0;
+}

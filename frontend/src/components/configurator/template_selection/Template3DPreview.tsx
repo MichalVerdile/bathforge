@@ -20,7 +20,12 @@ interface Template {
 }
 
 interface Template3DPreviewProps {
-  template: Template;
+  template: {
+    id: number;
+    name: string;
+    preview: string;
+    roomData?: unknown; 
+  };
 }
 
 const RoomModel: React.FC<{ modelPath: string }> = ({ modelPath }) => {

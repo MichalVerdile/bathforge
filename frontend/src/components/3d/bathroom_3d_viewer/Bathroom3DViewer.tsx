@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import Scene3D from "../scene/Scene3D";
-import ModelLoader from "./ModelLoader";
 import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
 import sceneService, {
   SceneProduct,
@@ -184,24 +183,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
         console.log("Saving custom room model:", roomModelData);
       } else if (templateData) {
         roomModelData = {
-          vertices: [
-            {
-              x: -templateData.roomData.width / 2,
-              y: -templateData.roomData.depth / 2,
-            },
-            {
-              x: templateData.roomData.width / 2,
-              y: -templateData.roomData.depth / 2,
-            },
-            {
-              x: templateData.roomData.width / 2,
-              y: templateData.roomData.depth / 2,
-            },
-            {
-              x: -templateData.roomData.width / 2,
-              y: templateData.roomData.depth / 2,
-            },
-          ],
+          vertices: templateData.roomData.vertices,
           height: templateData.roomData.height / 100,
         };
         console.log("Saving template room model:", roomModelData);
@@ -304,12 +286,20 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     const uniqueId = `product_${Date.now()}_${Math.random()
       .toString(36)
       .substr(2, 9)}`;
+
+    let defaultHeight = 0.08;
+    if (model.mountingType === "WALL") {
+      defaultHeight = 0.38;
+    } else if (model.mountingType === "FREESTANDING") {
+      defaultHeight = 0.08;
+    }
+
     const newProduct: SceneProduct3D = {
       uniqueId,
       productId: model.id,
       modelItem: model,
       positionX: position ? position[0] : 0,
-      positionY: position ? position[1] : 0.3,
+      positionY: position ? position[1] : defaultHeight,
       positionZ: position ? position[2] : 0,
       rotationX: 0,
       rotationY: 0,
@@ -613,22 +603,15 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
               />
             )}
 
-          {templateData?.preview && (
-            <ModelLoader
-              url={templateData.preview}
-              position={[0, 2.41, 0]}
-              rotation={[0, 0, 0]}
-              scale={[2.2, 2.2, 2.2]}
-              applyUnitDetection={true}
-              castShadow={true}
-              receiveShadow={true}
-              onError={(err) =>
-                console.error("Failed to load template model:", err)
-              }
+          {templateData && (
+            <Room
+              vertices={templateData.roomData.vertices}
+              height={templateData.roomData.height / 100}
+              viewMode="3D"
             />
           )}
 
-          {customRoomData && !templateData?.preview && (
+          {customRoomData && !templateData && (
             <Room
               vertices={customRoomData.vertices}
               height={customRoomData.height}
@@ -638,6 +621,19 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
           {sceneProducts.map((product) => {
             const selectedColor = getSelectedColor(product);
+            // Get room data from either custom room or template
+            const roomData = customRoomData
+              ? {
+                  vertices: customRoomData.vertices,
+                  height: customRoomData.height,
+                }
+              : templateData
+              ? {
+                  vertices: templateData.roomData.vertices,
+                  height: templateData.roomData.height / 100,
+                }
+              : undefined;
+
             return (
               <DraggableModel
                 key={product.uniqueId}
@@ -659,6 +655,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                   viewType !== "3D-Person"
                 }
                 disableInteractions={viewType === "3D-Person"}
+                roomVertices={roomData?.vertices}
+                roomHeight={roomData?.height}
                 onPositionChange={(position) => {
                   if (viewType !== "3D-Person") {
                     updateProductPosition(product.uniqueId, position);
@@ -780,12 +778,64 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                     </div>
                   )}
 
-                  <div className="position-info">
-                    <small>
-                      Position: [{(selectedProduct.positionX || 0).toFixed(1)},{" "}
-                      {(selectedProduct.positionY || 0).toFixed(1)},{" "}
-                      {(selectedProduct.positionZ || 0).toFixed(1)}]
-                    </small>
+                  <div className="slider-control">
+                    <label>
+                      Rotation:{" "}
+                      {Math.round(
+                        (selectedProduct.rotationY || 0) * (180 / Math.PI)
+                      )}
+                      °
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="360"
+                      step="15"
+                      value={Math.round(
+                        (selectedProduct.rotationY || 0) * (180 / Math.PI)
+                      )}
+                      onChange={(e) => {
+                        const degrees = parseFloat(e.target.value);
+                        const radians = degrees * (Math.PI / 180);
+                        updateProductRotation(selectedProductId, [
+                          selectedProduct.rotationX || 0,
+                          radians,
+                          selectedProduct.rotationZ || 0,
+                        ]);
+                      }}
+                      className="slider"
+                    />
+                  </div>
+
+                  <div className="slider-control">
+                    <label>
+                      Height:{" "}
+                      {Math.max(
+                        0,
+                        (selectedProduct.positionY || 0.08) - 0.08
+                      ).toFixed(2)}
+                      m
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1.30"
+                      step="0.01"
+                      value={Math.max(
+                        0,
+                        (selectedProduct.positionY || 0.08) - 0.08
+                      )}
+                      onChange={(e) => {
+                        const relativeHeight = parseFloat(e.target.value);
+                        const actualHeight = relativeHeight + 0.08;
+                        updateProductPosition(selectedProductId, [
+                          selectedProduct.positionX || 0,
+                          actualHeight,
+                          selectedProduct.positionZ || 0,
+                        ]);
+                      }}
+                      className="slider"
+                    />
                   </div>
                 </div>
               );
@@ -793,16 +843,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           </div>
         )}
 
-        {sceneProducts.length === 0 &&
-          !templateData?.preview &&
-          !customRoomData && (
-            <div className="welcome-message">
-              <h3 className="welcome-title">Welcome to BathForge 3D</h3>
-              <p className="welcome-description">
-                Browse and select bathroom fixtures to add them to your scene
-              </p>
-            </div>
-          )}
+        {sceneProducts.length === 0 && !templateData && !customRoomData && (
+          <div className="welcome-message">
+            <h3 className="welcome-title">Welcome to BathForge 3D</h3>
+            <p className="welcome-description">
+              Browse and select bathroom fixtures to add them to your scene
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

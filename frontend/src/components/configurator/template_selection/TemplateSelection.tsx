@@ -12,15 +12,8 @@ interface Template {
   name: string;
   preview: string;
   roomData: {
-    width: number;
     height: number;
-    depth: number;
-    fixtures: Array<{
-      type: "bathtub" | "sink" | "toilet" | "shower" | "window" | "door";
-      position: { x: number; y: number; z: number };
-      rotation: { x: number; y: number; z: number };
-      scale: { x: number; y: number; z: number };
-    }>;
+    vertices: Array<{ x: number; y: number }>;
   };
 }
 
@@ -30,97 +23,60 @@ const templates: Template[] = [
     name: "Square",
     preview: "/assets/templates/square.glb",
     roomData: {
-      width: 300,
       height: 200,
-      depth: 300,
-      fixtures: [
-        {
-          type: "door",
-          position: { x: -150, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-        {
-          type: "window",
-          position: { x: 0, y: 80, z: -150 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-      ],
-    },
+      vertices: [
+        { x: 0, y: 0 },
+        { x: 300, y: 0 },
+        { x: 300, y: 300 },
+        { x: 0, y: 300 }
+      ]
+    }
   },
   {
     id: 2,
     name: "Rectangle",
     preview: "/assets/templates/rectangle.glb",
     roomData: {
-      width: 400,
       height: 200,
-      depth: 250,
-      fixtures: [
-        {
-          type: "door",
-          position: { x: -200, y: 0, z: 0 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-        {
-          type: "window",
-          position: { x: 0, y: 80, z: -125 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-      ],
-    },
+      vertices: [
+        { x: 0, y: 0 },
+        { x: 400, y: 0 },
+        { x: 400, y: 250 },
+        { x: 0, y: 250 }
+      ]
+    }
   },
   {
     id: 3,
     name: "L-Shape",
     preview: "/assets/templates/L-shape.glb",
     roomData: {
-      width: 350,
       height: 200,
-      depth: 350,
-      fixtures: [
-        {
-          type: "door",
-          position: { x: -175, y: 0, z: 100 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-        {
-          type: "window",
-          position: { x: 100, y: 80, z: -175 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-      ],
-    },
+      vertices: [
+        { x: 0, y: 0 },
+        { x: 350, y: 0 },
+        { x: 350, y: 175 },
+        { x: 175, y: 175 },
+        { x: 175, y: 350 },
+        { x: 0, y: 350 }
+      ]
+    }
   },
   {
     id: 4,
     name: "Trapezoid",
     preview: "/assets/templates/trapezoid.glb",
     roomData: {
-      width: 320,
       height: 200,
-      depth: 280,
-      fixtures: [
-        {
-          type: "door",
-          position: { x: -160, y: 0, z: 50 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-        {
-          type: "window",
-          position: { x: 80, y: 80, z: -140 },
-          rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
-        },
-      ],
-    },
-  },
+      vertices: [
+        { x: 0, y: 0 },
+        { x: 320, y: 0 },
+        { x: 320, y: 200 },
+        { x: 240, y: 280 },
+        { x: 0, y: 280 }
+      ]
+    }
+  }
 ];
 
 useGLTF.preload("/assets/templates/square.glb");

@@ -2,13 +2,19 @@
   "version": "0.2.0",
   "configurations": [
     {
-        "type": "java",
-        "request": "attach",
-        "name": "Java",
-        "hostName": "localhost",
-        "port": 5005,
-        "sourceRoots": [
-        ]
+      "type": "java",
+      "name": "BathForgeApplication",
+      "request": "launch",
+      "mainClass": "com.bathforge.BathForgeApplication",
+      "projectName": "backend"
+    },
+    {
+      "type": "java",
+      "request": "attach",
+      "name": "Java",
+      "hostName": "localhost",
+      "port": 5005,
+      "sourceRoots": []
     }
   ]
 }

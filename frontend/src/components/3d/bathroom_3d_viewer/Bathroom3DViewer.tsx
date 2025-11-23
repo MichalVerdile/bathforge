@@ -10,7 +10,7 @@ import { ProductService } from "../../../controllers/api/products/ProductService
 import * as THREE from "three";
 import "./Bathroom3DViewer.css";
 import DraggableModel from "./DraggableModel";
-import { WallFloorSelector, applyTextureToMesh } from "./WallFloorSelector";
+import { WallFloorSelector, applyTextureToMesh, detectMeshType } from "./WallFloorSelector";
 import { Room } from "../../configurator/custom_room/Room";
 
 interface Vertex {
@@ -106,36 +106,274 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     return `${type}-${rounded.x}-${rounded.y}-${rounded.z}`;
   };
 
-  useEffect(() => {
-    const storedCustomRoom = localStorage.getItem("customRoom");
-    if (storedCustomRoom) {
+  const applyCoveringsFromAI = async (coveringsToApply: Array<{
+    productId: number; 
+    category: string; 
+    color?: string;
+    surfaceType?: 'wall' | 'floor';
+    repeatX?: number;
+    repeatY?: number;
+  }>) => {
+    if (!sceneRef.current) {
+      console.warn("Scene not ready for applying coverings");
+      return;
+    }
+
+    console.log("Applying coverings from AI to scene...", coveringsToApply);
+    
+    for (const covering of coveringsToApply) {
       try {
-        const customRoom = JSON.parse(storedCustomRoom);
-        setCustomRoomData(customRoom);
-        setCurrentScene({
-          name: `Custom Scene ${new Date().toLocaleString()}`,
+        const product = await ProductService.getById(covering.productId);
+        const texturePath = product.thumbnail || product.modelPath;
+        
+        // Use explicit surfaceType if provided, otherwise determine from category
+        let targetType: 'wall' | 'floor';
+        if (covering.surfaceType) {
+          targetType = covering.surfaceType;
+        } else {
+          const isFloorCovering = covering.category?.toLowerCase().includes('floor');
+          targetType = isFloorCovering ? 'floor' : 'wall';
+        }
+        
+        const repeatX = covering.repeatX || 3;
+        const repeatY = covering.repeatY || 3;
+        
+        console.log(`Applying ${targetType} covering:`, product.name, `with repeat (${repeatX}, ${repeatY})`);
+        
+        // Find all meshes of the target type in the scene
+        const meshesToTexture: THREE.Mesh[] = [];
+        sceneRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const meshType = detectMeshType(child);
+            if (meshType === targetType) {
+              meshesToTexture.push(child);
+            }
+          }
         });
+        
+        console.log(`Found ${meshesToTexture.length} ${targetType} meshes to apply texture`);
+        
+        // Apply texture to all matching surfaces
+        for (const mesh of meshesToTexture) {
+          try {
+            await applyTextureToMesh(mesh, texturePath, repeatX, repeatY);
+            
+            const surfaceIdentifier = getSurfaceIdentifier(mesh, targetType);
+            setAppliedCoverings((prev) => ({
+              ...prev,
+              [surfaceIdentifier]: {
+                productId: covering.productId,
+                surfaceType: targetType,
+                repeatX,
+                repeatY,
+              },
+            }));
+            
+            console.log(`Applied texture to ${targetType} surface:`, surfaceIdentifier);
+          } catch (error) {
+            console.error(`Failed to apply texture to ${targetType}:`, error);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load covering product:", covering.productId, error);
+      }
+    }
+    
+    // Schedule save after applying all coverings
+    scheduleAutoSave(1000);
+  };
+
+  useEffect(() => {
+    // Load AI-generated design if available
+    const loadAIDesign = async () => {
+      const storedAIResponse = localStorage.getItem("aiDesignResponse");
+      const storedAIPreferences = localStorage.getItem("aiPreferences");
+      
+      if (storedAIResponse && storedAIPreferences) {
+        try {
+          const aiResponse = JSON.parse(storedAIResponse);
+          const aiPreferences = JSON.parse(storedAIPreferences);
+          
+          console.log("Loading AI-generated design:", aiResponse);
+          
+          // Set the room data from AI preferences
+          if (aiPreferences.room) {
+            setCustomRoomData(aiPreferences.room);
+          }
+          
+          // Set scene name
+          setCurrentScene({
+            name: `AI Design ${new Date().toLocaleString()}`,
+          });
+          
+          // Load products from AI recommendations
+          if (aiResponse.productRecommendations && aiResponse.productRecommendations.length > 0) {
+            const loadedProducts: SceneProduct3D[] = [];
+            
+            for (const recommendation of aiResponse.productRecommendations) {
+              try {
+                // Fetch the full product data
+                const product = await ProductService.getById(recommendation.productId);
+                
+                // Get position from AI recommendations or use defaults
+                // AI backend now uses 1:1 meter ratio
+                let position = { 
+                  x: recommendation.positionX != null ? recommendation.positionX : 0, 
+                  y: recommendation.positionY != null ? recommendation.positionY : 0.3, 
+                  z: recommendation.positionZ != null ? recommendation.positionZ : 0 
+                };
+                
+                console.log("AI Recommendation for", product.name, ":", {
+                  positionX: recommendation.positionX,
+                  positionY: recommendation.positionY,
+                  positionZ: recommendation.positionZ,
+                  finalPosition: position,
+                  color: recommendation.color
+                });
+                
+                // Get colors if available
+                let colors = product.availableColors || [];
+                if (!colors || colors.length === 0) {
+                  try {
+                    colors = await ProductService.getColors(product.id);
+                  } catch (e) {
+                    console.warn("Failed to load colors for product", product.id);
+                  }
+                }
+                
+                // Find color ID if specified by AI
+                let selectedColorId = colors.length > 0 ? colors[0].id : undefined;
+                if (recommendation.color && colors.length > 0) {
+                  const matchingColor = colors.find(c => 
+                    c.name.toLowerCase().includes(recommendation.color.toLowerCase()) ||
+                    c.hexCode.toLowerCase().includes(recommendation.color.toLowerCase())
+                  );
+                  if (matchingColor) {
+                    selectedColorId = matchingColor.id;
+                    console.log(`Matched AI color "${recommendation.color}" to product color:`, matchingColor.name, matchingColor.hexCode);
+                  } else {
+                    console.warn(`Could not find matching color for "${recommendation.color}" in product ${product.name}`);
+                  }
+                }
+                
+                const uniqueId = `ai_product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                const sceneProduct: SceneProduct3D = {
+                  uniqueId,
+                  productId: product.id,
+                  modelItem: {
+                    id: product.id,
+                    name: product.name,
+                    category: product.categoryName || recommendation.category,
+                    categoryId: recommendation.categoryId || product.categoryId,
+                    priceRange: (recommendation.priceRange || product.priceRange) as 'LOW' | 'MEDIUM' | 'HIGH',
+                    mountingType: (recommendation.mountingType || product.mountingType) as 'FLOOR' | 'WALL' | 'FREESTANDING',
+                    url: product.modelPath,
+                    thumbnail: product.thumbnail || product.modelPath,
+                    availableColors: colors
+                  },
+                  positionX: position.x,
+                  positionY: position.y,
+                  positionZ: position.z,
+                  rotationX: 0,
+                  rotationY: 0,
+                  rotationZ: 0,
+                  scaleX: 1,
+                  scaleY: 1,
+                  scaleZ: 1,
+                  selectedColorId
+                };
+                
+                loadedProducts.push(sceneProduct);
+                console.log("Loaded AI product:", product.name, "at position", position, "with color", selectedColorId);
+              } catch (error) {
+                console.error("Failed to load product:", recommendation.productId, error);
+              }
+            }
+            
+            setSceneProducts(loadedProducts);
+            console.log(`Loaded ${loadedProducts.length} products from AI design`);
+          }
+          
+          // Apply covering recommendations from AI
+          if (aiResponse.coveringRecommendations && aiResponse.coveringRecommendations.length > 0) {
+            console.log(`Will apply ${aiResponse.coveringRecommendations.length} covering recommendations`);
+            
+            // Wait for scene to be fully loaded before applying coverings
+            setTimeout(async () => {
+              for (const covering of aiResponse.coveringRecommendations) {
+                try {
+                  console.log("Applying covering:", covering);
+                  await applyCoveringsFromAI([{
+                    productId: covering.productId,
+                    category: covering.category,
+                    color: covering.color,
+                    surfaceType: covering.surfaceType,
+                    repeatX: covering.repeatX || 1.0,
+                    repeatY: covering.repeatY || 1.0
+                  }]);
+                } catch (error) {
+                  console.error("Failed to apply covering:", covering, error);
+                }
+              }
+            }, 2000);
+          }
+          
+          // Clean up AI localStorage entries
+          localStorage.removeItem("aiDesignResponse");
+          localStorage.removeItem("aiPreferences");
+          return true;
+        } catch (error) {
+          console.error("Error parsing AI design data:", error);
+        }
+      }
+      return false;
+    };
+    
+    // Try to load AI design first
+    loadAIDesign().then((aiLoaded) => {
+      // If AI design was loaded, don't load template or custom room
+      // But if only custom room or template is present, load them
+      if (aiLoaded) {
+        // Clean up other potential sources
         localStorage.removeItem("customRoom");
         localStorage.removeItem("selectedTemplate");
         setTemplateData(null);
         return;
-      } catch (error) {
-        console.error("Error parsing custom room data:", error);
       }
-    }
+      
+      // Load custom room if no AI design
+      const storedCustomRoom = localStorage.getItem("customRoom");
+      if (storedCustomRoom) {
+        try {
+          const customRoom = JSON.parse(storedCustomRoom);
+          setCustomRoomData(customRoom);
+          setCurrentScene({
+            name: `Custom Scene ${new Date().toLocaleString()}`,
+          });
+          localStorage.removeItem("customRoom");
+          localStorage.removeItem("selectedTemplate");
+          setTemplateData(null);
+          return;
+        } catch (error) {
+          console.error("Error parsing custom room data:", error);
+        }
+      }
 
-    const storedTemplate = localStorage.getItem("selectedTemplate");
-    if (storedTemplate) {
-      try {
-        const template = JSON.parse(storedTemplate);
-        setTemplateData(template);
-        setCurrentScene({
-          name: `Template Scene ${new Date().toLocaleString()}`,
-        });
-      } catch (error) {
-        console.error("Error parsing template data:", error);
+      // Load template if no AI design or custom room
+      const storedTemplate = localStorage.getItem("selectedTemplate");
+      if (storedTemplate) {
+        try {
+          const template = JSON.parse(storedTemplate);
+          setTemplateData(template);
+          setCurrentScene({
+            name: `Template Scene ${new Date().toLocaleString()}`,
+          });
+        } catch (error) {
+          console.error("Error parsing template data:", error);
+        }
       }
-    }
+    });
   }, []);
 
   const autoSaveScene = async () => {
@@ -644,14 +882,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 id={product.uniqueId}
                 url={product.modelItem.url}
                 position={[
-                  product.positionX || 0,
-                  product.positionY || 0,
-                  product.positionZ || 0,
+                  product.positionX ?? 0,
+                  product.positionY ?? 0,
+                  product.positionZ ?? 0,
                 ]}
                 rotation={[
-                  product.rotationX || 0,
-                  product.rotationY || 0,
-                  product.rotationZ || 0,
+                  product.rotationX ?? 0,
+                  product.rotationY ?? 0,
+                  product.rotationZ ?? 0,
                 ]}
                 color={selectedColor?.hexCode}
                 selected={

@@ -103,6 +103,18 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
     [vertices, getWallLength]
   );
 
+  // Constrain vertex position within canvas boundaries
+  const constrainToCanvas = useCallback(
+    (x: number, y: number) => {
+      const margin = 20; // Keep vertices at least 20px from edge
+      return {
+        x: Math.max(margin, Math.min(canvasSize.width - margin, x)),
+        y: Math.max(margin, Math.min(canvasSize.height - margin, y)),
+      };
+    },
+    [canvasSize.width, canvasSize.height]
+  );
+
   // Calculate angle of a wall in degrees
   const getWallAngle = useCallback((p1: Vertex, p2: Vertex) => {
     const dx = p2.x - p1.x;
@@ -537,16 +549,22 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
           mousePos.y
         );
 
+        // Constrain to canvas boundaries
+        const constrainedPosition = constrainToCanvas(
+          snappedPosition.x,
+          snappedPosition.y
+        );
+
         // Check if the new position would create intersecting walls
         if (
           !wouldCreateIntersection(
             draggingVertex,
-            snappedPosition.x,
-            snappedPosition.y
+            constrainedPosition.x,
+            constrainedPosition.y
           )
         ) {
           const newVertices = [...vertices];
-          newVertices[draggingVertex] = snappedPosition;
+          newVertices[draggingVertex] = constrainedPosition;
           setVertices(newVertices);
         }
         // If it would create intersection, don't move the vertex
@@ -579,14 +597,18 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
           const moveX = projection * perpendicularDx;
           const moveY = projection * perpendicularDy;
 
-          newVertices[draggingWall] = {
-            x: current.x + moveX,
-            y: current.y + moveY,
-          };
-          newVertices[(draggingWall + 1) % vertices.length] = {
-            x: next.x + moveX,
-            y: next.y + moveY,
-          };
+          // Constrain both vertices to canvas boundaries
+          const constrainedCurrent = constrainToCanvas(
+            current.x + moveX,
+            current.y + moveY
+          );
+          const constrainedNext = constrainToCanvas(
+            next.x + moveX,
+            next.y + moveY
+          );
+
+          newVertices[draggingWall] = constrainedCurrent;
+          newVertices[(draggingWall + 1) % vertices.length] = constrainedNext;
 
           // Check if this would create intersections
           let wouldIntersect = false;
@@ -615,6 +637,7 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
       setVertices,
       wouldCreateIntersection,
       applyWallSnapping,
+      constrainToCanvas,
       mouseDownPos,
       DRAG_THRESHOLD,
     ]

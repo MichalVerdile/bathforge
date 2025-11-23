@@ -519,14 +519,35 @@ export default function DraggableModel({
               mat.opacity = 1;
               mat.depthWrite = true;
               mat.side = THREE.DoubleSide;
+              
               if (color) {
                 try {
                   mat.color.set(color);
+                  
+                  // Adjust material properties for better detail visibility
+                  // For very dark colors (like black), use slightly higher roughness
+                  const colorObj = new THREE.Color(color);
+                  const luminance = 0.299 * colorObj.r + 0.587 * colorObj.g + 0.114 * colorObj.b;
+                  
+                  if (luminance < 0.1) {
+                    // Very dark color (black)
+                    mat.roughness = 0.4;  // Less shiny to show more detail
+                    mat.metalness = 0.05; // Slight metalness for highlights
+                  } else if (luminance > 0.9) {
+                    // Very light color (white)
+                    mat.roughness = 0.5;  // Medium roughness to show depth
+                    mat.metalness = 0.0;  // No metalness for white
+                  } else {
+                    // Regular colors
+                    mat.roughness = mat.roughness !== undefined ? Math.min(1, Math.max(0, mat.roughness)) : 0.5;
+                    mat.metalness = mat.metalness !== undefined ? Math.min(1, Math.max(0, mat.metalness)) : 0.1;
+                  }
                 } catch { }
+              } else {
+                // No color override - use material defaults with slight adjustments
+                if (typeof mat.roughness === 'number') mat.roughness = Math.min(1, Math.max(0, mat.roughness ?? 0.5));
+                if (typeof mat.metalness === 'number') mat.metalness = Math.min(1, Math.max(0, mat.metalness ?? 0.1));
               }
-
-              if (typeof mat.roughness === 'number') mat.roughness = Math.min(1, Math.max(0, mat.roughness ?? 0.6));
-              if (typeof mat.metalness === 'number') mat.metalness = Math.min(1, Math.max(0, mat.metalness ?? 0.1));
             }
           };
 

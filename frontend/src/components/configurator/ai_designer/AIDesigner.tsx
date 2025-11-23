@@ -1,26 +1,43 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import StyleStep from "./StyleStep";
 import ColorStep from "./ColorStep";
 import FeaturesStep from "./FeaturesStep";
+import RoomStep from "./RoomStep";
 import SummaryStep from "./SummaryStep";
 import "./AIDesigner.css";
 import type { ColorPaletteId, FeatureId, StyleId } from "./data";
+import { aiDesignerController } from "../../../controllers/api/ai/AIDesignerController";
+import type { RoomEditorRef } from "../custom_room/RoomEditor";
 
 interface AIDesignerProps {
   onNavigate: (view: string) => void;
+}
+
+interface Vertex {
+  x: number;
+  y: number;
+}
+
+interface RoomConfiguration {
+  vertices: Vertex[];
+  height: number;
 }
 
 export interface AIPreferences {
   style?: StyleId;
   colors?: ColorPaletteId[];
   features?: FeatureId[];
+  room?: RoomConfiguration;
 }
 
 const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [preferences, setPreferences] = useState<AIPreferences>({});
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const roomEditorRef = useRef<RoomEditorRef>(null);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const updatePreferences = <Key extends keyof AIPreferences>(
     key: Key,
@@ -46,9 +63,31 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleGenerate = () => {
-    localStorage.setItem("aiPreferences", JSON.stringify(preferences));
-    onNavigate("3d");
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    setError(null);
+    
+    try {
+      console.log("Generating AI design with preferences:", preferences);
+      
+      // Call the backend AI service
+      const designResponse = await aiDesignerController.generateDesign(preferences);
+      
+      console.log("AI design generated:", designResponse);
+      
+      // Save both original preferences and AI response to localStorage
+      localStorage.setItem("aiPreferences", JSON.stringify(preferences));
+      localStorage.setItem("aiDesignResponse", JSON.stringify(designResponse));
+      
+      // Navigate to 3D view to show the generated design
+      onNavigate("3d");
+      
+    } catch (error: any) {
+      console.error("Failed to generate AI design:", error);
+      setError(error.message || "Failed to generate design. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const isStepComplete = (): boolean => {
@@ -60,6 +99,8 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
       case 3:
         return !!preferences.features && preferences.features.length > 0;
       case 4:
+        return !!preferences.room && preferences.room.vertices.length > 0;
+      case 5:
         return true;
       default:
         return false;
@@ -75,6 +116,8 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
       case 3:
         return "Pick Your Features";
       case 4:
+        return "Design Your Room Shape";
+      case 5:
         return "Review Your Preferences";
       default:
         return "AI Bathroom Designer";
@@ -107,6 +150,14 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
           />
         );
       case 4:
+        return (
+          <RoomStep
+            ref={roomEditorRef}
+            currentRoom={preferences.room}
+            onRoomChange={(room) => updatePreferences("room", room)}
+          />
+        );
+      case 5:
         return <SummaryStep preferences={preferences} />;
       default:
         return null;
@@ -126,9 +177,23 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
         <div className="ai-left">
           <div className="step-content">{renderStep()}</div>
 
+          {/* Error message */}
+          {error && (
+            <div style={{ 
+              color: 'red', 
+              margin: '1rem 0', 
+              padding: '0.5rem', 
+              background: '#ffe6e6', 
+              borderRadius: '4px',
+              border: '1px solid #ffcccc'
+            }}>
+              {error}
+            </div>
+          )}
+
           <div
             className={`action-buttons ${
-              currentStep === 4 ? "summary-spacing" : ""
+              currentStep === 5 ? "summary-spacing" : ""
             }`}
           >
             <button className="go-back-button" onClick={handleBack}>
@@ -147,10 +212,11 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
               </button>
             ) : (
               <button
-                className="continue-button enabled"
+                className={`continue-button ${isGenerating ? "disabled" : "enabled"}`}
                 onClick={handleGenerate}
+                disabled={isGenerating}
               >
-                Generate My Bathroom
+                {isGenerating ? "Generating..." : "Generate My Bathroom"}
               </button>
             )}
           </div>

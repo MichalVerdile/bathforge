@@ -47,13 +47,22 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ preferences }) => {
             {formatSelection(preferences.features, FEATURE_LABELS)}
           </p>
         </div>
+
+        <div className="summary-section">
+          <h3 className="summary-section-title">Room Configuration</h3>
+          <p className="summary-section-value">
+            {preferences.room && preferences.room.vertices.length > 0
+              ? `Custom room shape with ${preferences.room.vertices.length} corners, Height: ${preferences.room.height}m`
+              : "Default room shape"}
+          </p>
+        </div>
       </div>
 
       <div className="summary-note">
         <p>
-          Our AI will use these preferences to design a bathroom tailored to
-          your taste and requirements. You'll be able to further customize it in
-          the 3D editor.
+          Our AI will use these preferences and your custom room shape to design a bathroom 
+          perfectly tailored to your space and requirements. You'll be able to further 
+          customize it in the 3D viewer.
         </p>
       </div>
     </div>

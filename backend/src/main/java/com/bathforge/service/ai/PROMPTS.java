@@ -16,16 +16,16 @@ public enum PROMPTS {
                                     the requested style, color palette, and design aesthetic. Consider the visual appearance,
                                     colors, textures, and patterns shown in the images.
 
-                                    Design Request (AIDesignRequestDTO):
-                                    - Style: {{style}}
-                                    - Color Palettes: {{colorPalettes}}
-                                    - Features: {{features}}
-                                    - Room Configuration:
-                                        - Vertices (polygon points in meters, in order): {{roomConfiguration.vertices}}
-                                        - Height: {{roomConfiguration.height}}
-                                    - Additional Requirements: {{additionalRequirements}}
-
-                                    AVAILABLE PRODUCTS (you MUST select ONLY from this list):
+                    Design Request (AIDesignRequestDTO):
+                    - Style: {{style}}
+                    - Color Palettes: {{colorPalettes}}
+                    - Features: {{features}}
+                    - Room Configuration:
+                        - Vertices (polygon points in meters, in order): {{roomConfiguration.vertices}}
+                        - Height: {{roomConfiguration.height}}m
+                        - Doors: {{roomConfiguration.doors}}
+                        - Windows: {{roomConfiguration.windows}}
+                    - Additional Requirements: {{additionalRequirements}}                                    AVAILABLE PRODUCTS (you MUST select ONLY from this list):
                                     {{availableProducts}}
 
                                     COVERING PRODUCTS WITH IMAGE DATA:
@@ -56,18 +56,27 @@ public enum PROMPTS {
 
                                     {{productModelsData}}
 
-                                    IMPORTANT CONSTRAINTS:
-                                    - You MUST select products ONLY from the available products list above
-                                    - Each recommended product MUST use an existing productId from the list
-                                    - Each product's color MUST be one of the availableColors for that specific product
-                                    - Do NOT invent or create products that are not in the available list
-                                    - Select 5-10 products that best match the design request
-                                    - Select 2-4 covering products (tiles/textures) for walls and floor from the "coverings" category
-                                    - MANDATORY: ALL products MUST fit within the room boundaries defined by vertices: {{roomConfiguration.vertices}}
-                                    - MANDATORY: Use GLB model dimension data to ensure products don't exceed room space or overlap each other
-                                    - MANDATORY: Calculate positions considering the product's actual size from the GLB data, not just a single point
-
-                                    Output Format:
+                    IMPORTANT CONSTRAINTS:
+                    - You MUST select products ONLY from the available products list above
+                    - Each recommended product MUST use an existing productId from the list
+                    - Each product's color MUST be one of the availableColors for that specific product
+                    - Do NOT invent or create products that are not in the available list
+                    - Select 5-10 products that best match the design request
+                    - Select 2-4 covering products (tiles/textures) for walls and floor from the "coverings" category
+                    - MANDATORY: ALL products MUST fit within the room boundaries defined by vertices: {{roomConfiguration.vertices}}
+                    - MANDATORY: Use GLB model dimension data to ensure products don't exceed room space or overlap each other
+                    - MANDATORY: Calculate positions considering the product's actual size from the GLB data, not just a single point
+                    - DOOR AND WINDOW AWARENESS:
+                        * Doors: {{roomConfiguration.doors}} - Each door has wallIndex (which wall 0-3), position (0-1 along wall), width, height
+                        * Windows: {{roomConfiguration.windows}} - Each window has wallIndex, position, width, height, elevation (height from floor)
+                        * NEVER place products directly in front of doors - maintain minimum 1.0m clearance for door swing area
+                        * NEVER block windows - keep at least 0.5m clearance around window area
+                        * Door swing space must remain clear - no toilets, bathtubs, or furniture in door path
+                        * Window area must remain visible and accessible - no tall furniture or fixtures blocking windows
+                        * Calculate door/window positions from wall vertices and position parameter (0=start, 1=end of wall)
+                        * Consider door opening direction when calculating clearance zones
+                        * Wall-mounted products CAN be placed on the same wall as doors/windows if they don't interfere (mirrors above sinks, etc.)
+                        * Floor products (toilets, bathtubs) MUST NOT be placed where they would block door swing or window access                                    Output Format:
                                     Return ONLY a JSON object with this structure:
                                     {
                                       "products": [/* array of ProductRecommendationDTO */],
@@ -170,22 +179,51 @@ public enum PROMPTS {
                                     - Ensure covering colors complement the product color scheme
                                     - "reason" must explain why this covering fits the style and how it complements other products
 
-                                    SPATIAL REASONING AND PLACEMENT RULES:
-                                    - CRITICAL: First analyze room vertices {{roomConfiguration.vertices}} - these are ALREADY IN METERS
-                                    - EXAMPLE: vertices [[-1,-1], [1,-1], [1,1], [-1,1]] means room is 2m × 2m with X from -1 to 1, Z from -1 to 1
-                                    - Calculate room min/max X and Z coordinates from vertices - this is your ABSOLUTE boundary
-                                    - ALL positions MUST stay within these min/max values (not outside!)
-                                    - For EACH product, use its GLB model data to extract its bounding box dimensions (width, depth, height)
-                                    - When calculating position, ensure: minX ≤ (positionX - productWidth/2) AND (positionX + productWidth/2) ≤ maxX
-                                    - When calculating position, ensure: minZ ≤ (positionZ - productDepth/2) AND (positionZ + productDepth/2) ≤ maxZ
-                                    - Products MUST NOT extend beyond room boundaries - use the GLB dimension data to verify this
-                                    - Larger products (bathtubs, furniture) require more careful positioning based on their actual GLB dimensions
-                                    - Use the 3D model geometry to understand which side is the "front" and set rotationY accordingly
-                                    - Place products strategically from the room center, calculated from the vertices polygon
-                                    - Account for product dimensions when calculating spacing between items (not just point-to-point distance)
-                                    - DO NOT add arbitrary offsets or convert to different units - vertices are the TRUE room size in meters
+                    SPATIAL REASONING AND PLACEMENT RULES:
+                    - CRITICAL: First analyze room vertices {{roomConfiguration.vertices}} - these are ALREADY IN METERS
+                    - EXAMPLE: vertices [[-1,-1], [1,-1], [1,1], [-1,1]] means room is 2m × 2m with X from -1 to 1, Z from -1 to 1
+                    - Calculate room min/max X and Z coordinates from vertices - this is your ABSOLUTE boundary
+                    - ALL positions MUST stay within these min/max values (not outside!)
+                    - For EACH product, use its GLB model data to extract its bounding box dimensions (width, depth, height)
+                    - When calculating position, ensure: minX ≤ (positionX - productWidth/2) AND (positionX + productWidth/2) ≤ maxX
+                    - When calculating position, ensure: minZ ≤ (positionZ - productDepth/2) AND (positionZ + productDepth/2) ≤ maxZ
+                    - Products MUST NOT extend beyond room boundaries - use the GLB dimension data to verify this
+                    - Larger products (bathtubs, furniture) require more careful positioning based on their actual GLB dimensions
+                    - Use the 3D model geometry to understand which side is the "front" and set rotationY accordingly
+                    - Place products strategically from the room center, calculated from the vertices polygon
+                    - Account for product dimensions when calculating spacing between items (not just point-to-point distance)
+                    - DO NOT add arbitrary offsets or convert to different units - vertices are the TRUE room size in meters
 
-                    PRODUCT-SPECIFIC PLACEMENT LOGIC:
+                    DOOR AND WINDOW PLACEMENT CONSTRAINTS:
+                    - BEFORE placing any product, check doors {{roomConfiguration.doors}} and windows {{roomConfiguration.windows}}
+                    - For each door:
+                        * Calculate door's 3D position from: wallIndex (0-3), position (0-1 along wall), width, height
+                        * Wall vertices define wall endpoints - interpolate door center position along that wall
+                        * Door clearance zone: 1.0m in front of door (perpendicular to wall), full door width
+                        * NO products allowed in door clearance zone - this includes toilets, bathtubs, furniture, basins
+                        * Example: Door on wall 0 (bottom wall) at position 0.5 with width 0.9m creates clearance zone:
+                          - Door center at wall midpoint
+                          - 1.0m clearance extends into room from wall
+                          - Products must stay 1.0m away from door center in perpendicular direction
+                    - For each window:
+                        * Calculate window's 3D position from: wallIndex, position, width, height, elevation (from floor)
+                        * Window clearance zone: 0.5m in front of window, full window width and height range
+                        * Products can be UNDER windows if elevation is high enough (e.g., basin under window at 1.5m elevation)
+                        * Tall products (mirrors, cabinets) MUST NOT block window area
+                        * Example: Window at elevation 1.5m, height 0.6m means window occupies 1.5m to 2.1m height
+                          - Basin at 0.8m height OK (doesn't reach 1.5m)
+                          - Mirror from 1.2m to 1.8m NOT OK (blocks window 1.5m-1.8m range)
+                    - Wall index to wall vertices mapping:
+                        * wallIndex 0 = wall from vertices[0] to vertices[1]
+                        * wallIndex 1 = wall from vertices[1] to vertices[2]
+                        * wallIndex 2 = wall from vertices[2] to vertices[3]
+                        * wallIndex 3 = wall from vertices[3] to vertices[0]
+                    - Position along wall calculation:
+                        * position 0.0 = start vertex of wall
+                        * position 0.5 = midpoint of wall
+                        * position 1.0 = end vertex of wall
+                        * Interpolate: doorX = startVertex.x + (endVertex.x - startVertex.x) * position
+                        * Interpolate: doorZ = startVertex.z + (endVertex.z - startVertex.z) * position                    PRODUCT-SPECIFIC PLACEMENT LOGIC:
                     - TOILETS (WC):
                         * MUST be placed against a wall (position near room boundaries)
                         * Leave 0.6-0.8m clearance in front for user access

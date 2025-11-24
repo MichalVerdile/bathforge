@@ -446,15 +446,23 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       let roomModelData = undefined;
 
       if (customRoomData) {
+        // Prepare room properties with door/window data
+        const roomProperties = roomOpenings ? JSON.stringify(roomOpenings) : undefined;
+        
         roomModelData = {
           vertices: customRoomData.vertices,
           height: customRoomData.height,
+          roomProperties,
         };
         console.log("Saving custom room model:", roomModelData);
       } else if (templateData) {
+        // Prepare room properties with door/window data
+        const roomProperties = roomOpenings ? JSON.stringify(roomOpenings) : undefined;
+        
         roomModelData = {
           vertices: templateData.roomData.vertices,
           height: templateData.roomData.height / 100,
+          roomProperties,
         };
         console.log("Saving template room model:", roomModelData);
       }
@@ -518,6 +526,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 roomHeight: roomModelData.height,
                 modelType: templateData ? "TEMPLATE" : "CUSTOM",
                 templatePath: templateData?.preview,
+                roomProperties: roomModelData.roomProperties,
               }
             : undefined,
           coverings: coveringsData.length > 0 ? coveringsData : undefined,

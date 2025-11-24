@@ -294,7 +294,7 @@ class SceneService {
     name: string,
     user: string,
     sceneProducts: SceneProduct[],
-    roomModel?: { vertices: { x: number; y: number }[]; height: number },
+    roomModel?: { vertices: { x: number; y: number }[]; height: number; roomProperties?: string },
     coverings?: { productId: number; surfaceType: string; surfaceIdentifier?: string; repeatX?: number; repeatY?: number }[],
     cameraPosition?: string,
     lightingSettings?: string,
@@ -319,7 +319,8 @@ class SceneService {
     const roomModelData = roomModel ? {
       verticesData: JSON.stringify(roomModel.vertices),
       roomHeight: roomModel.height,
-      modelType: 'CUSTOM'
+      modelType: 'CUSTOM',
+      roomProperties: roomModel.roomProperties
     } : undefined;
 
     const coveringsData = coverings?.map(covering => ({

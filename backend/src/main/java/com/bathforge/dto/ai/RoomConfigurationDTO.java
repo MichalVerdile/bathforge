@@ -19,6 +19,12 @@ public class RoomConfigurationDTO {
     @DecimalMax(value = "4.0", message = "Room height cannot exceed 4.0 meters")
     private Double height;
 
+    @Valid
+    private List<DoorDTO> doors;
+
+    @Valid
+    private List<WindowDTO> windows;
+
     // Constructors
     public RoomConfigurationDTO() {
     }
@@ -26,6 +32,13 @@ public class RoomConfigurationDTO {
     public RoomConfigurationDTO(List<VertexDTO> vertices, Double height) {
         this.vertices = vertices;
         this.height = height;
+    }
+
+    public RoomConfigurationDTO(List<VertexDTO> vertices, Double height, List<DoorDTO> doors, List<WindowDTO> windows) {
+        this.vertices = vertices;
+        this.height = height;
+        this.doors = doors;
+        this.windows = windows;
     }
 
     // Getters and Setters
@@ -43,6 +56,22 @@ public class RoomConfigurationDTO {
 
     public void setHeight(Double height) {
         this.height = height;
+    }
+
+    public List<DoorDTO> getDoors() {
+        return doors;
+    }
+
+    public void setDoors(List<DoorDTO> doors) {
+        this.doors = doors;
+    }
+
+    public List<WindowDTO> getWindows() {
+        return windows;
+    }
+
+    public void setWindows(List<WindowDTO> windows) {
+        this.windows = windows;
     }
 
     /**
@@ -74,12 +103,21 @@ public class RoomConfigurationDTO {
 
     @Override
     public String toString() {
-        return "RoomConfigurationDTO{" +
-                "vertices=" + vertices +
-                ", height=" + height +
-                ", area=" + String.format("%.2f", calculateArea()) +
-                ", volume=" + String.format("%.2f", calculateVolume()) +
-                '}';
+        StringBuilder sb = new StringBuilder("RoomConfigurationDTO{");
+        sb.append("vertices=").append(vertices);
+        sb.append(", height=").append(height);
+        sb.append(", area=").append(String.format("%.2f", calculateArea()));
+        sb.append(", volume=").append(String.format("%.2f", calculateVolume()));
+
+        if (doors != null && !doors.isEmpty()) {
+            sb.append(", doors=").append(doors);
+        }
+        if (windows != null && !windows.isEmpty()) {
+            sb.append(", windows=").append(windows);
+        }
+
+        sb.append('}');
+        return sb.toString();
     }
 
     public static class VertexDTO {

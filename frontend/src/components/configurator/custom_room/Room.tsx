@@ -253,6 +253,7 @@ export const Room: React.FC<RoomProps> = ({
   return (
     <group ref={groupRef}>
       <mesh
+        name="floor"
         receiveShadow
         position-y={0}
         rotation-x={-Math.PI / 2}
@@ -281,6 +282,7 @@ export const Room: React.FC<RoomProps> = ({
         return (
           <mesh
             key={`wall-${index}`}
+            name={`wall-${index}`}
             ref={(el) => (wallRefs.current[index] = el)}
             castShadow={false}
             receiveShadow

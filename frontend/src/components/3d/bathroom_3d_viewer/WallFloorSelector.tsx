@@ -88,6 +88,12 @@ export function detectMeshType(mesh: THREE.Mesh): 'wall' | 'floor' | null {
     return null;
   }
   
+  const name = mesh.name.toLowerCase();
+  
+  // First check name-based detection (most reliable)
+  if (name.includes('wall')) return 'wall';
+  if (name.includes('floor') || name.includes('ground')) return 'floor';
+  
   const geometry = mesh.geometry;
   if (geometry) {
     geometry.computeBoundingBox();
@@ -97,30 +103,26 @@ export function detectMeshType(mesh: THREE.Mesh): 'wall' | 'floor' | null {
       const size = new THREE.Vector3();
       box.getSize(size);
       
+      // Skip very large meshes (likely environment/sky)
       if ((size.x > 30 || size.z > 30) && size.y < 0.5) {
         return null;
       }
-    }
-  }
-  
-  const name = mesh.name.toLowerCase();
-  
-  if (name.includes('wall')) return 'wall';
-  if (name.includes('floor') || name.includes('ground')) return 'floor';
-
-  if (geometry) {
-    geometry.computeBoundingBox();
-    const box = geometry.boundingBox;
-    
-    if (box) {
-      const size = new THREE.Vector3();
-      box.getSize(size);
       
-      if (size.y < 0.2 && size.x > 1 && size.z > 1 && size.x < 30 && size.z < 30) {
+      // Calculate aspect ratios to determine type
+      const isFlat = size.y < Math.min(size.x, size.z) * 0.1; // Y is much smaller than X or Z
+      const isHorizontal = size.x > 1 && size.z > 1 && size.x < 30 && size.z < 30;
+      const isTall = size.y > 1.5;
+      const isVertical = (size.x > 1 || size.z > 1) && size.y > Math.max(size.x, size.z) * 0.5;
+      
+      // Floor detection: flat horizontal surface
+      if (isFlat && isHorizontal) {
+        console.log(`Detected floor mesh: ${mesh.name}, size:`, size);
         return 'floor';
       }
       
-      if (size.y > 1.5 && (size.x > 1 || size.z > 1)) {
+      // Wall detection: tall vertical surface
+      if (isTall && isVertical) {
+        console.log(`Detected wall mesh: ${mesh.name}, size:`, size);
         return 'wall';
       }
     }

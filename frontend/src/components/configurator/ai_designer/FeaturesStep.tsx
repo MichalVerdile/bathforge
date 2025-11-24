@@ -34,7 +34,14 @@ const FeaturesStep: React.FC<FeaturesStepProps> = ({
             }`}
             onClick={() => toggleFeature(feature.id)}
           >
-            <div className="feature-icon">{feature.icon}</div>
+            <div className="feature-icon">
+              {(() => {
+                const Icon = feature.icon as React.ComponentType<{
+                  size?: number;
+                }>;
+                return <Icon size={28} />;
+              })()}
+            </div>
             <h3 className="feature-name">{feature.name}</h3>
             <p className="feature-description">{feature.description}</p>
           </div>

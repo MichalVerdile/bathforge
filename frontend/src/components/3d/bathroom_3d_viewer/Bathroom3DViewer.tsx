@@ -310,22 +310,20 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             
             // Wait for scene to be fully loaded before applying coverings
             setTimeout(async () => {
-              for (const covering of aiResponse.coveringRecommendations) {
-                try {
-                  console.log("Applying covering:", covering);
-                  await applyCoveringsFromAI([{
-                    productId: covering.productId,
-                    category: covering.category,
-                    color: covering.color,
-                    surfaceType: covering.surfaceType,
-                    repeatX: covering.repeatX || 1.0,
-                    repeatY: covering.repeatY || 1.0
-                  }]);
-                } catch (error) {
-                  console.error("Failed to apply covering:", covering, error);
-                }
+              try {
+                console.log("Applying coverings:", aiResponse.coveringRecommendations);
+                await applyCoveringsFromAI(aiResponse.coveringRecommendations.map((covering: any) => ({
+                  productId: covering.productId,
+                  category: covering.category,
+                  color: covering.color,
+                  surfaceType: covering.surfaceType,
+                  repeatX: covering.repeatX || 1.0,
+                  repeatY: covering.repeatY || 1.0
+                })));
+              } catch (error) {
+                console.error("Failed to apply coverings:", error);
               }
-            }, 2000);
+            }, 3000);
           }
           
           // Clean up AI localStorage entries

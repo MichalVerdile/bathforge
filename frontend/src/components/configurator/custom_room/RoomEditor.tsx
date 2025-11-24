@@ -120,15 +120,20 @@ const DynamicCamera: React.FC<{
 interface RoomEditorProps {
   viewMode: "2D" | "3D";
   height: number;
+  selectedOpeningId?: string | null;
+  onOpeningClick?: (id: string, type: "door" | "window") => void;
+  onOpeningHover?: (id: string | null) => void;
 }
 
 export interface RoomEditorRef {
   reset: () => void;
   getRoomData: () => { vertices: Vertex[]; height: number; openings: RoomOpenings };
+  getOpenings: () => RoomOpenings;
+  updateOpenings: (openings: RoomOpenings) => void;
 }
 
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
-  ({ viewMode, height }, ref) => {
+  ({ viewMode, height, selectedOpeningId, onOpeningClick, onOpeningHover }, ref) => {
     const getInitialVertices = (): Vertex[] => {
       const canvas = calculateCanvasSize();
       const squareSize = 200; // Fixed 200x200 square
@@ -147,6 +152,7 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
     };
 
     const [vertices, setVertices] = useState<Vertex[]>(getInitialVertices());
+    const [customOpenings, setCustomOpenings] = useState<RoomOpenings | null>(null);
 
     // Normalize vertices to start at origin for consistent door/window placement
     const normalizedVertices = useMemo(() => {
@@ -156,11 +162,12 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
       return vertices.map((v) => ({ x: v.x - minX, y: v.y - minY }));
     }, [vertices]);
 
-    // Generate default openings based on current room shape
+    // Use custom openings if set, otherwise generate defaults based on current room shape
     const openings = useMemo(() => {
+      if (customOpenings) return customOpenings;
       if (normalizedVertices.length < 3) return { doors: [], windows: [] };
       return createDefaultOpenings(normalizedVertices, height);
-    }, [normalizedVertices, height]);
+    }, [normalizedVertices, height, customOpenings]);
 
     const resetVertices = () => {
       setVertices(getInitialVertices());
@@ -169,6 +176,8 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
     useImperativeHandle(ref, () => ({
       reset: resetVertices,
       getRoomData: () => ({ vertices: normalizedVertices, height, openings }),
+      getOpenings: () => openings,
+      updateOpenings: (newOpenings: RoomOpenings) => setCustomOpenings(newOpenings),
     }));
 
     if (viewMode === "2D") {
@@ -194,7 +203,10 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
           height={height}
           viewMode={viewMode}
           openings={openings}
-          isInteractive={false}
+          selectedOpeningId={selectedOpeningId}
+          onOpeningClick={onOpeningClick}
+          onOpeningHover={onOpeningHover}
+          isInteractive={!!onOpeningClick}
         />
         <DynamicCamera
           viewMode={viewMode}

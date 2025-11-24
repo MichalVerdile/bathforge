@@ -14,6 +14,10 @@ import {
   PerspectiveCamera,
   OrbitControls,
 } from "@react-three/drei";
+import {
+  RoomOpenings,
+  createDefaultOpenings,
+} from "./DoorWindowTypes";
 
 interface Vertex {
   x: number;
@@ -120,7 +124,7 @@ interface RoomEditorProps {
 
 export interface RoomEditorRef {
   reset: () => void;
-  getRoomData: () => { vertices: Vertex[]; height: number };
+  getRoomData: () => { vertices: Vertex[]; height: number; openings: RoomOpenings };
 }
 
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
@@ -144,13 +148,27 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
 
     const [vertices, setVertices] = useState<Vertex[]>(getInitialVertices());
 
+    // Normalize vertices to start at origin for consistent door/window placement
+    const normalizedVertices = useMemo(() => {
+      if (vertices.length === 0) return [];
+      const minX = Math.min(...vertices.map((v) => v.x));
+      const minY = Math.min(...vertices.map((v) => v.y));
+      return vertices.map((v) => ({ x: v.x - minX, y: v.y - minY }));
+    }, [vertices]);
+
+    // Generate default openings based on current room shape
+    const openings = useMemo(() => {
+      if (normalizedVertices.length < 3) return { doors: [], windows: [] };
+      return createDefaultOpenings(normalizedVertices, height);
+    }, [normalizedVertices, height]);
+
     const resetVertices = () => {
       setVertices(getInitialVertices());
     };
 
     useImperativeHandle(ref, () => ({
       reset: resetVertices,
-      getRoomData: () => ({ vertices, height }),
+      getRoomData: () => ({ vertices: normalizedVertices, height, openings }),
     }));
 
     if (viewMode === "2D") {
@@ -171,7 +189,13 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
           shadow-bias={-0.0001}
         />
 
-        <Room vertices={vertices} height={height} viewMode={viewMode} />
+        <Room
+          vertices={normalizedVertices}
+          height={height}
+          viewMode={viewMode}
+          openings={openings}
+          isInteractive={false}
+        />
         <DynamicCamera
           viewMode={viewMode}
           vertices={vertices}

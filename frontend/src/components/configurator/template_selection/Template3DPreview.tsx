@@ -1,8 +1,25 @@
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Environment } from '@react-three/drei';
 import { Room } from '../custom_room/Room';
 import { RoomOpenings } from '../custom_room/DoorWindowTypes';
+import React, { Suspense } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
+
+interface Template {
+  id: number;
+  name: string;
+  preview: string;
+  roomData: {
+    width: number;
+    height: number;
+    depth: number;
+    fixtures: Array<{
+      type: "bathtub" | "sink" | "toilet" | "shower" | "window" | "door";
+      position: { x: number; y: number; z: number };
+      rotation: { x: number; y: number; z: number };
+      scale: { x: number; y: number; z: number };
+    }>;
+  };
+}
 
 interface Template3DPreviewProps {
   template: {
@@ -17,13 +34,19 @@ interface Template3DPreviewProps {
   };
 }
 
+
+const RoomModel: React.FC<{ modelPath: string }> = ({ modelPath }) => {
+  const { scene } = useGLTF(modelPath);
+  return <primitive object={scene} scale={[1, 1, 1]} position={[0, -1, 0]} />;
+};
+
 const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
   const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 500);
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, []);
@@ -40,9 +63,8 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
     <div className="template-3d-preview">
       <div className="model-preview">
         <Canvas
-          camera={{ position: [cameraDistance, cameraDistance, cameraDistance], fov: 60 }}
-          style={{ width: '100%', height: '100%' }}
-          shadows
+          camera={{ position: [4, 4, 4], fov: 60 }}
+          style={{ width: "100%", height: "100%" }}
         >
           <Suspense fallback={null}>
             <ambientLight intensity={0.6} />
@@ -73,7 +95,7 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
               enableZoom={true}
               enableRotate={true}
               minDistance={2}
-              maxDistance={25}
+              maxDistance={15}
               maxPolarAngle={Math.PI / 2}
               autoRotate={true}
               autoRotateSpeed={0.5}

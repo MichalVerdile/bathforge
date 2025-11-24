@@ -1,3 +1,5 @@
+import { Room } from '../custom_room/Room';
+import { RoomOpenings } from '../custom_room/DoorWindowTypes';
 import React, { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF, Environment } from "@react-three/drei";
@@ -24,9 +26,14 @@ interface Template3DPreviewProps {
     id: number;
     name: string;
     preview: string;
-    roomData?: unknown; 
+    roomData?: {
+      height: number;
+      vertices: Array<{ x: number; y: number }>;
+      openings?: RoomOpenings;
+    };
   };
 }
+
 
 const RoomModel: React.FC<{ modelPath: string }> = ({ modelPath }) => {
   const { scene } = useGLTF(modelPath);
@@ -43,6 +50,14 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // Calculate camera position based on room size
+  const roomData = template.roomData;
+  const cameraDistance = roomData
+    ? Math.max(
+        ...roomData.vertices.map((v) => Math.max(Math.abs(v.x), Math.abs(v.y)))
+      ) * 0.015 + 3
+    : 8;
 
   return (
     <div className="template-3d-preview">
@@ -64,7 +79,16 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
 
             <Environment preset="apartment" />
 
-            <RoomModel modelPath={template.preview} />
+            {/* Render room with doors and windows */}
+            {roomData && (
+              <Room
+                vertices={roomData.vertices}
+                height={roomData.height / 100} // Convert cm to meters
+                viewMode="3D"
+                openings={roomData.openings}
+                isInteractive={false}
+              />
+            )}
 
             <OrbitControls
               enablePan={true}
@@ -73,7 +97,7 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
               minDistance={2}
               maxDistance={15}
               maxPolarAngle={Math.PI / 2}
-              autoRotate={false}
+              autoRotate={true}
               autoRotateSpeed={0.5}
             />
           </Suspense>
@@ -82,7 +106,7 @@ const Template3DPreview: React.FC<Template3DPreviewProps> = ({ template }) => {
         {isLoading && (
           <div className="loading-overlay">
             <div className="loading-spinner"></div>
-            <span>Loading 3D Model...</span>
+            <span>Loading 3D Preview...</span>
           </div>
         )}
       </div>

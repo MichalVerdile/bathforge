@@ -323,6 +323,60 @@
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
 }
 
+.slider-control label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.slider-control .slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #334155 0%, #475569 100%);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.slider-control .slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.slider-control .slider::-webkit-slider-thumb:hover {
+  background: #cbd5e1;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+.slider-control .slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #94a3b8;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  margin-top: 0;
+}
+
+.slider-control .slider::-moz-range-thumb:hover {
+  background: #cbd5e1;
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
 .model-info-overlay {
   position: absolute;
   top: 20px;
@@ -495,4 +549,80 @@
   .welcome-description {
     font-size: 14px;
   }
+}
+
+/* Opening (Door/Window) Controls */
+.opening-controls-panel {
+  top: 10px;
+  right: 10px;
+}
+
+.opening-controls-panel .control-header .deselect-button {
+  background: #475569;
+  padding: 4px 10px;
+  font-size: 14px;
+  font-weight: bold;
+  width: auto;
+}
+
+.wall-selector {
+  margin-bottom: 16px;
+}
+
+.wall-selector label {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.wall-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wall-button {
+  background: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.wall-button:hover {
+  background: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+.wall-button.active {
+  background: #94a3b8;
+  color: #0f172a;
+  border-color: #94a3b8;
+  font-weight: 600;
+}
+
+.opening-info {
+  background: #0f172a;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+}
+
+.opening-info p {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.opening-info p:last-child {
+  margin-bottom: 0;
 }

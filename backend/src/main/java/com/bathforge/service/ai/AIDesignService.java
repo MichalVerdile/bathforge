@@ -144,6 +144,13 @@ public class AIDesignService {
 
         logger.info("Found {} covering products for image analysis", coveringProducts.size());
 
+        // Separate non-covering products for GLB model analysis
+        List<ProductDTO> modelProducts = allProducts.stream()
+                .filter(p -> !"coverings".equalsIgnoreCase(p.getCategoryName()))
+                .collect(java.util.stream.Collectors.toList());
+
+        logger.info("Found {} products with 3D models for analysis", modelProducts.size());
+
         // Format products as JSON for the prompt
         String productsJson = formatProductsForPrompt(allProducts);
         templateData.put("availableProducts", productsJson);
@@ -152,6 +159,11 @@ public class AIDesignService {
         Map<Long, String> coveringImages = loadCoveringImages(coveringProducts);
         String coveringImagesData = formatCoveringImagesForPrompt(coveringProducts, coveringImages);
         templateData.put("coveringImagesData", coveringImagesData);
+
+        // Load and format 3D model data as base64
+        Map<Long, String> productModels = loadProductModels(modelProducts);
+        String productModelsData = formatProductModelsForPrompt(modelProducts, productModels);
+        templateData.put("productModelsData", productModelsData);
 
         String prompt = applyTemplate(PROMPTS.ProductRecommendationPrompt.getPromptText(), templateData);
 
@@ -207,6 +219,81 @@ public class AIDesignService {
         return lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") ||
                 lowerUrl.endsWith(".png") || lowerUrl.endsWith(".webp") ||
                 lowerUrl.endsWith(".gif") || lowerUrl.endsWith(".bmp");
+    }
+
+    /**
+     * Check if URL points to a GLB model file
+     */
+    private boolean isGlbFile(String url) {
+        if (url == null)
+            return false;
+        return url.toLowerCase().endsWith(".glb");
+    }
+
+    /**
+     * Load product 3D models as base64 encoded data
+     */
+    private Map<Long, String> loadProductModels(List<ProductDTO> products) {
+        Map<Long, String> modelData = new HashMap<>();
+
+        for (ProductDTO product : products) {
+            try {
+                String modelUrl = product.getModelPath();
+
+                if (modelUrl != null && !modelUrl.isEmpty() && isGlbFile(modelUrl)) {
+                    String base64Model = promptService.loadImageAsBase64(modelUrl);
+                    modelData.put(product.getId(), base64Model);
+                    logger.debug("Loaded GLB model for product: {} (ID: {})", product.getName(), product.getId());
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to load GLB model for product {} (ID: {}): {}",
+                        product.getName(), product.getId(), e.getMessage());
+            }
+        }
+
+        logger.info("Successfully loaded {} GLB models out of {} products",
+                modelData.size(), products.size());
+        return modelData;
+    }
+
+    /**
+     * Build context text for product models with embedded base64 data
+     */
+    private String formatProductModelsForPrompt(List<ProductDTO> products, Map<Long, String> modelData) {
+        if (modelData.isEmpty()) {
+            return "No 3D model data available.";
+        }
+
+        StringBuilder data = new StringBuilder();
+
+        for (ProductDTO product : products) {
+            if (modelData.containsKey(product.getId())) {
+                Map<String, Object> productMap = new HashMap<>();
+                productMap.put("productId", product.getId());
+                productMap.put("productName", product.getName());
+                productMap.put("category", product.getCategoryName());
+                productMap.put("availableColors", product.getAvailableColors().stream()
+                        .map(c -> c.getName())
+                        .collect(java.util.stream.Collectors.toList()));
+
+                // Include first 200 characters of base64 as sample
+                String base64Data = modelData.get(product.getId());
+                String base64Sample = base64Data.length() > 200
+                        ? base64Data.substring(0, 200) + "... [truncated]"
+                        : base64Data;
+                productMap.put("modelDataSample", base64Sample);
+                productMap.put("modelDataLength", base64Data.length());
+
+                try {
+                    data.append(objectMapper.writeValueAsString(productMap));
+                    data.append("\n");
+                } catch (Exception e) {
+                    logger.error("Failed to serialize product model data for product {}", product.getId(), e);
+                }
+            }
+        }
+
+        return data.toString();
     }
 
     /**
@@ -285,9 +372,9 @@ public class AIDesignService {
                 productDTO.setPositionX(rec.getPositionX());
                 productDTO.setPositionY(rec.getPositionY());
                 productDTO.setPositionZ(rec.getPositionZ());
-                productDTO.setRotationX(0.0);
-                productDTO.setRotationY(0.0);
-                productDTO.setRotationZ(0.0);
+                productDTO.setRotationX(rec.getRotationX() != null ? rec.getRotationX() : 0.0);
+                productDTO.setRotationY(rec.getRotationY() != null ? rec.getRotationY() : 0.0);
+                productDTO.setRotationZ(rec.getRotationZ() != null ? rec.getRotationZ() : 0.0);
                 productDTO.setScaleX(1.0);
                 productDTO.setScaleY(1.0);
                 productDTO.setScaleZ(1.0);

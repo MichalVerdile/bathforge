@@ -13,6 +13,9 @@ public class ProductRecommendationDTO {
     private Double positionX;
     private Double positionY;
     private Double positionZ;
+    private Double rotationX;
+    private Double rotationY;
+    private Double rotationZ;
     private String color;
 
     // Constructors
@@ -97,6 +100,30 @@ public class ProductRecommendationDTO {
 
     public void setColor(String color) {
         this.color = color;
+    }
+
+    public Double getRotationX() {
+        return rotationX;
+    }
+
+    public void setRotationX(Double rotationX) {
+        this.rotationX = rotationX;
+    }
+
+    public Double getRotationY() {
+        return rotationY;
+    }
+
+    public void setRotationY(Double rotationY) {
+        this.rotationY = rotationY;
+    }
+
+    public Double getRotationZ() {
+        return rotationZ;
+    }
+
+    public void setRotationZ(Double rotationZ) {
+        this.rotationZ = rotationZ;
     }
 
     public Long getCategoryId() {

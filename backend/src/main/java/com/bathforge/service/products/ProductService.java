@@ -51,6 +51,18 @@ public class ProductService {
     }
 
     /**
+     * Get products for AI selection
+     * Returns products with descriptions (showcase items) + all coverings
+     */
+    @Transactional(readOnly = true)
+    public List<ProductDTO> getProductsForAISelection() {
+        return productRepository.findProductsForAISelection()
+                .stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Get product by ID
      */
     @Transactional(readOnly = true)
@@ -112,6 +124,17 @@ public class ProductService {
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Find product by exact name (case-insensitive)
+     * Used by AI to look up products by name
+     */
+    @Transactional(readOnly = true)
+    public ProductDTO findByName(String name) {
+        return productRepository.findByNameIgnoreCase(name)
+                .map(this::convertToDTO)
+                .orElse(null);
     }
 
     /**

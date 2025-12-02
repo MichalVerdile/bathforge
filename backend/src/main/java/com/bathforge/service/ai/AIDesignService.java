@@ -4,10 +4,16 @@ import com.bathforge.dto.ai.AIDesignRequestDTO;
 import com.bathforge.dto.ai.AIDesignResponseDTO;
 import com.bathforge.dto.ai.CoveringRecommendationDTO;
 import com.bathforge.dto.ai.ProductRecommendationDTO;
+import com.bathforge.dto.ai.RoomConfigurationDTO;
+import com.bathforge.dto.ai.RoomConfigurationDTO.VertexDTO;
 import com.bathforge.dto.products.ProductDTO;
 import com.bathforge.dto.scene.CreateSceneDTO;
 import com.bathforge.dto.scene.CreateSceneProductDTO;
 import com.bathforge.dto.scene.CreateSceneRoomModelDTO;
+import com.bathforge.service.ai.collision.BoundingBox2D;
+import com.bathforge.service.ai.collision.Position3D;
+import com.bathforge.service.ai.collision.ProductDimensions;
+import com.bathforge.service.ai.collision.RoomBounds;
 import com.bathforge.service.products.ProductService;
 import com.bathforge.service.scene.SceneService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class AIDesignService {
@@ -61,15 +68,16 @@ public class AIDesignService {
                     response.getProductRecommendations() != null ? response.getProductRecommendations().size() : 0,
                     response.getCoveringRecommendations() != null ? response.getCoveringRecommendations().size() : 0);
 
-            // Generate design metadata
-            logger.debug("Generating design metadata...");
-            generateDesignMetadata(request, response);
+            // Set simple metadata from user input (no AI call needed)
+            response.setStyle(request.getStyle());
+            response.setColorPalettes(request.getColorPalettes());
+            response.setFeatures(request.getFeatures());
+            response.setDescription("AI-generated bathroom design"); // Simple placeholder
+            response.setStatus(AIDesignResponseDTO.GenerationStatus.GENERATED);
 
             // Save the design as a scene
-            if (response.getStatus() == AIDesignResponseDTO.GenerationStatus.GENERATED) {
-                logger.debug("Saving AI-generated design as scene...");
-                saveDesignAsScene(request, response);
-            }
+            logger.debug("Saving AI-generated design as scene...");
+            saveDesignAsScene(request, response);
 
             logger.info("Successfully completed AI design generation with ID: {}", response.getDesignId());
 
@@ -82,47 +90,6 @@ public class AIDesignService {
         return response;
     }
 
-    /**
-     * Generate design metadata (description, style, colorPalettes, features,
-     * sceneConfiguration)
-     */
-    private void generateDesignMetadata(AIDesignRequestDTO request, AIDesignResponseDTO response) {
-        logger.debug("Building design metadata prompt...");
-
-        Map<String, Object> templateData = buildTemplateData(request);
-        String prompt = applyTemplate(PROMPTS.DesignMetadataPrompt.getPromptText(), templateData);
-
-        logger.debug("Sending design metadata request to OpenAI...");
-        String aiResponse = promptService.generateDesignFromPrompt(prompt);
-        logger.debug("Received design metadata response from OpenAI");
-
-        // Parse the metadata JSON response
-        try {
-            Map<String, Object> metadata = objectMapper.readValue(aiResponse,
-                    new TypeReference<Map<String, Object>>() {
-                    });
-
-            response.setDescription((String) metadata.get("description"));
-            response.setStyle((String) metadata.get("style"));
-
-            @SuppressWarnings("unchecked")
-            List<String> colorPalettes = (List<String>) metadata.get("colorPalettes");
-            response.setColorPalettes(colorPalettes);
-
-            @SuppressWarnings("unchecked")
-            List<String> features = (List<String>) metadata.get("features");
-            response.setFeatures(features);
-
-            response.setSceneConfiguration((String) metadata.get("sceneConfiguration"));
-            response.setStatus(AIDesignResponseDTO.GenerationStatus.GENERATED);
-
-            logger.info("Successfully parsed design metadata");
-        } catch (Exception e) {
-            logger.error("Failed to parse design metadata JSON: {}", e.getMessage(), e);
-            response.setStatus(AIDesignResponseDTO.GenerationStatus.FAILED);
-            throw new RuntimeException("Failed to parse design metadata", e);
-        }
-    }
 
     /**
      * Generate product and covering recommendations based on requested features
@@ -132,209 +99,26 @@ public class AIDesignService {
 
         Map<String, Object> templateData = buildTemplateData(request);
 
-        // Fetch all available products with their colors
-        logger.debug("Fetching all available products and colors...");
-        List<ProductDTO> allProducts = productService.getAllProducts();
+        // Fetch showcase products (with descriptions) and all coverings
+        logger.debug("Fetching showcase products and coverings for AI selection...");
+        List<ProductDTO> allProducts = productService.getProductsForAISelection();
         logger.info("Found {} products available for AI selection", allProducts.size());
 
-        // Separate covering products for image analysis
-        List<ProductDTO> coveringProducts = allProducts.stream()
-                .filter(p -> "coverings".equalsIgnoreCase(p.getCategoryName()))
-                .collect(java.util.stream.Collectors.toList());
-
-        logger.info("Found {} covering products for image analysis", coveringProducts.size());
-
-        // Separate non-covering products for GLB model analysis
-        List<ProductDTO> modelProducts = allProducts.stream()
-                .filter(p -> !"coverings".equalsIgnoreCase(p.getCategoryName()))
-                .collect(java.util.stream.Collectors.toList());
-
-        logger.info("Found {} products with 3D models for analysis", modelProducts.size());
-
-        // Format products as JSON for the prompt
+        // Format products as JSON for the prompt (includes coverings with descriptions)
         String productsJson = formatProductsForPrompt(allProducts);
         templateData.put("availableProducts", productsJson);
 
-        // Load and format covering images as base64 data
-        Map<Long, String> coveringImages = loadCoveringImages(coveringProducts);
-        String coveringImagesData = formatCoveringImagesForPrompt(coveringProducts, coveringImages);
-        templateData.put("coveringImagesData", coveringImagesData);
-
-        // Load and format 3D model data as base64
-        Map<Long, String> productModels = loadProductModels(modelProducts);
-        String productModelsData = formatProductModelsForPrompt(modelProducts, productModels);
-        templateData.put("productModelsData", productModelsData);
-
         String prompt = applyTemplate(PROMPTS.ProductRecommendationPrompt.getPromptText(), templateData);
-
         String aiResponse = promptService.generateDesignFromPrompt(prompt);
 
         logger.debug("Received product recommendations response from OpenAI");
 
-        parseRecommendations(aiResponse, response);
+        parseRecommendations(aiResponse, response, request);
         logger.info("Parsed {} product and {} covering recommendations from AI response",
                 response.getProductRecommendations().size(),
                 response.getCoveringRecommendations() != null ? response.getCoveringRecommendations().size() : 0);
     }
 
-    /**
-     * Load covering product images as base64 encoded data
-     */
-    private Map<Long, String> loadCoveringImages(List<ProductDTO> coveringProducts) {
-        Map<Long, String> imageData = new HashMap<>();
-
-        for (ProductDTO product : coveringProducts) {
-            try {
-                String imageUrl = product.getThumbnail() != null ? product.getThumbnail() : product.getModelPath();
-
-                if (imageUrl != null && !imageUrl.isEmpty()) {
-                    // Check if it's an image file (not a 3D model)
-                    if (isImageFile(imageUrl)) {
-                        String base64Image = promptService.loadImageAsBase64(imageUrl);
-                        imageData.put(product.getId(), base64Image);
-                        logger.debug("Loaded image for covering product: {} (ID: {})", product.getName(),
-                                product.getId());
-                    } else {
-                        logger.debug("Skipping non-image file for product {}: {}", product.getId(), imageUrl);
-                    }
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to load image for covering product {} (ID: {}): {}",
-                        product.getName(), product.getId(), e.getMessage());
-            }
-        }
-
-        logger.info("Successfully loaded {} covering images out of {} products",
-                imageData.size(), coveringProducts.size());
-        return imageData;
-    }
-
-    /**
-     * Check if URL points to an image file
-     */
-    private boolean isImageFile(String url) {
-        if (url == null)
-            return false;
-        String lowerUrl = url.toLowerCase();
-        return lowerUrl.endsWith(".jpg") || lowerUrl.endsWith(".jpeg") ||
-                lowerUrl.endsWith(".png") || lowerUrl.endsWith(".webp") ||
-                lowerUrl.endsWith(".gif") || lowerUrl.endsWith(".bmp");
-    }
-
-    /**
-     * Check if URL points to a GLB model file
-     */
-    private boolean isGlbFile(String url) {
-        if (url == null)
-            return false;
-        return url.toLowerCase().endsWith(".glb");
-    }
-
-    /**
-     * Load product 3D models as base64 encoded data
-     */
-    private Map<Long, String> loadProductModels(List<ProductDTO> products) {
-        Map<Long, String> modelData = new HashMap<>();
-
-        for (ProductDTO product : products) {
-            try {
-                String modelUrl = product.getModelPath();
-
-                if (modelUrl != null && !modelUrl.isEmpty() && isGlbFile(modelUrl)) {
-                    String base64Model = promptService.loadImageAsBase64(modelUrl);
-                    modelData.put(product.getId(), base64Model);
-                    logger.debug("Loaded GLB model for product: {} (ID: {})", product.getName(), product.getId());
-                }
-            } catch (Exception e) {
-                logger.warn("Failed to load GLB model for product {} (ID: {}): {}",
-                        product.getName(), product.getId(), e.getMessage());
-            }
-        }
-
-        logger.info("Successfully loaded {} GLB models out of {} products",
-                modelData.size(), products.size());
-        return modelData;
-    }
-
-    /**
-     * Build context text for product models with embedded base64 data
-     */
-    private String formatProductModelsForPrompt(List<ProductDTO> products, Map<Long, String> modelData) {
-        if (modelData.isEmpty()) {
-            return "No 3D model data available.";
-        }
-
-        StringBuilder data = new StringBuilder();
-
-        for (ProductDTO product : products) {
-            if (modelData.containsKey(product.getId())) {
-                Map<String, Object> productMap = new HashMap<>();
-                productMap.put("productId", product.getId());
-                productMap.put("productName", product.getName());
-                productMap.put("category", product.getCategoryName());
-                productMap.put("availableColors", product.getAvailableColors().stream()
-                        .map(c -> c.getName())
-                        .collect(java.util.stream.Collectors.toList()));
-
-                // Include first 200 characters of base64 as sample
-                String base64Data = modelData.get(product.getId());
-                String base64Sample = base64Data.length() > 200
-                        ? base64Data.substring(0, 200) + "... [truncated]"
-                        : base64Data;
-                productMap.put("modelDataSample", base64Sample);
-                productMap.put("modelDataLength", base64Data.length());
-
-                try {
-                    data.append(objectMapper.writeValueAsString(productMap));
-                    data.append("\n");
-                } catch (Exception e) {
-                    logger.error("Failed to serialize product model data for product {}", product.getId(), e);
-                }
-            }
-        }
-
-        return data.toString();
-    }
-
-    /**
-     * Build context text for covering images with embedded base64 data
-     */
-    private String formatCoveringImagesForPrompt(List<ProductDTO> coveringProducts, Map<Long, String> imageData) {
-        if (imageData.isEmpty()) {
-            return "No covering images available.";
-        }
-
-        StringBuilder data = new StringBuilder();
-
-        for (ProductDTO product : coveringProducts) {
-            if (imageData.containsKey(product.getId())) {
-                Map<String, Object> coveringMap = new HashMap<>();
-                coveringMap.put("productId", product.getId());
-                coveringMap.put("productName", product.getName());
-                coveringMap.put("category", product.getCategoryName());
-                coveringMap.put("availableColors", product.getAvailableColors().stream()
-                        .map(c -> c.getName())
-                        .collect(java.util.stream.Collectors.toList()));
-
-                // Include first 200 characters of base64 as sample
-                String base64Data = imageData.get(product.getId());
-                String base64Sample = base64Data.length() > 200
-                        ? base64Data.substring(0, 200) + "... [truncated]"
-                        : base64Data;
-                coveringMap.put("imageDataSample", base64Sample);
-                coveringMap.put("imageDataLength", base64Data.length());
-
-                try {
-                    data.append(objectMapper.writeValueAsString(coveringMap));
-                    data.append("\n");
-                } catch (Exception e) {
-                    logger.error("Failed to serialize covering image data for product {}", product.getId(), e);
-                }
-            }
-        }
-
-        return data.toString();
-    }
 
     /**
      * Save the AI-generated design as a scene in the database
@@ -357,15 +141,26 @@ public class AIDesignService {
                 productDTO.setProductId(rec.getProductId());
 
                 // Find matching color ID if color name is specified
-                if (rec.getColor() != null) {
+                if (rec.getColor() != null && !rec.getColor().isEmpty()) {
                     try {
                         var colors = productService.getColorsForProduct(rec.getProductId());
-                        colors.stream()
-                                .filter(c -> c.getName().equalsIgnoreCase(rec.getColor()))
-                                .findFirst()
-                                .ifPresent(c -> productDTO.setColorId(c.getId()));
+                        if (colors != null && !colors.isEmpty()) {
+                            var matchingColor = colors.stream()
+                                    .filter(c -> c.getName().equalsIgnoreCase(rec.getColor()))
+                                    .findFirst();
+
+                            if (matchingColor.isPresent()) {
+                                productDTO.setColorId(matchingColor.get().getId());
+                            } else {
+                                logger.debug("Color '{}' not found for product '{}', using first available color",
+                                        rec.getColor(), rec.getProductName());
+                                if (!colors.isEmpty()) {
+                                    productDTO.setColorId(colors.get(0).getId());
+                                }
+                            }
+                        }
                     } catch (Exception e) {
-                        logger.warn("Could not find color '{}' for product {}", rec.getColor(), rec.getProductId());
+                        logger.error("Error matching color for product '{}': {}", rec.getProductName(), e.getMessage());
                     }
                 }
 
@@ -399,6 +194,28 @@ public class AIDesignService {
 
                 roomModelDTO.setRoomHeight(request.getRoomConfiguration().getHeight());
                 roomModelDTO.setModelType("CUSTOM");
+
+                // Add doors and windows to room properties
+                try {
+                    Map<String, Object> roomProperties = new HashMap<>();
+                    if (request.getRoomConfiguration().getDoors() != null && !request.getRoomConfiguration().getDoors().isEmpty()) {
+                        roomProperties.put("doors", request.getRoomConfiguration().getDoors());
+                        logger.debug("Added {} doors to room properties", request.getRoomConfiguration().getDoors().size());
+                    }
+                    if (request.getRoomConfiguration().getWindows() != null && !request.getRoomConfiguration().getWindows().isEmpty()) {
+                        roomProperties.put("windows", request.getRoomConfiguration().getWindows());
+                        logger.debug("Added {} windows to room properties", request.getRoomConfiguration().getWindows().size());
+                    }
+                    if (!roomProperties.isEmpty()) {
+                        String roomPropertiesJson = objectMapper.writeValueAsString(roomProperties);
+                        roomModelDTO.setRoomProperties(roomPropertiesJson);
+                        logger.info("Saved room properties with doors and windows");
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to serialize room properties (doors/windows): {}", e.getMessage(), e);
+                    // Continue without room properties - don't fail the entire save
+                }
+
                 sceneDTO.setRoomModel(roomModelDTO);
             }
 
@@ -422,6 +239,10 @@ public class AIDesignService {
         map.put("colorPalettes", request.getColorPalettes());
         map.put("features", request.getFeatures());
 
+        // Add detailed color palette descriptions for AI
+        String colorPaletteDescriptions = getColorPaletteDescriptions(request.getColorPalettes());
+        map.put("colorPaletteDescriptions", colorPaletteDescriptions);
+
         if (request.getRoomConfiguration() != null) {
             map.put("roomConfiguration.height", request.getRoomConfiguration().getHeight());
             map.put("roomConfiguration.vertices", request.getRoomConfiguration().getVertices());
@@ -434,6 +255,38 @@ public class AIDesignService {
                 request.getAdditionalRequirements() != null ? request.getAdditionalRequirements() : "None");
 
         return map;
+    }
+
+    /**
+     * Get detailed color descriptions for the selected color palettes
+     */
+    private String getColorPaletteDescriptions(List<String> colorPalettes) {
+        if (colorPalettes == null || colorPalettes.isEmpty()) {
+            return "Neutral colors (White, Beige, Gray)";
+        }
+
+        Map<String, String> paletteDescriptions = new HashMap<>();
+        paletteDescriptions.put("spa-serenity",
+            "Light blue-gray, soft beige, pale tones");
+        paletteDescriptions.put("modern-monochrome",
+            "Black, white, gray");
+        paletteDescriptions.put("natural-warmth",
+            "Warm beige, brown, cream");
+        paletteDescriptions.put("urban-chic",
+            "Gray, silver, chrome");
+        paletteDescriptions.put("luxe-dark",
+            "Dark charcoal, gold, navy");
+        paletteDescriptions.put("sage-stone",
+            "Sage green, stone gray, taupe");
+
+        StringBuilder result = new StringBuilder();
+        for (String palette : colorPalettes) {
+            String description = paletteDescriptions.getOrDefault(palette.toLowerCase(),
+                "Neutral colors (White, Gray, Beige)");
+            result.append(description).append(". ");
+        }
+
+        return result.toString().trim();
     }
 
     /**
@@ -482,9 +335,277 @@ public class AIDesignService {
     }
 
     /**
+     * Extract room bounds from room configuration.
+     * Converts 2D vertices to 3D coordinates and calculates bounding box.
+     *
+     * @param roomConfig The room configuration from the request
+     * @return RoomBounds representing the room's boundaries
+     */
+    private RoomBounds extractRoomBounds(RoomConfigurationDTO roomConfig) {
+        if (roomConfig == null || roomConfig.getVertices() == null || roomConfig.getVertices().isEmpty()) {
+            // Default room: 2.2m x 2.2m
+            logger.debug("No room configuration provided, using default bounds");
+            return new RoomBounds(-1.1, 1.1, -1.1, 1.1);
+        }
+
+        List<VertexDTO> vertices = roomConfig.getVertices();
+
+        // Calculate centroid
+        double centerX = vertices.stream()
+                .mapToDouble(VertexDTO::getX)
+                .average().orElse(0);
+        double centerY = vertices.stream()
+                .mapToDouble(VertexDTO::getY)
+                .average().orElse(0);
+
+        // Convert to 3D coordinates (cm to meters: multiply by 0.01)
+        List<Position3D> vertices3D = new ArrayList<>();
+        for (VertexDTO vertex : vertices) {
+            double x = (vertex.getX() - centerX) * 0.01;
+            double z = (vertex.getY() - centerY) * 0.01;
+            vertices3D.add(new Position3D(x, 0, z));
+        }
+
+        // Calculate bounding box
+        double minX = vertices3D.stream()
+                .mapToDouble(v -> v.x)
+                .min().orElse(-1.1);
+        double maxX = vertices3D.stream()
+                .mapToDouble(v -> v.x)
+                .max().orElse(1.1);
+        double minZ = vertices3D.stream()
+                .mapToDouble(v -> v.z)
+                .min().orElse(-1.1);
+        double maxZ = vertices3D.stream()
+                .mapToDouble(v -> v.z)
+                .max().orElse(1.1);
+
+        RoomBounds bounds = new RoomBounds(minX, maxX, minZ, maxZ, vertices3D);
+        logger.debug("Extracted room bounds: {} with {} vertices", bounds, vertices3D.size());
+        return bounds;
+    }
+
+
+    /**
+     * Calculate positions for AI-recommended products using smart placement.
+     * Uses actual room vertices for L-shaped, U-shaped, and irregular rooms.
+     * Validates that products fit inside the room polygon.
+     * Bathtubs are always placed in the center.
+     */
+    private void calculateProductPositions(
+            List<ProductRecommendationDTO> products,
+            AIDesignRequestDTO request) {
+        if (products == null || products.isEmpty()) {
+            return;
+        }
+
+        logger.info("Calculating positions for {} products using smart placement", products.size());
+
+        // Extract room bounds
+        RoomBounds room = extractRoomBounds(request.getRoomConfiguration());
+        logger.info("Room bounds: {}", room);
+
+        // Safety buffer to add extra space from walls
+        final double SAFETY_BUFFER = 0.25; // 25cm extra clearance
+
+        // Sort products: bathtubs go last (will be placed in center)
+        // Other large items also sorted by size so largest items get placed last
+        products.sort((a, b) -> {
+            boolean aIsBathtub = "bathtubs".equalsIgnoreCase(a.getCategory()) ||
+                                 "bath tubs".equalsIgnoreCase(a.getCategory()) ||
+                                 a.getCategory().toLowerCase().contains("bathtub");
+            boolean bIsBathtub = "bathtubs".equalsIgnoreCase(b.getCategory()) ||
+                                 "bath tubs".equalsIgnoreCase(b.getCategory()) ||
+                                 b.getCategory().toLowerCase().contains("bathtub");
+
+            // Bathtubs always go last (to center)
+            if (aIsBathtub && !bIsBathtub) return 1;
+            if (!aIsBathtub && bIsBathtub) return -1;
+
+            // For non-bathtubs, sort by footprint (smaller first, so larger ones go toward center)
+            ProductDimensions dimsA = ProductDimensions.forCategory(a.getCategory());
+            ProductDimensions dimsB = ProductDimensions.forCategory(b.getCategory());
+            return Double.compare(dimsA.getFootprint(), dimsB.getFootprint());
+        });
+
+        logger.info("Sorted products for placement: {}", products.stream()
+                .map(p -> p.getProductName() + " (" + p.getCategory() + ")")
+                .toList());
+
+        // Track used positions to avoid placing multiple products at the same spot
+        List<BoundingBox2D> usedPositions = new ArrayList<>();
+
+        // Assign products to positions
+        for (int i = 0; i < products.size(); i++) {
+            ProductRecommendationDTO product = products.get(i);
+
+            // Get product dimensions based on category
+            ProductDimensions dims = ProductDimensions.forCategory(product.getCategory());
+            logger.debug("Product '{}' dimensions: {}", product.getProductName(), dims);
+
+            // Check if this is a bathtub (should go in center)
+            boolean isBathtub = "bathtubs".equalsIgnoreCase(product.getCategory()) ||
+                               "bath tubs".equalsIgnoreCase(product.getCategory()) ||
+                               product.getCategory().toLowerCase().contains("bathtub");
+
+            // Find a valid position for this product
+            Position3D position = findValidPosition(room, dims, usedPositions, SAFETY_BUFFER, isBathtub);
+
+            if (position == null) {
+                logger.warn("Could not find valid position for product '{}', using center as fallback",
+                           product.getProductName());
+                position = room.getCenter();
+            }
+
+            // Get height based on mounting type
+            double height = getDefaultHeightForMountingType(product.getMountingType());
+
+            product.setPositionX(position.x);
+            product.setPositionY(height);
+            product.setPositionZ(position.z);
+            product.setRotationX(0.0);
+            product.setRotationY(0.0);
+            product.setRotationZ(0.0);
+
+            // Record this position as used
+            BoundingBox2D productBox = new BoundingBox2D(position, dims);
+            usedPositions.add(productBox);
+
+            logger.debug("Placed product '{}' at ({}, {}, {})",
+                    product.getProductName(),
+                    String.format("%.2f", position.x),
+                    String.format("%.2f", height),
+                    String.format("%.2f", position.z));
+        }
+
+        logger.info("Completed positioning {} products using smart placement", products.size());
+    }
+
+    /**
+     * Find a valid position for a product that:
+     * 1. Is inside the room polygon
+     * 2. Doesn't collide with already placed products
+     * 3. Has proper clearance from walls
+     * 4. Spreads items evenly across the room
+     */
+    private Position3D findValidPosition(RoomBounds room, ProductDimensions dims,
+                                          List<BoundingBox2D> usedPositions,
+                                          double safetyBuffer, boolean preferCenter) {
+        double offset = Math.max(dims.getWidth(), dims.getDepth()) / 2.0 + safetyBuffer;
+
+        // If product should be in center (bathtubs), try center first
+        if (preferCenter) {
+            Position3D center = room.getCenter();
+            if (isValidPosition(center, dims, room, usedPositions)) {
+                logger.debug("Placing bathtub at center position");
+                return center;
+            }
+        }
+
+        // Generate candidate positions in priority order
+        List<Position3D> candidates = new ArrayList<>();
+
+        // Strategy 1: Bounding box corners (prioritize spreading to corners)
+        // This ensures items spread out across the room first
+        candidates.add(new Position3D(room.getMinX() + offset, 0, room.getMaxZ() - offset)); // Top-left
+        candidates.add(new Position3D(room.getMaxX() - offset, 0, room.getMaxZ() - offset)); // Top-right
+        candidates.add(new Position3D(room.getMinX() + offset, 0, room.getMinZ() + offset)); // Bottom-left
+        candidates.add(new Position3D(room.getMaxX() - offset, 0, room.getMinZ() + offset)); // Bottom-right
+
+        // Strategy 2: Edge midpoints (for better distribution)
+        double midX = (room.getMinX() + room.getMaxX()) / 2.0;
+        double midZ = (room.getMinZ() + room.getMaxZ()) / 2.0;
+        candidates.add(new Position3D(midX, 0, room.getMaxZ() - offset)); // Top-middle
+        candidates.add(new Position3D(midX, 0, room.getMinZ() + offset)); // Bottom-middle
+        candidates.add(new Position3D(room.getMinX() + offset, 0, midZ)); // Left-middle
+        candidates.add(new Position3D(room.getMaxX() - offset, 0, midZ)); // Right-middle
+
+        // Strategy 3: Use actual room vertices if available (for L, U, irregular shapes)
+        // These provide additional placement options specific to the room shape
+        if (room.hasVertices()) {
+            List<Position3D> vertices = room.getVertices();
+            for (Position3D vertex : vertices) {
+                // Try positions offset inward from each vertex
+                candidates.add(new Position3D(vertex.x + offset, 0, vertex.z + offset));
+                candidates.add(new Position3D(vertex.x - offset, 0, vertex.z + offset));
+                candidates.add(new Position3D(vertex.x + offset, 0, vertex.z - offset));
+                candidates.add(new Position3D(vertex.x - offset, 0, vertex.z - offset));
+            }
+        }
+
+        // Strategy 4: Center (only for non-bathtubs as last resort before grid)
+        if (!preferCenter) {
+            candidates.add(room.getCenter());
+        }
+
+        // Strategy 5: Grid sampling across the room (last resort)
+        double stepSize = 0.5; // 50cm grid
+        for (double x = room.getMinX() + offset; x <= room.getMaxX() - offset; x += stepSize) {
+            for (double z = room.getMinZ() + offset; z <= room.getMaxZ() - offset; z += stepSize) {
+                candidates.add(new Position3D(x, 0, z));
+            }
+        }
+
+        // Try each candidate position
+        for (Position3D candidate : candidates) {
+            if (isValidPosition(candidate, dims, room, usedPositions)) {
+                logger.debug("Found valid position at ({}, {})",
+                    String.format("%.2f", candidate.x),
+                    String.format("%.2f", candidate.z));
+                return candidate;
+            }
+        }
+
+        return null; // No valid position found
+    }
+
+    /**
+     * Check if a position is valid for placing a product:
+     * - Product must fit entirely inside the room polygon
+     * - Product must not collide with already placed products
+     */
+    private boolean isValidPosition(Position3D position, ProductDimensions dims,
+                                     RoomBounds room, List<BoundingBox2D> usedPositions) {
+        // Create bounding box for this product at this position
+        BoundingBox2D productBox = new BoundingBox2D(position, dims);
+
+        // Check 1: Product must fit inside the room polygon
+        if (!room.containsBox(productBox)) {
+            return false;
+        }
+
+        // Check 2: Product must not collide with already placed products
+        final double COLLISION_BUFFER = 0.15; // 15cm clearance between products
+        for (BoundingBox2D usedBox : usedPositions) {
+            if (productBox.intersects(usedBox, COLLISION_BUFFER)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get the default Y-height for a product based on its mounting type
+     * Matches the frontend's default placement logic
+     */
+    private double getDefaultHeightForMountingType(String mountingType) {
+        if (mountingType == null) {
+            return 0.08; // Default to floor level
+        }
+
+        return switch (mountingType) {
+            case "WALL" -> 0.38;         // Wall-mounted items at 38cm
+            case "FLOOR" -> 0.08;        // Floor items at 8cm
+            case "FREESTANDING" -> 0.08; // Freestanding items at 8cm
+            default -> 0.08;             // Default to floor level
+        };
+    }
+
+    /**
      * Parse product and covering recommendations from JSON response
      */
-    private void parseRecommendations(String json, AIDesignResponseDTO response) {
+    private void parseRecommendations(String json, AIDesignResponseDTO response, AIDesignRequestDTO request) {
         try {
             // Parse the response which contains both products and coverings
             Map<String, Object> aiResult = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
@@ -492,19 +613,71 @@ public class AIDesignService {
 
             // Parse products array
             if (aiResult.containsKey("products")) {
-                String productsJson = objectMapper.writeValueAsString(aiResult.get("products"));
-                List<ProductRecommendationDTO> products = objectMapper.readValue(productsJson,
-                        new TypeReference<List<ProductRecommendationDTO>>() {
-                        });
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> productsRaw = (List<Map<String, Object>>) aiResult.get("products");
+                List<ProductRecommendationDTO> products = new ArrayList<>();
+
+                for (Map<String, Object> productData : productsRaw) {
+                    String productName = (String) productData.get("productName");
+                    String color = (String) productData.get("color");
+
+                    // Look up the actual product by name
+                    ProductDTO actualProduct = productService.findByName(productName);
+                    if (actualProduct == null) {
+                        logger.warn("AI recommended unknown product: {}", productName);
+                        continue;
+                    }
+
+                    // Build complete recommendation with correct data from database
+                    ProductRecommendationDTO rec = new ProductRecommendationDTO();
+                    rec.setProductId(actualProduct.getId());
+                    rec.setProductName(actualProduct.getName());
+                    rec.setCategory(actualProduct.getCategoryName());
+                    rec.setCategoryId(actualProduct.getCategoryId());
+                    rec.setPriceRange(actualProduct.getPriceRange() != null ? actualProduct.getPriceRange().toString() : null);
+                    rec.setMountingType(actualProduct.getMountingType() != null ? actualProduct.getMountingType().toString() : null);
+                    rec.setColor(color);
+
+                    products.add(rec);
+                }
+
+                // Calculate positions for products to avoid overlap
+                calculateProductPositions(products, request);
+
                 response.setProductRecommendations(products);
             }
 
             // Parse coverings array
             if (aiResult.containsKey("coverings")) {
-                String coveringsJson = objectMapper.writeValueAsString(aiResult.get("coverings"));
-                List<CoveringRecommendationDTO> coverings = objectMapper.readValue(coveringsJson,
-                        new TypeReference<List<CoveringRecommendationDTO>>() {
-                        });
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> coveringsRaw = (List<Map<String, Object>>) aiResult.get("coverings");
+                List<CoveringRecommendationDTO> coverings = new ArrayList<>();
+
+                for (Map<String, Object> coveringData : coveringsRaw) {
+                    String productName = (String) coveringData.get("productName");
+                    String surfaceType = (String) coveringData.get("surfaceType");
+
+                    // Look up the actual product by name
+                    ProductDTO actualProduct = productService.findByName(productName);
+                    if (actualProduct == null) {
+                        logger.warn("AI recommended unknown covering: {}", productName);
+                        continue;
+                    }
+
+                    // Build complete recommendation with correct data from database
+                    CoveringRecommendationDTO rec = new CoveringRecommendationDTO();
+                    rec.setProductId(actualProduct.getId());
+                    rec.setProductName(actualProduct.getName());
+                    rec.setCategory(actualProduct.getCategoryName());
+                    rec.setSurfaceType(surfaceType != null ? surfaceType : "wall");
+                    rec.setRepeatX(3.0); // Sensible default
+                    rec.setRepeatY(3.0); // Sensible default
+
+                    coverings.add(rec);
+                    logger.info("Resolved covering '{}' to ID {} (surfaceType: {})",
+                            productName, actualProduct.getId(), rec.getSurfaceType());
+                }
+
                 response.setCoveringRecommendations(coverings);
             }
         } catch (Exception e) {
@@ -547,5 +720,12 @@ public class AIDesignService {
             logger.error("OpenAI test failed: {}", e.getMessage(), e);
             throw new RuntimeException("OpenAI connection test failed: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Get products available for AI selection (for debugging)
+     */
+    public List<ProductDTO> getProductsForAISelection() {
+        return productService.getProductsForAISelection();
     }
 }

@@ -26,7 +26,13 @@ const FeaturesStep: React.FC<FeaturesStepProps> = ({
         Select the essential features you want in your bathroom
       </p>
       <div className="features-grid">
-        {FEATURE_OPTIONS.map((feature) => (
+        {FEATURE_OPTIONS.filter(
+          (feature) =>
+            feature.id !== "fittings" &&
+            feature.id !== "fittings_bathtubs" &&
+            feature.id !== "accessoires" &&
+            feature.id !== "shower"
+        ).map((feature) => (
           <div
             key={feature.id}
             className={`feature-card ${

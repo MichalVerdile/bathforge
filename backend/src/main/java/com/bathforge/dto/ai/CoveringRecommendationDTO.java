@@ -5,12 +5,9 @@ public class CoveringRecommendationDTO {
     private Long productId;
     private String productName;
     private String category;
-    private String color;
     private String surfaceType; // "wall" or "floor"
     private Double repeatX;
     private Double repeatY;
-    private String reason;
-    private Double confidenceScore;
 
     // Constructors
     public CoveringRecommendationDTO() {
@@ -51,14 +48,6 @@ public class CoveringRecommendationDTO {
         this.category = category;
     }
 
-    public String getColor() {
-        return color;
-    }
-
-    public void setColor(String color) {
-        this.color = color;
-    }
-
     public String getSurfaceType() {
         return surfaceType;
     }
@@ -83,22 +72,6 @@ public class CoveringRecommendationDTO {
         this.repeatY = repeatY;
     }
 
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
-
-    public Double getConfidenceScore() {
-        return confidenceScore;
-    }
-
-    public void setConfidenceScore(Double confidenceScore) {
-        this.confidenceScore = confidenceScore;
-    }
-
     @Override
     public String toString() {
         return "CoveringRecommendationDTO{" +
@@ -106,7 +79,6 @@ public class CoveringRecommendationDTO {
                 ", productName='" + productName + '\'' +
                 ", category='" + category + '\'' +
                 ", surfaceType='" + surfaceType + '\'' +
-                ", color='" + color + '\'' +
                 ", repeatX=" + repeatX +
                 ", repeatY=" + repeatY +
                 '}';

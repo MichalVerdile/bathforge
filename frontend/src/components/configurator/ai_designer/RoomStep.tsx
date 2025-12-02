@@ -145,21 +145,31 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
     }
   };
 
-  // Auto-save room data when component mounts or updates
+  // Sync roomHeight with currentRoom when it changes
   useEffect(() => {
-    const timer = setTimeout(handleRoomDataChange, 500);
-    return () => clearTimeout(timer);
-  }, [handleRoomDataChange]);
+    if (currentRoom?.height !== undefined) {
+      setRoomHeight(currentRoom.height);
+    }
+  }, [currentRoom?.height]);
 
   return (
-    <div className="room-step-container">
-      <div className="room-editor-wrapper" style={{ 
-        height: '550px', 
-        border: '2px solid #e0e0e0', 
+    <div className="room-step-container" style={{
+      width: '100%',
+      maxWidth: '900px',
+      margin: '0 auto',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center'
+    }}>
+      <div className="room-editor-wrapper" style={{
+        height: '550px',
+        border: '2px solid #334155',
         borderRadius: '8px',
         position: 'relative',
         backgroundColor: '#f8f9fa',
-        width: '1000px'
+        width: '100%',
+        maxWidth: '900px',
+        overflow: 'hidden'
       }}>
         <RoomEditor
           ref={roomEditorRef}
@@ -170,6 +180,11 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
           onOpeningHover={(id) => {
             // Optional: could add hover effects here
           }}
+          onVerticesChange={handleRoomDataChange}
+          initialRoom={currentRoom ? {
+            vertices: currentRoom.vertices,
+            openings: currentRoom.openings
+          } : undefined}
         />
 
         {/* View Toggle Buttons */}

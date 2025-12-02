@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import StyleStep from "./StyleStep";
 import ColorStep from "./ColorStep";
 import FeaturesStep from "./FeaturesStep";
@@ -8,6 +8,7 @@ import "./AIDesigner.css";
 import type { ColorPaletteId, FeatureId, StyleId } from "./data";
 import { aiDesignerController } from "../../../controllers/api/ai/AIDesignerController";
 import type { RoomEditorRef } from "../custom_room/RoomEditor";
+import type { RoomOpenings } from "../custom_room/DoorWindowTypes";
 
 interface AIDesignerProps {
   onNavigate: (view: string) => void;
@@ -21,6 +22,7 @@ interface Vertex {
 interface RoomConfiguration {
   vertices: Vertex[];
   height: number;
+  openings?: RoomOpenings;
 }
 
 export interface AIPreferences {
@@ -39,7 +41,7 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
 
   const totalSteps = 5;
 
-  const updatePreferences = <Key extends keyof AIPreferences>(
+  const updatePreferences = useCallback(<Key extends keyof AIPreferences>(
     key: Key,
     value: AIPreferences[Key]
   ) => {
@@ -47,7 +49,7 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
       ...prev,
       [key]: value,
     }));
-  };
+  }, []);
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -62,6 +64,10 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
       onNavigate("planner");
     }
   };
+
+  const handleRoomChange = useCallback((room: RoomConfiguration) => {
+    updatePreferences("room", room);
+  }, [updatePreferences]);
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -154,7 +160,7 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
           <RoomStep
             ref={roomEditorRef}
             currentRoom={preferences.room}
-            onRoomChange={(room) => updatePreferences("room", room)}
+            onRoomChange={handleRoomChange}
           />
         );
       case 5:

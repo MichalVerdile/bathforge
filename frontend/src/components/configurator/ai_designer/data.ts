@@ -28,7 +28,7 @@ export interface ColorPalette {
     | "spa-serenity"
     | "modern-monochrome"
     | "natural-warmth"
-    | "coastal-fresh"
+    | "urban-chic"
     | "luxe-dark"
     | "sage-stone";
   name: string;
@@ -129,13 +129,13 @@ export const COLOR_PALETTES: ColorPalette[] = [
     },
   },
   {
-    id: "coastal-fresh",
-    name: "Coastal Fresh",
+    id: "urban-chic",
+    name: "Urban Chic",
     colors: {
-      primary: "#FEFEFE",
-      secondary: "#E8F4F8",
-      accent1: "#7FB3D5",
-      accent2: "#D4C5B0",
+      primary: "#F5F5F5",
+      secondary: "#E0E0E0",
+      accent1: "#9E9E9E",
+      accent2: "#616161",
     },
   },
   {

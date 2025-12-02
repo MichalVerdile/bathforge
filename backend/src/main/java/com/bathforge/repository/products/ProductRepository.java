@@ -94,4 +94,13 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      * Count products by category ID
      */
     long countByCategoryId(Long categoryId);
+
+    /**
+     * Find products for AI selection
+     * Returns: Products with non-empty descriptions + specific covering products (Coverings 2, 4, 6)
+     */
+    @Query("SELECT p FROM Product p WHERE " +
+            "(p.description IS NOT NULL AND p.description != '') " +
+            "OR (p.category.name = 'coverings' AND p.name IN ('Coverings 2', 'Coverings 4'))")
+    List<Product> findProductsForAISelection();
 }

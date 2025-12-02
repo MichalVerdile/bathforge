@@ -87,42 +87,63 @@ export function detectMeshType(mesh: THREE.Mesh): 'wall' | 'floor' | null {
   if (mesh.material && (mesh.material as any).type === 'ShadowMaterial') {
     return null;
   }
-  
+
   const name = mesh.name.toLowerCase();
-  
+
+  // Skip product meshes - they shouldn't be detected as walls/floors
+  // Products are loaded from GLB models and shouldn't be textured as room surfaces
+  let parent = mesh.parent;
+  while (parent) {
+    const parentName = parent.name?.toLowerCase() || '';
+    // If this mesh is part of a product model, skip it
+    if (parentName.includes('basin') || parentName.includes('bathtub') ||
+        parentName.includes('wc') || parentName.includes('toilet') ||
+        parentName.includes('radiator') || parentName.includes('shower') ||
+        parentName.includes('furniture') || parentName.includes('product')) {
+      return null;
+    }
+    parent = parent.parent;
+  }
+
   // First check name-based detection (most reliable)
   if (name.includes('wall')) return 'wall';
   if (name.includes('floor') || name.includes('ground')) return 'floor';
-  
+
   const geometry = mesh.geometry;
   if (geometry) {
     geometry.computeBoundingBox();
     const box = geometry.boundingBox;
-    
+
     if (box) {
       const size = new THREE.Vector3();
       box.getSize(size);
-      
+
+      // IMPORTANT: Walls and floors should be reasonably large
+      // Skip small meshes that are likely product parts (< 50cm on any side)
+      const MIN_SURFACE_SIZE = 0.5; // 50cm minimum
+      if (size.x < MIN_SURFACE_SIZE && size.z < MIN_SURFACE_SIZE) {
+        return null;
+      }
+
       // Skip very large meshes (likely environment/sky)
       if ((size.x > 30 || size.z > 30) && size.y < 0.5) {
         return null;
       }
-      
+
       // Calculate aspect ratios to determine type
       const isFlat = size.y < Math.min(size.x, size.z) * 0.1; // Y is much smaller than X or Z
       const isHorizontal = size.x > 1 && size.z > 1 && size.x < 30 && size.z < 30;
-      const isTall = size.y > 1.5;
-      const isVertical = (size.x > 1 || size.z > 1) && size.y > Math.max(size.x, size.z) * 0.5;
-      
+      const isTall = size.y > 1.8; // Increased from 1.5 to avoid small products
+      const isWide = size.x > 1.5 || size.z > 1.5; // Wall should be reasonably wide
+      const isVertical = isWide && size.y > Math.max(size.x, size.z) * 0.5;
+
       // Floor detection: flat horizontal surface
       if (isFlat && isHorizontal) {
-        console.log(`Detected floor mesh: ${mesh.name}, size:`, size);
         return 'floor';
       }
-      
-      // Wall detection: tall vertical surface
+
+      // Wall detection: tall vertical surface with minimum size requirements
       if (isTall && isVertical) {
-        console.log(`Detected wall mesh: ${mesh.name}, size:`, size);
         return 'wall';
       }
     }

@@ -77,7 +77,7 @@ public class AIDesignController {
     public ResponseEntity<String[]> getAvailableColorPalettes() {
         String[] colorPalettes = {
                 "spa-serenity", "modern-monochrome", "natural-warmth",
-                "coastal-fresh", "luxe-dark", "sage-stone"
+                "urban-chic", "luxe-dark", "sage-stone"
         };
         return ResponseEntity.ok(colorPalettes);
     }

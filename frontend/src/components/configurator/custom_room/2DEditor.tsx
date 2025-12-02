@@ -21,9 +21,10 @@ export const calculateCanvasSize = (): { width: number; height: number } => {
     viewportHeight - headerHeight - bottomButtonsHeight - padding;
   const availableWidth = viewportWidth - padding;
 
-  const width = Math.min(availableWidth * 0.9, 1200);
+  // Constrain to fit within the AI configurator container (900px max width, 550px max height)
+  const width = Math.min(availableWidth * 0.9, 880); // 880 to leave some margin within 900px container
 
-  const height = Math.min(availableHeight * 0.95, 1200);
+  const height = Math.min(availableHeight * 0.95, 530); // 530 to leave some margin within 550px container
 
   return {
     width: Math.max(width, 400),

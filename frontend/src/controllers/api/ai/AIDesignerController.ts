@@ -1,5 +1,5 @@
-import { apiClient } from '../../configuration/apiClient';
-import type { AIPreferences } from '../../../components/configurator/ai_designer/AIDesigner';
+import { apiClient } from "../../configuration/apiClient";
+import type { AIPreferences } from "../../../components/configurator/ai_designer/AIDesigner";
 
 export interface Vertex {
   x: number;
@@ -39,11 +39,11 @@ export interface AIDesignResponse {
   productRecommendations: ProductRecommendation[];
   sceneConfiguration: string;
   generatedAt: string;
-  status: 'PENDING' | 'GENERATED' | 'FAILED';
+  status: "PENDING" | "GENERATED" | "FAILED";
 }
 
 class AIDesignerController {
-  private readonly baseUrl = '/ai/design';
+  private readonly baseUrl = "/ai/design";
 
   /**
    * Generate AI bathroom design based on user preferences
@@ -51,36 +51,35 @@ class AIDesignerController {
   async generateDesign(preferences: AIPreferences): Promise<AIDesignResponse> {
     try {
       // Convert frontend preferences to backend format
-      console.log(preferences);
       const request: AIDesignRequest = {
-        style: preferences.style || '',
+        style: preferences.style || "",
         colorPalettes: preferences.colors || [],
         features: preferences.features || [],
-        roomConfiguration: preferences.room ? {
-          vertices: preferences.room.vertices,
-          height: preferences.room.height
-        } : undefined,
-        additionalRequirements: ''
+        roomConfiguration: preferences.room
+          ? {
+              vertices: preferences.room.vertices,
+              height: preferences.room.height,
+            }
+          : undefined,
+        additionalRequirements: "",
       };
-
-      console.log('Sending AI design request:', request);
 
       const response = await apiClient.post<AIDesignResponse>(
         `${this.baseUrl}/generate`,
         request
       );
 
-      console.log('AI design response:', response.data);
       return response.data;
-
     } catch (error: any) {
-      console.error('Error generating AI design:', error);
-      
+      console.error("Error generating AI design:", error);
+
       if (error.response?.data) {
-        throw new Error(error.response.data.description || 'Failed to generate design');
+        throw new Error(
+          error.response.data.description || "Failed to generate design"
+        );
       }
-      
-      throw new Error('Failed to connect to AI design service');
+
+      throw new Error("Failed to connect to AI design service");
     }
   }
 
@@ -92,9 +91,16 @@ class AIDesignerController {
       const response = await apiClient.get<string[]>(`${this.baseUrl}/styles`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching available styles:', error);
+      console.error("Error fetching available styles:", error);
       // Return default styles as fallback
-      return ['modern', 'traditional', 'minimalist', 'luxury', 'industrial', 'scandinavian'];
+      return [
+        "modern",
+        "traditional",
+        "minimalist",
+        "luxury",
+        "industrial",
+        "scandinavian",
+      ];
     }
   }
 
@@ -103,12 +109,21 @@ class AIDesignerController {
    */
   async getAvailableColorPalettes(): Promise<string[]> {
     try {
-      const response = await apiClient.get<string[]>(`${this.baseUrl}/color-palettes`);
+      const response = await apiClient.get<string[]>(
+        `${this.baseUrl}/color-palettes`
+      );
       return response.data;
     } catch (error) {
-      console.error('Error fetching available color palettes:', error);
+      console.error("Error fetching available color palettes:", error);
       // Return default color palettes as fallback
-      return ['spa-serenity', 'modern-monochrome', 'natural-warmth', 'coastal-fresh', 'luxe-dark', 'sage-stone'];
+      return [
+        "spa-serenity",
+        "modern-monochrome",
+        "natural-warmth",
+        "urban-chic",
+        "luxe-dark",
+        "sage-stone",
+      ];
     }
   }
 
@@ -117,12 +132,14 @@ class AIDesignerController {
    */
   async getAvailableFeatures(): Promise<string[]> {
     try {
-      const response = await apiClient.get<string[]>(`${this.baseUrl}/features`);
+      const response = await apiClient.get<string[]>(
+        `${this.baseUrl}/features`
+      );
       return response.data;
     } catch (error) {
-      console.error('Error fetching available features:', error);
+      console.error("Error fetching available features:", error);
       // Return default features as fallback
-      return ['bathtub', 'shower', 'sink', 'toilet', 'storage', 'mirror'];
+      return ["bathtub", "shower", "sink", "toilet", "storage", "mirror"];
     }
   }
 
@@ -134,7 +151,7 @@ class AIDesignerController {
       await apiClient.get(`${this.baseUrl}/health`);
       return true;
     } catch (error) {
-      console.error('AI service health check failed:', error);
+      console.error("AI service health check failed:", error);
       return false;
     }
   }

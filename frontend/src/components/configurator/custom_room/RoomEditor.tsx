@@ -117,12 +117,24 @@ const DynamicCamera: React.FC<{
   );
 };
 
+interface Vertex {
+  x: number;
+  y: number;
+}
+
+interface InitialRoomData {
+  vertices?: Vertex[];
+  openings?: RoomOpenings;
+}
+
 interface RoomEditorProps {
   viewMode: "2D" | "3D";
   height: number;
   selectedOpeningId?: string | null;
   onOpeningClick?: (id: string, type: "door" | "window") => void;
   onOpeningHover?: (id: string | null) => void;
+  onVerticesChange?: () => void;
+  initialRoom?: InitialRoomData;
 }
 
 export interface RoomEditorRef {
@@ -133,12 +145,37 @@ export interface RoomEditorRef {
 }
 
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
-  ({ viewMode, height, selectedOpeningId, onOpeningClick, onOpeningHover }, ref) => {
+  ({ viewMode, height, selectedOpeningId, onOpeningClick, onOpeningHover, onVerticesChange, initialRoom }, ref) => {
+    const onVerticesChangeRef = React.useRef(onVerticesChange);
+
+    // Keep ref up to date
+    useEffect(() => {
+      onVerticesChangeRef.current = onVerticesChange;
+    }, [onVerticesChange]);
+
     const getInitialVertices = (): Vertex[] => {
       const canvas = calculateCanvasSize();
-      const squareSize = 200; // Fixed 200x200 square
 
-      // Center the square on the canvas
+      // Use saved vertices if available (they are normalized, so we need to center them)
+      if (initialRoom?.vertices && initialRoom.vertices.length > 0) {
+        const savedVertices = initialRoom.vertices;
+
+        // Calculate bounding box of saved vertices
+        const maxX = Math.max(...savedVertices.map(v => v.x));
+        const maxY = Math.max(...savedVertices.map(v => v.y));
+
+        // Center the saved shape on the canvas
+        const offsetX = (canvas.width - maxX) / 2;
+        const offsetY = (canvas.height - maxY) / 2;
+
+        return savedVertices.map(v => ({
+          x: v.x + offsetX,
+          y: v.y + offsetY
+        }));
+      }
+
+      // Create default square
+      const squareSize = 250;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       const halfSize = squareSize / 2;
@@ -152,7 +189,7 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
     };
 
     const [vertices, setVertices] = useState<Vertex[]>(getInitialVertices());
-    const [customOpenings, setCustomOpenings] = useState<RoomOpenings | null>(null);
+    const [customOpenings, setCustomOpenings] = useState<RoomOpenings | null>(initialRoom?.openings || null);
 
     // Normalize vertices to start at origin for consistent door/window placement
     const normalizedVertices = useMemo(() => {
@@ -179,6 +216,13 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
       getOpenings: () => openings,
       updateOpenings: (newOpenings: RoomOpenings) => setCustomOpenings(newOpenings),
     }));
+
+    // Notify parent when vertices change
+    useEffect(() => {
+      if (onVerticesChangeRef.current) {
+        onVerticesChangeRef.current();
+      }
+    }, [vertices]);
 
     if (viewMode === "2D") {
       return <TwoDEditor vertices={vertices} setVertices={setVertices} />;

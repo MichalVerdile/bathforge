@@ -8,25 +8,22 @@ public class ProductRecommendationDTO {
     private Long categoryId;
     private String priceRange;
     private String mountingType;
-    private String reason;
-    private Double confidenceScore;
+    private String color;                   
     private Double positionX;
     private Double positionY;
     private Double positionZ;
     private Double rotationX;
     private Double rotationY;
     private Double rotationZ;
-    private String color;
 
     // Constructors
     public ProductRecommendationDTO() {
     }
 
-    public ProductRecommendationDTO(Long productId, String productName, String category, String reason) {
+    public ProductRecommendationDTO(Long productId, String productName, String category) {
         this.productId = productId;
         this.productName = productName;
         this.category = category;
-        this.reason = reason;
     }
 
     // Getters and Setters
@@ -52,22 +49,6 @@ public class ProductRecommendationDTO {
 
     public void setCategory(String category) {
         this.category = category;
-    }
-
-    public String getReason() {
-        return reason;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
-
-    public Double getConfidenceScore() {
-        return confidenceScore;
-    }
-
-    public void setConfidenceScore(Double confidenceScore) {
-        this.confidenceScore = confidenceScore;
     }
 
     public Double getPositionX() {
@@ -156,8 +137,7 @@ public class ProductRecommendationDTO {
                 "productId=" + productId +
                 ", productName='" + productName + '\'' +
                 ", category='" + category + '\'' +
-                ", reason='" + reason + '\'' +
-                ", confidenceScore=" + confidenceScore +
+                ", color='" + color + '\'' +
                 '}';
     }
 }

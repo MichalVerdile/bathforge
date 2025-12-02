@@ -6,14 +6,12 @@ import java.util.List;
 public class AIDesignResponseDTO {
 
     private String designId;
-    private String generatedPrompt;
     private String description;
     private String style;
     private List<String> colorPalettes;
     private List<String> features;
     private List<ProductRecommendationDTO> productRecommendations;
     private List<CoveringRecommendationDTO> coveringRecommendations;
-    private String sceneConfiguration;
     private LocalDateTime generatedAt;
     private GenerationStatus status;
 
@@ -29,10 +27,9 @@ public class AIDesignResponseDTO {
         this.status = GenerationStatus.PENDING;
     }
 
-    public AIDesignResponseDTO(String designId, String generatedPrompt, String description) {
+    public AIDesignResponseDTO(String designId, String description) {
         this();
         this.designId = designId;
-        this.generatedPrompt = generatedPrompt;
         this.description = description;
     }
 
@@ -43,14 +40,6 @@ public class AIDesignResponseDTO {
 
     public void setDesignId(String designId) {
         this.designId = designId;
-    }
-
-    public String getGeneratedPrompt() {
-        return generatedPrompt;
-    }
-
-    public void setGeneratedPrompt(String generatedPrompt) {
-        this.generatedPrompt = generatedPrompt;
     }
 
     public String getDescription() {
@@ -99,14 +88,6 @@ public class AIDesignResponseDTO {
 
     public void setCoveringRecommendations(List<CoveringRecommendationDTO> coveringRecommendations) {
         this.coveringRecommendations = coveringRecommendations;
-    }
-
-    public String getSceneConfiguration() {
-        return sceneConfiguration;
-    }
-
-    public void setSceneConfiguration(String sceneConfiguration) {
-        this.sceneConfiguration = sceneConfiguration;
     }
 
     public LocalDateTime getGeneratedAt() {

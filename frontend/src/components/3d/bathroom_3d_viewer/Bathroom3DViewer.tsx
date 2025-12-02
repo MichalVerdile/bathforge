@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Scene3D from "../scene/Scene3D";
-import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
+import ModelBrowser, { type ModelItem, type PlacedProduct } from "../model_browser/ModelBrowser";
 import sceneService, {
   SceneProduct,
 } from "../../../controllers/api/scenes/SceneService";
@@ -72,6 +72,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [roomOpenings, setRoomOpenings] = useState<RoomOpenings | null>(null);
   const [selectedOpeningId, setSelectedOpeningId] = useState<string | null>(null);
   const [selectedOpeningType, setSelectedOpeningType] = useState<"door" | "window" | null>(null);
+  const [isAIGeneratedRoom, setIsAIGeneratedRoom] = useState(false);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
@@ -227,11 +228,12 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
             }
           }
 
-          // Set scene name
+          // Set scene name and mark as AI-generated
           setCurrentScene({
             name: `AI Design ${new Date().toLocaleString()}`,
           });
-          
+          setIsAIGeneratedRoom(true);
+
           // Load products from AI recommendations
           if (aiResponse.productRecommendations && aiResponse.productRecommendations.length > 0) {
             const loadedProducts: SceneProduct3D[] = [];
@@ -920,6 +922,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           onModelSelect={handleModelSelect}
           selectedModel={selectedModel}
           onCategoryChange={setSelectedBrowserCategory}
+          placedProducts={sceneProducts}
+          onPlacedProductClick={setSelectedProductId}
+          selectedProductId={selectedProductId}
+          initialViewMode={isAIGeneratedRoom ? "list" : "browser"}
         />
       )}
 

@@ -13,11 +13,22 @@ import { useModelData } from "../../../hooks/useModelData";
 import { ModelItem, ModelCategory } from "../../../types/api";
 import "./ModelBrowser.css";
 
+interface PlacedProduct {
+  uniqueId: string;
+  productId: number;
+  modelItem: ModelItem;
+  selectedColorId?: number;
+}
+
 interface ModelBrowserProps {
   onModelSelect: (model: ModelItem) => void;
   selectedModel?: ModelItem | null;
   style?: React.CSSProperties;
   onCategoryChange?: (categoryName: string) => void;
+  placedProducts?: PlacedProduct[];
+  onPlacedProductClick?: (uniqueId: string) => void;
+  selectedProductId?: string | null;
+  initialViewMode?: "browser" | "list";
 }
 
 const getCategoryIcon = (
@@ -82,9 +93,14 @@ export default function ModelBrowser({
   selectedModel,
   style,
   onCategoryChange,
+  placedProducts = [],
+  onPlacedProductClick,
+  selectedProductId,
+  initialViewMode = "browser",
 }: ModelBrowserProps) {
   const { categories, loading, error, refresh } = useModelData();
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [viewMode, setViewMode] = useState<"browser" | "list">(initialViewMode);
 
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
@@ -97,6 +113,13 @@ export default function ModelBrowser({
       onCategoryChange(selectedCategory);
     }
   }, [selectedCategory, onCategoryChange]);
+
+  useEffect(() => {
+    // Update view mode when initialViewMode changes (e.g., when AI products load)
+    if (initialViewMode === "list" && placedProducts.length > 0) {
+      setViewMode("list");
+    }
+  }, [initialViewMode, placedProducts.length]);
 
   const currentCategory = categories.find(
     (cat) => cat.name === selectedCategory
@@ -150,50 +173,56 @@ export default function ModelBrowser({
   return (
     <div className="model-browser" style={style}>
       <div className="model-browser-header">
-        <div className="model-browser-title">
-          <span>Product Browser</span>
+        <div className="view-switch">
           <button
-            className="refresh-button"
-            onClick={refresh}
-            data-tooltip="Refresh models"
+            className={`view-switch-button ${viewMode === "browser" ? "active" : ""}`}
+            onClick={() => setViewMode("browser")}
           >
-            <FaSync size={14} />
+            Browser
+          </button>
+          <button
+            className={`view-switch-button ${viewMode === "list" ? "active" : ""}`}
+            onClick={() => setViewMode("list")}
+          >
+            List ({placedProducts.length})
           </button>
         </div>
       </div>
 
-      <div className="category-tabs">
-        {(() => {
-          const regularCategories = categories.filter(
-            (cat) => cat.name.toLowerCase() !== "coverings"
-          );
-          const coveringsCategory = categories.find(
-            (cat) => cat.name.toLowerCase() === "coverings"
-          );
-          const sortedCategories = coveringsCategory
-            ? [...regularCategories, coveringsCategory]
-            : regularCategories;
+      {viewMode === "browser" && (
+        <>
+          <div className="category-tabs">
+            {(() => {
+              const regularCategories = categories.filter(
+                (cat) => cat.name.toLowerCase() !== "coverings"
+              );
+              const coveringsCategory = categories.find(
+                (cat) => cat.name.toLowerCase() === "coverings"
+              );
+              const sortedCategories = coveringsCategory
+                ? [...regularCategories, coveringsCategory]
+                : regularCategories;
 
-          return sortedCategories.map((category) => (
-            <button
-              key={category.name}
-              className={`category-tab ${
-                category.name.toLowerCase() === "coverings"
-                  ? "coverings-tab"
-                  : ""
-              } ${selectedCategory === category.name ? "active" : ""}`}
-              onClick={() => setSelectedCategory(category.name)}
-              data-tooltip={category.displayName}
-            >
-              <span className="category-icon">
-                {getCategoryIcon(category.name)}
-              </span>
-            </button>
-          ));
-        })()}
-      </div>
+              return sortedCategories.map((category) => (
+                <button
+                  key={category.name}
+                  className={`category-tab ${
+                    category.name.toLowerCase() === "coverings"
+                      ? "coverings-tab"
+                      : ""
+                  } ${selectedCategory === category.name ? "active" : ""}`}
+                  onClick={() => setSelectedCategory(category.name)}
+                  data-tooltip={category.displayName}
+                >
+                  <span className="category-icon">
+                    {getCategoryIcon(category.name)}
+                  </span>
+                </button>
+              ));
+            })()}
+          </div>
 
-      <div className="model-list">
+          <div className="model-list">
         {filteredModels.length === 0 ? (
           <div className="no-models-message">No products in this category.</div>
         ) : (
@@ -258,21 +287,86 @@ export default function ModelBrowser({
             </div>
           ))
         )}
-      </div>
-
-      <div className="model-browser-footer">
-        {filteredModels.length} product(s) available
-        {currentCategory && (
-          <div className="current-category">
-            <span className="current-category-icon">
-              {getCategoryIcon(currentCategory.name, 14)}
-            </span>
-            <span>{currentCategory.displayName}</span>
           </div>
-        )}
-      </div>
+
+          <div className="model-browser-footer">
+            {filteredModels.length} product(s) available
+            {currentCategory && (
+              <div className="current-category">
+                <span className="current-category-icon">
+                  {getCategoryIcon(currentCategory.name, 14)}
+                </span>
+                <span>{currentCategory.displayName}</span>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {viewMode === "list" && (
+        <div className="placed-products-list">
+          {placedProducts.length === 0 ? (
+            <div className="no-products-message">
+              <div className="empty-list-title">No Items Placed</div>
+              <div className="empty-list-description">
+                Add products from the browser to see them here
+              </div>
+            </div>
+          ) : (
+            placedProducts.map((product) => (
+              <div
+                key={product.uniqueId}
+                className={`placed-product-item ${
+                  selectedProductId === product.uniqueId ? "selected" : ""
+                }`}
+                onClick={() => onPlacedProductClick?.(product.uniqueId)}
+              >
+                <div className="placed-product-preview">
+                  <img
+                    src={product.modelItem.thumbnail ?? ""}
+                    alt={product.modelItem.name}
+                    className="placed-product-image"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const placeholder =
+                        target.nextElementSibling as HTMLElement;
+                      if (placeholder) placeholder.style.display = "flex";
+                    }}
+                  />
+                  <div className="placed-product-placeholder">
+                    <span className="placeholder-icon">
+                      {getProductIcon(product.modelItem.category)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="placed-product-info">
+                  <div className="placed-product-name">
+                    {product.modelItem.name}
+                  </div>
+                  <div className="placed-product-details">
+                    {product.modelItem.category}
+                    {product.selectedColorId &&
+                      product.modelItem.availableColors && (
+                        <>
+                          {" • "}
+                          {
+                            product.modelItem.availableColors.find(
+                              (c) => c.id === product.selectedColorId
+                            )?.name
+                          }
+                        </>
+                      )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-export type { ModelItem, ModelCategory };
+export type { ModelItem, ModelCategory, PlacedProduct };

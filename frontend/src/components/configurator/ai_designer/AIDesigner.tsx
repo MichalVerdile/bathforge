@@ -181,6 +181,16 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
 
       <div className="ai-designer-content">
         <div className="ai-left">
+          {/* Loading Overlay */}
+          {isGenerating && (
+            <div className="loading-overlay">
+              <div className="loading-content">
+                <div className="loading-spinner"></div>
+                <p className="loading-text">Generating your bathroom design...</p>
+              </div>
+            </div>
+          )}
+
           <div className="step-content">{renderStep()}</div>
 
           {/* Error message */}
@@ -222,7 +232,7 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
                 onClick={handleGenerate}
                 disabled={isGenerating}
               >
-                {isGenerating ? "Generating..." : "Generate My Bathroom"}
+                Generate My Bathroom
               </button>
             )}
           </div>

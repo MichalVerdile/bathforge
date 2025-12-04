@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import Scene3D from "../scene/Scene3D";
-import ModelBrowser, { type ModelItem } from "../model_browser/ModelBrowser";
+import ModelBrowser, { type ModelItem, type PlacedProduct } from "../model_browser/ModelBrowser";
 import sceneService, {
   SceneProduct,
 } from "../../../controllers/api/scenes/SceneService";
@@ -9,7 +9,7 @@ import { ProductService } from "../../../controllers/api/products/ProductService
 import * as THREE from "three";
 import "./Bathroom3DViewer.css";
 import DraggableModel from "./DraggableModel";
-import { WallFloorSelector, applyTextureToMesh } from "./WallFloorSelector";
+import { WallFloorSelector, applyTextureToMesh, detectMeshType } from "./WallFloorSelector";
 import { Room } from "../../configurator/custom_room/Room";
 import {
   RoomOpenings,
@@ -72,6 +72,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
   const [roomOpenings, setRoomOpenings] = useState<RoomOpenings | null>(null);
   const [selectedOpeningId, setSelectedOpeningId] = useState<string | null>(null);
   const [selectedOpeningType, setSelectedOpeningType] = useState<"door" | "window" | null>(null);
+  const [isAIGeneratedRoom, setIsAIGeneratedRoom] = useState(false);
   const [controls, setControls] = useState<SceneControlsState>({
     position: [0, 0, 0],
     rotation: [0, 0, 0],
@@ -115,13 +116,254 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
     return `${type}-${rounded.x}-${rounded.y}-${rounded.z}`;
   };
 
-  useEffect(() => {
-    const storedCustomRoom = localStorage.getItem("customRoom");
-    if (storedCustomRoom) {
+  const applyCoveringsFromAI = async (coveringsToApply: Array<{
+    productId: number;
+    category: string;
+    color?: string;
+    surfaceType?: 'wall' | 'floor';
+    repeatX?: number;
+    repeatY?: number;
+  }>) => {
+    if (!sceneRef.current) {
+      return;
+    }
+
+    // Batch all covering updates to avoid multiple re-renders
+    const newCoverings: { [surfaceIdentifier: string]: {
+      productId: number;
+      surfaceType: "wall" | "floor";
+      repeatX: number;
+      repeatY: number;
+    }} = {};
+
+    for (const covering of coveringsToApply) {
       try {
-        const customRoom = JSON.parse(storedCustomRoom);
-        setCustomRoomData(customRoom);
-        // Initialize openings from stored data or create default ones
+        const product = await ProductService.getById(covering.productId);
+        const texturePath = product.thumbnail || product.modelPath;
+
+        // Use explicit surfaceType if provided, otherwise determine from category
+        let targetType: 'wall' | 'floor';
+        if (covering.surfaceType) {
+          targetType = covering.surfaceType;
+        } else {
+          const isFloorCovering = covering.category?.toLowerCase().includes('floor');
+          targetType = isFloorCovering ? 'floor' : 'wall';
+        }
+
+        const repeatX = covering.repeatX || 3;
+        const repeatY = covering.repeatY || 3;
+
+        // Find all meshes of the target type in the scene
+        // IMPORTANT: Only target actual room surfaces (not product models)
+        const meshesToTexture: THREE.Mesh[] = [];
+        sceneRef.current.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            const name = child.name.toLowerCase();
+
+            // Explicit name matching - only room surfaces
+            if (targetType === 'floor' && name === 'floor') {
+              meshesToTexture.push(child);
+            } else if (targetType === 'wall' && name.startsWith('wall-')) {
+              meshesToTexture.push(child);
+            }
+          }
+        });
+
+        // Apply texture to all matching surfaces
+        for (const mesh of meshesToTexture) {
+          try {
+            await applyTextureToMesh(mesh, texturePath, repeatX, repeatY);
+
+            const surfaceIdentifier = getSurfaceIdentifier(mesh, targetType);
+            // Collect in batch instead of updating state immediately
+            newCoverings[surfaceIdentifier] = {
+              productId: covering.productId,
+              surfaceType: targetType,
+              repeatX,
+              repeatY,
+            };
+          } catch (error) {
+            console.error(`Failed to apply texture to ${targetType}:`, error);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load covering product:", covering.productId, error);
+      }
+    }
+
+    // Update state ONCE with all coverings
+    setAppliedCoverings((prev) => ({
+      ...prev,
+      ...newCoverings
+    }));
+
+    // Schedule save after applying all coverings
+    scheduleAutoSave(1000);
+  };
+
+  useEffect(() => {
+    // Load AI-generated design if available
+    const loadAIDesign = async () => {
+      const storedAIResponse = localStorage.getItem("aiDesignResponse");
+      const storedAIPreferences = localStorage.getItem("aiPreferences");
+      
+      if (storedAIResponse && storedAIPreferences) {
+        try {
+          const aiResponse = JSON.parse(storedAIResponse);
+          const aiPreferences = JSON.parse(storedAIPreferences);
+
+          // Set the room data from AI preferences
+          if (aiPreferences.room) {
+            setCustomRoomData(aiPreferences.room);
+            // Initialize openings from AI preferences or create default ones
+            if (aiPreferences.room.openings) {
+              setRoomOpenings(aiPreferences.room.openings);
+            } else {
+              // Generate default openings for AI-generated room
+              const defaultOpenings = createDefaultOpenings(
+                aiPreferences.room.vertices,
+                aiPreferences.room.height
+              );
+              setRoomOpenings(defaultOpenings);
+            }
+          }
+
+          // Set scene name and mark as AI-generated
+          setCurrentScene({
+            name: `AI Design ${new Date().toLocaleString()}`,
+          });
+          setIsAIGeneratedRoom(true);
+
+          // Load products from AI recommendations
+          if (aiResponse.productRecommendations && aiResponse.productRecommendations.length > 0) {
+            const loadedProducts: SceneProduct3D[] = [];
+            
+            for (const recommendation of aiResponse.productRecommendations) {
+              try {
+                // Fetch the full product data
+                const product = await ProductService.getById(recommendation.productId);
+                
+                // Get position from AI recommendations or use defaults based on mounting type
+                // AI backend now calculates positions to avoid overlap and sets proper heights
+                let defaultY = 0.08; // Default for FLOOR/FREESTANDING
+                if (recommendation.mountingType === 'WALL') {
+                  defaultY = 0.38; // Wall-mounted items
+                }
+
+                let position = {
+                  x: recommendation.positionX != null ? recommendation.positionX : 0,
+                  y: recommendation.positionY != null ? recommendation.positionY : defaultY,
+                  z: recommendation.positionZ != null ? recommendation.positionZ : 0
+                };
+
+                // Get colors if available
+                let colors = product.availableColors || [];
+                if (!colors || colors.length === 0) {
+                  try {
+                    colors = await ProductService.getColors(product.id);
+                  } catch (e) {
+                    // Color loading failed, continue with empty array
+                  }
+                }
+                
+                // Find color ID if specified by AI
+                let selectedColorId = colors.length > 0 ? colors[0].id : undefined;
+                if (recommendation.color && colors.length > 0) {
+                  const matchingColor = colors.find(c => 
+                    c.name.toLowerCase().includes(recommendation.color.toLowerCase()) ||
+                    c.hexCode.toLowerCase().includes(recommendation.color.toLowerCase())
+                  );
+                  if (matchingColor) {
+                    selectedColorId = matchingColor.id;
+                  }
+                }
+                
+                const uniqueId = `ai_product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                
+                const sceneProduct: SceneProduct3D = {
+                  uniqueId,
+                  productId: product.id,
+                  modelItem: {
+                    id: product.id,
+                    name: product.name,
+                    category: product.categoryName || recommendation.category,
+                    categoryId: recommendation.categoryId || product.categoryId,
+                    priceRange: (recommendation.priceRange || product.priceRange) as 'LOW' | 'MEDIUM' | 'HIGH',
+                    mountingType: (recommendation.mountingType || product.mountingType) as 'FLOOR' | 'WALL' | 'FREESTANDING',
+                    url: product.modelPath,
+                    thumbnail: product.thumbnail || product.modelPath,
+                    availableColors: colors
+                  },
+                  positionX: position.x,
+                  positionY: position.y,
+                  positionZ: position.z,
+                  rotationX: recommendation.rotationX != null ? recommendation.rotationX : 0,
+                  rotationY: recommendation.rotationY != null ? recommendation.rotationY : 0,
+                  rotationZ: recommendation.rotationZ != null ? recommendation.rotationZ : 0,
+                  scaleX: 1,
+                  scaleY: 1,
+                  scaleZ: 1,
+                  selectedColorId
+                };
+
+                loadedProducts.push(sceneProduct);
+              } catch (error) {
+                console.error("Failed to load product:", recommendation.productId, error);
+              }
+            }
+
+            setSceneProducts(loadedProducts);
+          }
+          
+          // Apply covering recommendations from AI
+          if (aiResponse.coveringRecommendations && aiResponse.coveringRecommendations.length > 0) {
+            // Wait for scene to be fully loaded before applying coverings
+            setTimeout(async () => {
+              try {
+                await applyCoveringsFromAI(aiResponse.coveringRecommendations.map((covering: any) => ({
+                  productId: covering.productId,
+                  category: covering.category,
+                  color: covering.color,
+                  surfaceType: covering.surfaceType,
+                  repeatX: covering.repeatX || 1.0,
+                  repeatY: covering.repeatY || 1.0
+                })));
+              } catch (error) {
+                console.error("Failed to apply coverings:", error);
+              }
+            }, 3000);
+          }
+          
+          // Clean up AI localStorage entries
+          localStorage.removeItem("aiDesignResponse");
+          localStorage.removeItem("aiPreferences");
+          return true;
+        } catch (error) {
+          console.error("Error parsing AI design data:", error);
+        }
+      }
+      return false;
+    };
+    
+    // Try to load AI design first
+    loadAIDesign().then((aiLoaded) => {
+      // If AI design was loaded, don't load template or custom room
+      // But if only custom room or template is present, load them
+      if (aiLoaded) {
+        // Clean up other potential sources
+        localStorage.removeItem("customRoom");
+        localStorage.removeItem("selectedTemplate");
+        setTemplateData(null);
+        return;
+      }
+      
+      // Load custom room if no AI design
+      const storedCustomRoom = localStorage.getItem("customRoom");
+      if (storedCustomRoom) {
+        try {
+          const customRoom = JSON.parse(storedCustomRoom);
+          setCustomRoomData(customRoom);
+          // Initialize openings from stored data or create default ones
         if (customRoom.openings) {
           setRoomOpenings(customRoom.openings);
         } else {
@@ -133,23 +375,24 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           setRoomOpenings(defaultOpenings);
         }
         setCurrentScene({
-          name: `Custom Scene ${new Date().toLocaleString()}`,
-        });
-        localStorage.removeItem("customRoom");
-        localStorage.removeItem("selectedTemplate");
-        setTemplateData(null);
-        return;
-      } catch (error) {
-        console.error("Error parsing custom room data:", error);
+            name: `Custom Scene ${new Date().toLocaleString()}`,
+          });
+          localStorage.removeItem("customRoom");
+          localStorage.removeItem("selectedTemplate");
+          setTemplateData(null);
+          return;
+        } catch (error) {
+          console.error("Error parsing custom room data:", error);
+        }
       }
-    }
 
-    const storedTemplate = localStorage.getItem("selectedTemplate");
-    if (storedTemplate) {
-      try {
-        const template = JSON.parse(storedTemplate);
-        setTemplateData(template);
-        // Initialize openings from template
+      // Load template if no AI design or custom room
+      const storedTemplate = localStorage.getItem("selectedTemplate");
+      if (storedTemplate) {
+        try {
+          const template = JSON.parse(storedTemplate);
+          setTemplateData(template);
+          // Initialize openings from template
         if (template.roomData?.openings) {
           setRoomOpenings(template.roomData.openings);
         } else {
@@ -161,12 +404,13 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           setRoomOpenings(defaultOpenings);
         }
         setCurrentScene({
-          name: `Template Scene ${new Date().toLocaleString()}`,
-        });
-      } catch (error) {
-        console.error("Error parsing template data:", error);
+            name: `Template Scene ${new Date().toLocaleString()}`,
+          });
+        } catch (error) {
+          console.error("Error parsing template data:", error);
+        }
       }
-    }
+    });
   }, []);
 
   const autoSaveScene = async () => {
@@ -208,15 +452,23 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       let roomModelData = undefined;
 
       if (customRoomData) {
+        // Prepare room properties with door/window data
+        const roomProperties = roomOpenings ? JSON.stringify(roomOpenings) : undefined;
+        
         roomModelData = {
           vertices: customRoomData.vertices,
           height: customRoomData.height,
+          roomProperties,
         };
         console.log("Saving custom room model:", roomModelData);
       } else if (templateData) {
+        // Prepare room properties with door/window data
+        const roomProperties = roomOpenings ? JSON.stringify(roomOpenings) : undefined;
+        
         roomModelData = {
           vertices: templateData.roomData.vertices,
           height: templateData.roomData.height / 100,
+          roomProperties,
         };
         console.log("Saving template room model:", roomModelData);
       }
@@ -280,6 +532,7 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 roomHeight: roomModelData.height,
                 modelType: templateData ? "TEMPLATE" : "CUSTOM",
                 templatePath: templateData?.preview,
+                roomProperties: roomModelData.roomProperties,
               }
             : undefined,
           coverings: coveringsData.length > 0 ? coveringsData : undefined,
@@ -669,6 +922,10 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           onModelSelect={handleModelSelect}
           selectedModel={selectedModel}
           onCategoryChange={setSelectedBrowserCategory}
+          placedProducts={sceneProducts}
+          onPlacedProductClick={setSelectedProductId}
+          selectedProductId={selectedProductId}
+          initialViewMode={isAIGeneratedRoom ? "list" : "browser"}
         />
       )}
 
@@ -775,14 +1032,14 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
                 id={product.uniqueId}
                 url={product.modelItem.url}
                 position={[
-                  product.positionX || 0,
-                  product.positionY || 0,
-                  product.positionZ || 0,
+                  product.positionX ?? 0,
+                  product.positionY ?? 0,
+                  product.positionZ ?? 0,
                 ]}
                 rotation={[
-                  product.rotationX || 0,
-                  product.rotationY || 0,
-                  product.rotationZ || 0,
+                  product.rotationX ?? 0,
+                  product.rotationY ?? 0,
+                  product.rotationZ ?? 0,
                 ]}
                 color={selectedColor?.hexCode}
                 selected={

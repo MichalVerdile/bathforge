@@ -1,3 +1,15 @@
+import type { ComponentType } from "react";
+import {
+  MdBathtub,
+  MdWash,
+  MdShower,
+  MdSpa,
+  MdLayers,
+  MdLocalFireDepartment,
+  MdPlumbing,
+} from "react-icons/md";
+import { FaToilet, FaChair, FaFaucet } from "react-icons/fa";
+
 export interface StyleOption {
   id:
     | "modern"
@@ -16,7 +28,7 @@ export interface ColorPalette {
     | "spa-serenity"
     | "modern-monochrome"
     | "natural-warmth"
-    | "coastal-fresh"
+    | "urban-chic"
     | "luxe-dark"
     | "sage-stone";
   name: string;
@@ -29,9 +41,19 @@ export interface ColorPalette {
 }
 
 export interface FeatureOption {
-  id: "bathtub" | "shower" | "sink" | "toilet" | "storage" | "mirror";
+  id:
+    | "bathtubs"
+    | "basins"
+    | "wcs"
+    | "shower"
+    | "furniture"
+    | "accessoires"
+    | "fittings"
+    | "coverings"
+    | "towel_radiators"
+    | "fittings_bathtubs";
   name: string;
-  icon: string;
+  icon: ComponentType<{ size?: number }>;
   description: string;
   category: string;
 }
@@ -107,13 +129,13 @@ export const COLOR_PALETTES: ColorPalette[] = [
     },
   },
   {
-    id: "coastal-fresh",
-    name: "Coastal Fresh",
+    id: "urban-chic",
+    name: "Urban Chic",
     colors: {
-      primary: "#FEFEFE",
-      secondary: "#E8F4F8",
-      accent1: "#7FB3D5",
-      accent2: "#D4C5B0",
+      primary: "#F5F5F5",
+      secondary: "#E0E0E0",
+      accent1: "#9E9E9E",
+      accent2: "#616161",
     },
   },
   {
@@ -140,46 +162,67 @@ export const COLOR_PALETTES: ColorPalette[] = [
 
 export const FEATURE_OPTIONS: FeatureOption[] = [
   {
-    id: "bathtub",
-    name: "Bathtub",
-    icon: "🛁",
-    description: "Relaxing soaking tub",
+    id: "bathtubs",
+    name: "Bathtubs",
+    icon: MdBathtub,
+    description: "Relaxing soaking tubs",
     category: "bathtubs",
+  },
+  {
+    id: "basins",
+    name: "Basins",
+    icon: MdWash,
+    description: "Bathroom basins and sinks",
+    category: "basins",
+  },
+  {
+    id: "wcs",
+    name: "WCs",
+    icon: FaToilet,
+    description: "Modern toilets",
+    category: "wcs",
   },
   {
     id: "shower",
     name: "Shower",
-    icon: "🚿",
-    description: "Walk-in or enclosed shower",
+    icon: MdShower,
+    description: "Walk-in or enclosed showers",
     category: "shower",
   },
   {
-    id: "sink",
-    name: "Sink",
-    icon: "💧",
-    description: "Bathroom basin",
-    category: "basins",
-  },
-  {
-    id: "toilet",
-    name: "Toilet",
-    icon: "🚽",
-    description: "Modern WC",
-    category: "wcs",
-  },
-  {
-    id: "storage",
-    name: "Storage",
-    icon: "🗄️",
-    description: "Cabinets and shelving",
+    id: "furniture",
+    name: "Furniture",
+    icon: FaChair,
+    description: "Cabinets, vanities and storage furniture",
     category: "furniture",
   },
   {
-    id: "mirror",
-    name: "Mirror",
-    icon: "🪞",
-    description: "Wall-mounted or cabinet mirror",
+    id: "accessoires",
+    name: "Accessories",
+    icon: MdSpa,
+    description: "Mirrors, hooks and small accessories",
     category: "accessoires",
+  },
+  {
+    id: "fittings",
+    name: "Fittings",
+    icon: FaFaucet,
+    description: "Taps, mixers and hardware",
+    category: "fittings",
+  },
+  {
+    id: "towel_radiators",
+    name: "Towel Radiators",
+    icon: MdLocalFireDepartment,
+    description: "Heated towel rails and radiators",
+    category: "towel_radiators",
+  },
+  {
+    id: "fittings_bathtubs",
+    name: "Bathtub Fittings",
+    icon: MdPlumbing,
+    description: "Plumbing and fittings for bathtubs",
+    category: "fittings_bathtubs",
   },
 ];
 

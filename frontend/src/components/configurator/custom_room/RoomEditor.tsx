@@ -117,23 +117,65 @@ const DynamicCamera: React.FC<{
   );
 };
 
+interface Vertex {
+  x: number;
+  y: number;
+}
+
+interface InitialRoomData {
+  vertices?: Vertex[];
+  openings?: RoomOpenings;
+}
+
 interface RoomEditorProps {
   viewMode: "2D" | "3D";
   height: number;
+  selectedOpeningId?: string | null;
+  onOpeningClick?: (id: string, type: "door" | "window") => void;
+  onOpeningHover?: (id: string | null) => void;
+  onVerticesChange?: () => void;
+  initialRoom?: InitialRoomData;
 }
 
 export interface RoomEditorRef {
   reset: () => void;
   getRoomData: () => { vertices: Vertex[]; height: number; openings: RoomOpenings };
+  getOpenings: () => RoomOpenings;
+  updateOpenings: (openings: RoomOpenings) => void;
 }
 
 export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
-  ({ viewMode, height }, ref) => {
+  ({ viewMode, height, selectedOpeningId, onOpeningClick, onOpeningHover, onVerticesChange, initialRoom }, ref) => {
+    const onVerticesChangeRef = React.useRef(onVerticesChange);
+
+    // Keep ref up to date
+    useEffect(() => {
+      onVerticesChangeRef.current = onVerticesChange;
+    }, [onVerticesChange]);
+
     const getInitialVertices = (): Vertex[] => {
       const canvas = calculateCanvasSize();
-      const squareSize = 200; // Fixed 200x200 square
 
-      // Center the square on the canvas
+      // Use saved vertices if available (they are normalized, so we need to center them)
+      if (initialRoom?.vertices && initialRoom.vertices.length > 0) {
+        const savedVertices = initialRoom.vertices;
+
+        // Calculate bounding box of saved vertices
+        const maxX = Math.max(...savedVertices.map(v => v.x));
+        const maxY = Math.max(...savedVertices.map(v => v.y));
+
+        // Center the saved shape on the canvas
+        const offsetX = (canvas.width - maxX) / 2;
+        const offsetY = (canvas.height - maxY) / 2;
+
+        return savedVertices.map(v => ({
+          x: v.x + offsetX,
+          y: v.y + offsetY
+        }));
+      }
+
+      // Create default square
+      const squareSize = 250;
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
       const halfSize = squareSize / 2;
@@ -147,6 +189,7 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
     };
 
     const [vertices, setVertices] = useState<Vertex[]>(getInitialVertices());
+    const [customOpenings, setCustomOpenings] = useState<RoomOpenings | null>(initialRoom?.openings || null);
 
     // Normalize vertices to start at origin for consistent door/window placement
     const normalizedVertices = useMemo(() => {
@@ -156,11 +199,12 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
       return vertices.map((v) => ({ x: v.x - minX, y: v.y - minY }));
     }, [vertices]);
 
-    // Generate default openings based on current room shape
+    // Use custom openings if set, otherwise generate defaults based on current room shape
     const openings = useMemo(() => {
+      if (customOpenings) return customOpenings;
       if (normalizedVertices.length < 3) return { doors: [], windows: [] };
       return createDefaultOpenings(normalizedVertices, height);
-    }, [normalizedVertices, height]);
+    }, [normalizedVertices, height, customOpenings]);
 
     const resetVertices = () => {
       setVertices(getInitialVertices());
@@ -169,7 +213,16 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
     useImperativeHandle(ref, () => ({
       reset: resetVertices,
       getRoomData: () => ({ vertices: normalizedVertices, height, openings }),
+      getOpenings: () => openings,
+      updateOpenings: (newOpenings: RoomOpenings) => setCustomOpenings(newOpenings),
     }));
+
+    // Notify parent when vertices change
+    useEffect(() => {
+      if (onVerticesChangeRef.current) {
+        onVerticesChangeRef.current();
+      }
+    }, [vertices]);
 
     if (viewMode === "2D") {
       return <TwoDEditor vertices={vertices} setVertices={setVertices} />;
@@ -194,7 +247,10 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
           height={height}
           viewMode={viewMode}
           openings={openings}
-          isInteractive={false}
+          selectedOpeningId={selectedOpeningId}
+          onOpeningClick={onOpeningClick}
+          onOpeningHover={onOpeningHover}
+          isInteractive={!!onOpeningClick}
         />
         <DynamicCamera
           viewMode={viewMode}

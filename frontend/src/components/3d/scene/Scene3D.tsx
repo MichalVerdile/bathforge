@@ -216,11 +216,13 @@ function Loader() {
 function Lights() {
   return (
     <>
-      <ambientLight intensity={0.4} />
+      {/* Increased ambient light for better visibility of dark colors */}
+      <ambientLight intensity={0.6} />
 
+      {/* Main directional light with shadow */}
       <directionalLight
         position={[10, 10, 5]}
-        intensity={1}
+        intensity={0.8}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -231,17 +233,36 @@ function Lights() {
         shadow-camera-bottom={-10}
       />
 
+      {/* Fill lights from different angles to reveal details */}
       <directionalLight
         position={[-5, 5, -5]}
+        intensity={0.4}
+      />
+      
+      <directionalLight
+        position={[5, 3, -5]}
+        intensity={0.3}
+      />
+      
+      <directionalLight
+        position={[-5, 3, 5]}
         intensity={0.3}
       />
 
+      {/* Top light for better illumination */}
       <spotLight
         position={[0, 15, 0]}
-        intensity={0.5}
+        intensity={0.4}
         angle={0.6}
         penumbra={0.5}
         castShadow
+      />
+      
+      {/* Hemisphere light for natural color variation */}
+      <hemisphereLight
+        color="#ffffff"
+        groundColor="#444444"
+        intensity={0.5}
       />
     </>
   );

@@ -329,7 +329,8 @@ function DraggableModel({
     }
   }, [rotation, currentRotation]);
 
-  // Error state
+  // Model processing is handled by the useModelProcessor hook
+  
   if (error) {
     console.error(`Model error for ${url}:`, error);
     return (

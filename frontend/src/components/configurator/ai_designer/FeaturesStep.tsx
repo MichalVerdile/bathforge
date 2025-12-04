@@ -26,7 +26,13 @@ const FeaturesStep: React.FC<FeaturesStepProps> = ({
         Select the essential features you want in your bathroom
       </p>
       <div className="features-grid">
-        {FEATURE_OPTIONS.map((feature) => (
+        {FEATURE_OPTIONS.filter(
+          (feature) =>
+            feature.id !== "fittings" &&
+            feature.id !== "fittings_bathtubs" &&
+            feature.id !== "accessoires" &&
+            feature.id !== "shower"
+        ).map((feature) => (
           <div
             key={feature.id}
             className={`feature-card ${
@@ -34,7 +40,14 @@ const FeaturesStep: React.FC<FeaturesStepProps> = ({
             }`}
             onClick={() => toggleFeature(feature.id)}
           >
-            <div className="feature-icon">{feature.icon}</div>
+            <div className="feature-icon">
+              {(() => {
+                const Icon = feature.icon as React.ComponentType<{
+                  size?: number;
+                }>;
+                return <Icon size={28} />;
+              })()}
+            </div>
             <h3 className="feature-name">{feature.name}</h3>
             <p className="feature-description">{feature.description}</p>
           </div>

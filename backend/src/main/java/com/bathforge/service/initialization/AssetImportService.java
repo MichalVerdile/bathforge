@@ -358,16 +358,10 @@ public class AssetImportService {
 
     private Map<String, String> bathtubImageMap() {
         Map<String, String> m = new HashMap<>();
-        m.put("BAB14070-A", "cq5dam.web.460.460.jpeg");
-        m.put("CA1317075P", "cq5dam.web.460.460_(1).jpeg");
-        m.put("DIVINAWSTANDARDCONTELAIO+RUBINETTERIA", "cq5dam.web.460.460_(2).jpeg");
-        m.put("DI5190140D0", "cq5dam.web.460.460_(3).jpeg");
-        m.put("SEN2190142", "cq5dam.web.460.460 (4).jpeg");
-        m.put("STILE170X70_STANDARDCONTELAIO+RUBINETTERIA", "cq5dam.web.460.460_(5).jpeg");
-        m.put("STILECSTANDARDCONTELAIORUBPOGGIATESTA", "cq5dam.web.460.460_(6).jpeg");
-        m.put("UNA1135135-A", "cq5dam.web.460.460_(7).jpeg");
-        m.put("VEN117070D", "cq5dam.web.460.460_(8).jpeg");
-        m.put("VOG115085D", "cq5dam.web.460.460_(9).jpeg");
+        m.put("3dpea.com_VBKS1990C2_BOOK_bathtub_190x90_freestanding_SX", "rexa_vasche_book_download_1200px.jpg");
+        m.put("3dpea.com_VR1D1980C1_R1_bathtub_190x80_freestanding_DX", "rexa_vasche_R1_download_1200px.jpg");
+        m.put("VLU01790C1_LUNI_bathtub_170x90_freestanding", "rexa_vasche_luni_download_1200px.jpg");
+        m.put("VMYC187501_MYPLANET_bathtub_180x75x50_freestanding", "rexa_vasche_myplanet_download_1200px.jpg");
         return m;
     }
 

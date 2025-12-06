@@ -155,20 +155,17 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
   return (
     <div className="room-step-container" style={{
       width: '100%',
-      maxWidth: '900px',
       margin: '0 auto',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center'
     }}>
       <div className="room-editor-wrapper" style={{
-        height: '550px',
         border: '2px solid #334155',
         borderRadius: '8px',
         position: 'relative',
         backgroundColor: '#f8f9fa',
         width: '100%',
-        maxWidth: '900px',
         overflow: 'hidden'
       }}>
         <RoomEditor

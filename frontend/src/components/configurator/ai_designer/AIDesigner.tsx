@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import StyleStep from "./StyleStep";
 import ColorStep from "./ColorStep";
 import FeaturesStep from "./FeaturesStep";
@@ -12,6 +12,7 @@ import type { RoomOpenings } from "../custom_room/DoorWindowTypes";
 
 interface AIDesignerProps {
   onNavigate: (view: string) => void;
+  onTitleChange?: (title: string) => void;
 }
 
 interface Vertex {
@@ -32,7 +33,7 @@ export interface AIPreferences {
   room?: RoomConfiguration;
 }
 
-const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
+const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [preferences, setPreferences] = useState<AIPreferences>({});
   const [isGenerating, setIsGenerating] = useState(false);
@@ -130,6 +131,16 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
     }
   };
 
+  // Update header title when step changes
+  useEffect(() => {
+    if (onTitleChange) {
+      const stepTitle = getStepTitle();
+      const title = `Step ${currentStep} of ${totalSteps}: ${stepTitle}`;
+      onTitleChange(title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep, onTitleChange]);
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -172,13 +183,6 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate }) => {
 
   return (
     <div className="ai-designer">
-      <div className="page-title">
-        <h1 className="step-number">
-          Step {currentStep} of {totalSteps}
-        </h1>
-        <h2 className="step-title">{getStepTitle()}</h2>
-      </div>
-
       <div className="ai-designer-content">
         <div className="ai-left">
           {/* Loading Overlay */}

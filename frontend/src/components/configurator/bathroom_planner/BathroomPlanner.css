@@ -11,14 +11,14 @@
 }
 
 .planner-title {
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   color: #94a3b8;
   margin: 0;
   font-weight: 400;
 }
 
 .planner-subtitle {
-  font-size: 2rem;
+  font-size: 1.6rem;
   color: #f1f5f9;
   margin: 0.5rem 0 0 0;
   font-weight: 600;
@@ -32,7 +32,7 @@
 }
 
 .planner-left {
-  padding: 3rem;
+  padding: 2.4rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -40,19 +40,19 @@
 }
 
 .options-container {
-  max-width: 400px;
+  max-width: 320px;
   margin: 0 auto;
 }
 
 .option-card {
   display: flex;
   align-items: center;
-  padding: 1.5rem;
-  margin-bottom: 1rem;
+  padding: 1.2rem;
+  margin-bottom: 0.8rem;
   border: 2px solid #334155;
   border-radius: 12px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   background: #0f172a;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   color: #f1f5f9;
@@ -60,20 +60,23 @@
 
 .option-card:hover {
   border-color: #94a3b8;
-  box-shadow: 0 4px 20px rgba(148, 163, 184, 0.2);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.15);
 }
 
 .option-card.selected {
   border-color: #94a3b8;
   background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
   color: #0f172a;
-  box-shadow: 0 8px 30px rgba(148, 163, 184, 0.4);
+  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.25);
 }
 
 .option-card:last-of-type {
   border-style: dashed;
   border-color: #475569;
+}
+
+.option-card:last-of-type:hover {
+  border-color: #94a3b8;
 }
 
 .option-card:last-of-type.selected {
@@ -82,16 +85,16 @@
 }
 
 .option-icon {
-  width: 60px;
-  height: 60px;
+  width: 48px;
+  height: 48px;
   background: #334155;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1rem;
+  margin-right: 0.8rem;
   color: #94a3b8;
-  transition: all 0.3s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .option-card.selected .option-icon {
@@ -101,27 +104,27 @@
 
 .option-content h3 {
   margin: 0 0 0.25rem 0;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .option-content p {
   margin: 0;
   opacity: 0.7;
-  font-size: 0.9rem;
+  font-size: 0.72rem;
 }
 
 .continue-button {
-  margin-top: 2rem;
-  padding: 1rem 2rem;
+  margin-top: 1.6rem;
+  padding: 0.8rem 1.6rem;
   border: none;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 0.88rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   width: 100%;
-  max-width: 400px;
+  max-width: 320px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -133,19 +136,12 @@
 
 .continue-button.enabled:hover {
   background: #cbd5e1;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.4);
+  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
 }
 
 .continue-button.disabled {
   background: #334155;
   color: #64748b;
-  cursor: not-allowed;
-}
-
-.continue-button.disabled {
-  background: #e2e8f0;
-  color: #a0aec0;
   cursor: not-allowed;
 }
 
@@ -155,13 +151,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+  padding: 2.4rem;
 }
 
 .preview-container {
   width: 100%;
-  max-width: 500px;
-  height: 400px;
+  max-width: 400px;
+  height: 320px;
   background: rgba(30, 41, 59, 0.95);
   backdrop-filter: blur(10px);
   border-radius: 20px;
@@ -187,12 +183,6 @@
   border-radius: 15px;
   border: 2px solid #94a3b8;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.bathroom-preview-image:hover {
-  transform: scale(1.02);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
 }
 
 @media (max-width: 1024px) {

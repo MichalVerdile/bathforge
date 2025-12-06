@@ -153,6 +153,22 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
       onVerticesChangeRef.current = onVerticesChange;
     }, [onVerticesChange]);
 
+    const getDefaultSquare = (): Vertex[] => {
+      const canvas = calculateCanvasSize();
+      // Create default square
+      const squareSize = 250;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const halfSize = squareSize / 2;
+
+      return [
+        { x: centerX - halfSize, y: centerY - halfSize },
+        { x: centerX + halfSize, y: centerY - halfSize },
+        { x: centerX + halfSize, y: centerY + halfSize },
+        { x: centerX - halfSize, y: centerY + halfSize },
+      ];
+    };
+
     const getInitialVertices = (): Vertex[] => {
       const canvas = calculateCanvasSize();
 
@@ -174,18 +190,8 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
         }));
       }
 
-      // Create default square
-      const squareSize = 250;
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const halfSize = squareSize / 2;
-
-      return [
-        { x: centerX - halfSize, y: centerY - halfSize },
-        { x: centerX + halfSize, y: centerY - halfSize },
-        { x: centerX + halfSize, y: centerY + halfSize },
-        { x: centerX - halfSize, y: centerY + halfSize },
-      ];
+      // Otherwise use default square
+      return getDefaultSquare();
     };
 
     const [vertices, setVertices] = useState<Vertex[]>(getInitialVertices());
@@ -207,7 +213,8 @@ export const RoomEditor = forwardRef<RoomEditorRef, RoomEditorProps>(
     }, [normalizedVertices, height, customOpenings]);
 
     const resetVertices = () => {
-      setVertices(getInitialVertices());
+      setVertices(getDefaultSquare());
+      setCustomOpenings(null); // Also reset openings to defaults
     };
 
     useImperativeHandle(ref, () => ({

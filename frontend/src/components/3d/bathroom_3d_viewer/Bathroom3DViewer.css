@@ -110,7 +110,6 @@
 
 .deselect-button:hover {
   background: #64748b;
-  transform: translateY(-1px);
 }
 
 .view-type-selector {
@@ -149,7 +148,6 @@
   background: #334155;
   color: #f1f5f9;
   border-color: #475569;
-  transform: translateY(-1px);
 }
 
 .view-type-button.active {
@@ -157,7 +155,7 @@
   color: #0f172a;
   border-color: #94a3b8;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
+  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.2);
 }
 
 .scene-header h4 {

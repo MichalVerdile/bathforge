@@ -13,18 +13,31 @@ interface TwoDEditorProps {
 export const calculateCanvasSize = (): { width: number; height: number } => {
   const viewportHeight = window.innerHeight;
   const viewportWidth = window.innerWidth;
-  const headerHeight = 100; // approximate header height
-  const bottomButtonsHeight = 100; // approximate bottom buttons height
+
+  // For laptop and larger screens, use consistent sizing
+  // This ensures the canvas is always properly centered regardless of container
+  const isLargeScreen = viewportWidth >= 1024;
+
+  if (isLargeScreen) {
+    // Use fixed optimal sizes for laptop+ screens
+    // These sizes work well within both CustomRoom and AIDesigner containers
+    return {
+      width: 800,
+      height: 500,
+    };
+  }
+
+  // For smaller screens, calculate dynamically
+  const headerHeight = 100;
+  const bottomButtonsHeight = 100;
   const padding = 40;
 
   const availableHeight =
     viewportHeight - headerHeight - bottomButtonsHeight - padding;
   const availableWidth = viewportWidth - padding;
 
-  // Constrain to fit within the AI configurator container (900px max width, 550px max height)
-  const width = Math.min(availableWidth * 0.9, 880); // 880 to leave some margin within 900px container
-
-  const height = Math.min(availableHeight * 0.95, 530); // 530 to leave some margin within 550px container
+  const width = Math.min(availableWidth * 0.9, 800);
+  const height = Math.min(availableHeight * 0.95, 500);
 
   return {
     width: Math.max(width, 400),
@@ -821,6 +834,9 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
         height: "100%",
         background: "#0f172a",
         position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
       <style>
@@ -859,7 +875,6 @@ export const TwoDEditor: React.FC<TwoDEditorProps> = ({
               ? "grab"
               : "default",
           display: "block",
-          margin: "auto",
           outline: "none",
         }}
       />

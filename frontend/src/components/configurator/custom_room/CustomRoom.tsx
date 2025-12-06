@@ -33,27 +33,34 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
           </div>
 
           {viewMode === "2D" && (
-            <div className="reset-button-container">
+            <div style={{
+              position: 'absolute',
+              top: '2rem',
+              right: '2rem',
+              zIndex: 20
+            }}>
               <button
-                className="reset-button"
                 onClick={handleReset}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                  borderRadius: '8px',
+                  background: 'rgba(239, 68, 68, 0.9)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontWeight: '500',
+                  transition: 'all 0.2s ease',
+                  backdropFilter: 'blur(5px)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(220, 38, 38, 1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+                }}
                 aria-label="Reset room shape"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth="1.5"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                  />
-                </svg>
-                <span>Reset</span>
+                Reset Shape
               </button>
             </div>
           )}
@@ -103,23 +110,36 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
             </button>
           </div>
 
-          {/* Height Input - Only show in 3D mode */}
+          {/* Height Slider - Only show in 3D mode */}
           {viewMode === "3D" && (
-            <div className="height-input-container">
-              <label className="height-input-label">Room Height (m)</label>
+            <div style={{
+              position: 'absolute',
+              top: '2rem',
+              right: '2rem',
+              zIndex: 20,
+              background: 'rgba(30, 41, 59, 0.95)',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '6px',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#cbd5e1'
+              }}>
+                Room Height: {roomHeight.toFixed(1)}m
+              </label>
               <input
-                type="number"
+                type="range"
                 min={MIN_HEIGHT}
                 max={MAX_HEIGHT}
-                step="0.05"
+                step="0.1"
                 value={roomHeight}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  if (!isNaN(val) && val >= MIN_HEIGHT && val <= MAX_HEIGHT) {
-                    setRoomHeight(val);
-                  }
-                }}
-                className="height-input"
+                onChange={(e) => setRoomHeight(parseFloat(e.target.value))}
+                style={{ width: '120px' }}
               />
             </div>
           )}

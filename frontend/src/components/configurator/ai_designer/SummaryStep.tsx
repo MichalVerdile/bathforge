@@ -60,8 +60,8 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ preferences }) => {
 
       <div className="summary-note">
         <p>
-          Our AI will use these preferences and your custom room shape to design a bathroom 
-          perfectly tailored to your space and requirements. You'll be able to further 
+          Our AI will use these preferences and your custom room shape to design a bathroom
+          perfectly tailored to your space and requirements. You'll be able to further
           customize it in the 3D viewer.
         </p>
       </div>

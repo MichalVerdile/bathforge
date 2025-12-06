@@ -23,6 +23,7 @@ type ViewType =
 function App() {
   const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>("planner");
+  const [aiDesignerTitle, setAiDesignerTitle] = useState<string>("AI Designer");
 
   useEffect(() => {
     const testBackendConnection = async () => {
@@ -108,7 +109,23 @@ function App() {
   }
 
   if (currentView === "ai-design") {
-    return <AIDesigner onNavigate={handleNavigate} />;
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Header
+          onNavigateHome={handleNavigateHome}
+          onNavigateLogin={handleNavigateLogin}
+          showBackButton={true}
+          onNavigateBack={() => handleNavigate('planner')}
+          title={aiDesignerTitle}
+        />
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <AIDesigner
+            onNavigate={handleNavigate}
+            onTitleChange={setAiDesignerTitle}
+          />
+        </div>
+      </div>
+    );
   }
 
   if (currentView === "3d") {

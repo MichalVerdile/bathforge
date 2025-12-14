@@ -289,6 +289,7 @@ interface Scene3DProps {
   backgroundColor?: string;
   onSceneReady?: (scene: THREE.Scene) => void;
   onCameraReady?: (camera: THREE.Camera) => void;
+  onRendererReady?: (renderer: THREE.WebGLRenderer) => void;
   controlsEnabled?: boolean;
   onBackgroundClick?: () => void;
   viewType?: ViewType;
@@ -302,6 +303,7 @@ export default function Scene3D({
   backgroundColor = '#0f172a',
   onSceneReady,
   onCameraReady,
+  onRendererReady,
   controlsEnabled = true,
   onBackgroundClick,
   viewType = '2D',
@@ -373,7 +375,7 @@ export default function Scene3D({
           far: 1000
         }}
         style={{ background: backgroundColor }}
-        onCreated={({ scene, camera }) => {
+        onCreated={({ scene, camera, gl }) => {
           scene.castShadow = true;
           scene.receiveShadow = true;
 
@@ -383,6 +385,10 @@ export default function Scene3D({
 
           if (onCameraReady) {
             onCameraReady(camera);
+          }
+
+          if (onRendererReady) {
+            onRendererReady(gl);
           }
         }}
         onPointerMissed={() => onBackgroundClick?.()}

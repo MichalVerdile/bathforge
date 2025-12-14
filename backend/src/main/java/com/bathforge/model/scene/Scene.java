@@ -1,5 +1,6 @@
 package com.bathforge.model.scene;
 
+import com.bathforge.model.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -21,8 +22,12 @@ public class Scene {
     @Column(length = 1000)
     private String description;
 
-    @NotBlank(message = "User is required")
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
+    // Legacy username field for backwards compatibility (will be removed in future)
+    @Column(name = "username")
     private String username;
 
     @Column(name = "scene_data", columnDefinition = "TEXT")
@@ -69,6 +74,13 @@ public class Scene {
         this.username = username;
     }
 
+    public Scene(String name, String description, User user) {
+        this();
+        this.name = name;
+        this.description = description;
+        this.user = user;
+    }
+
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
@@ -104,6 +116,14 @@ public class Scene {
 
     public void setUser(String username) {
         this.username = username;
+    }
+
+    public User getUserEntity() {
+        return user;
+    }
+
+    public void setUserEntity(User user) {
+        this.user = user;
     }
 
     public String getSceneData() {

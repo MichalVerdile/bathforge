@@ -158,6 +158,34 @@
   box-shadow: 0 2px 4px rgba(148, 163, 184, 0.2);
 }
 
+.request-quote-inline-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.request-quote-inline-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  transform: translateY(-1px);
+}
+
+.request-quote-inline-button:active {
+  transform: translateY(0);
+}
+
 .scene-header h4 {
   margin: 0 0 4px 0;
   font-size: 16px;

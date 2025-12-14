@@ -12,7 +12,7 @@ const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem('bathforge_auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,7 +31,8 @@ apiClient.interceptors.response.use(
   (error) => {
     console.error('API response error:', error.response?.status, error.response?.data || error.message);
     if (error.response?.status === 401) {
-      localStorage.removeItem('authToken');
+      localStorage.removeItem('bathforge_auth_token');
+      localStorage.removeItem('bathforge_user');
     }
     return Promise.reject(error);
   }

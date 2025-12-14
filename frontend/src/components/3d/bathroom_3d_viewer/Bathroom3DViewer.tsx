@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import Scene3D from "../scene/Scene3D";
 import ModelBrowser, { type ModelItem, type PlacedProduct } from "../model_browser/ModelBrowser";
 import sceneService, {
@@ -17,6 +17,8 @@ import {
   WindowData,
   createDefaultOpenings,
 } from "../../configurator/custom_room/DoorWindowTypes";
+import { captureHighQualitySnapshot } from "../../../utils/sceneSnapshot";
+import { SceneData } from "../../common/QuoteRequestModal";
 
 interface Vertex {
   x: number;
@@ -43,9 +45,15 @@ export type ViewType = "2D" | "3D-Person" | "3D-Free";
 
 interface Bathroom3DViewerProps {
   style?: React.CSSProperties;
+  onRequestQuote?: (sceneData: SceneData, snapshot?: string) => void;
 }
 
-export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
+export interface Bathroom3DViewerHandle {
+  captureSnapshot: () => string | null;
+  getSceneData: () => Promise<SceneData>;
+}
+
+const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProps>(({ style, onRequestQuote }, ref) => {
   const [selectedModel, setSelectedModel] = useState<ModelItem | null>(null);
   const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
@@ -101,7 +109,111 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Function to capture scene snapshot
+  const captureSnapshot = useCallback((): string | null => {
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) {
+      console.warn("Cannot capture snapshot: renderer, scene, or camera not ready");
+      return null;
+    }
+
+    try {
+      return captureHighQualitySnapshot(
+        rendererRef.current,
+        sceneRef.current,
+        cameraRef.current,
+        { width: 1920, height: 1080, quality: 0.9 }
+      );
+    } catch (error) {
+      console.error("Failed to capture snapshot:", error);
+      return null;
+    }
+  }, []);
+
+  // Function to calculate room area in square meters using Shoelace formula
+  const calculateRoomArea = useCallback((vertices: Vertex[]): number => {
+    if (vertices.length < 3) return 0;
+    
+    let area = 0;
+    for (let i = 0; i < vertices.length; i++) {
+      const j = (i + 1) % vertices.length;
+      area += vertices[i].x * vertices[j].y;
+      area -= vertices[j].x * vertices[i].y;
+    }
+    return Math.abs(area / 2);
+  }, []);
+
+  // Function to get scene data for quote request
+  const getSceneData = useCallback(async (): Promise<SceneData> => {
+    const products = sceneProducts.map((product) => ({
+      name: product.modelItem.name,
+      category: product.modelItem.category || "Unknown",
+      color: product.selectedColorId
+        ? product.modelItem.availableColors?.find((c) => c.id === product.selectedColorId)?.name
+        : undefined,
+      position: `(${(product.positionX || 0).toFixed(2)}, ${(product.positionY || 0).toFixed(2)}, ${(product.positionZ || 0).toFixed(2)})`,
+    }));
+
+    // Fetch covering product names
+    const coveringPromises = Object.entries(appliedCoverings).map(async ([key, covering]) => {
+      try {
+        const product = await ProductService.getById(covering.productId);
+        return {
+          type: covering.surfaceType === "floor" ? "Floor" : "Wall",
+          name: product.name,
+          color: undefined,
+        };
+      } catch (error) {
+        console.error(`Failed to fetch covering product ${covering.productId}:`, error);
+        return {
+          type: covering.surfaceType === "floor" ? "Floor" : "Wall",
+          name: `Product ID: ${covering.productId}`,
+          color: undefined,
+        };
+      }
+    });
+
+    const coverings = await Promise.all(coveringPromises);
+
+    let roomDimensions = "Custom room";
+    let roomArea = 0;
+    
+    if (customRoomData) {
+      const vertices = customRoomData.vertices;
+      roomArea = calculateRoomArea(vertices);
+      roomDimensions = `Custom room with ${vertices.length} walls, height: ${customRoomData.height}m, area: ${roomArea.toFixed(2)} m²`;
+    } else if (templateData) {
+      const vertices = templateData.roomData?.vertices || [];
+      roomArea = calculateRoomArea(vertices);
+      const height = templateData.roomData?.height ? (templateData.roomData.height / 100) : 0;
+      roomDimensions = `Template room with ${vertices.length} walls, height: ${height.toFixed(2)}m, area: ${roomArea.toFixed(2)} m²`;
+    }
+
+    return {
+      sceneId: currentScene.id?.toString() || "unsaved",
+      roomDimensions,
+      products,
+      coverings,
+    };
+  }, [sceneProducts, appliedCoverings, customRoomData, templateData, currentScene, calculateRoomArea]);
+
+  // Handle quote request button click
+  const handleRequestQuote = useCallback(async () => {
+    const snapshot = captureSnapshot();
+    const sceneData = await getSceneData();
+    
+    if (onRequestQuote) {
+      onRequestQuote(sceneData, snapshot || undefined);
+    }
+  }, [captureSnapshot, getSceneData, onRequestQuote]);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    captureSnapshot,
+    getSceneData,
+  }), [captureSnapshot, getSceneData]);
 
   const getSurfaceIdentifier = (
     mesh: THREE.Mesh,
@@ -978,6 +1090,9 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
           onCameraReady={(camera) => {
             cameraRef.current = camera;
           }}
+          onRendererReady={(renderer) => {
+            rendererRef.current = renderer;
+          }}
         >
           {(viewType === "2D" || viewType === "3D-Free") &&
             selectedBrowserCategory === "coverings" && (
@@ -1330,4 +1445,8 @@ export default function Bathroom3DViewer({ style }: Bathroom3DViewerProps) {
       </div>
     </div>
   );
-}
+});
+
+Bathroom3DViewer.displayName = 'Bathroom3DViewer';
+
+export default Bathroom3DViewer;

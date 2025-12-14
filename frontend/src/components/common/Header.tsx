@@ -1,6 +1,7 @@
 import React from "react";
 import { HiHome } from "react-icons/hi";
 import { HiUser } from "react-icons/hi";
+import { HiDocumentText } from "react-icons/hi";
 import "./Header.css";
 
 interface HeaderProps {
@@ -10,6 +11,8 @@ interface HeaderProps {
   onNavigateBack?: () => void;
   title?: string;
   disableHomeButton?: boolean;
+  showQuoteButton?: boolean;
+  onRequestQuote?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -19,6 +22,8 @@ const Header: React.FC<HeaderProps> = ({
   onNavigateBack,
   title,
   disableHomeButton = false,
+  showQuoteButton = false,
+  onRequestQuote,
 }) => {
   return (
     <header className="app-header">
@@ -41,6 +46,16 @@ const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="header-right">
+        {showQuoteButton && (
+          <button
+            className="header-quote-button"
+            onClick={onRequestQuote}
+            title="Request for Quote"
+          >
+            <HiDocumentText size={20} />
+            <span>Request Quote</span>
+          </button>
+        )}
         <button
           className="header-icon-button login-button"
           onClick={onNavigateLogin}

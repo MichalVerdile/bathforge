@@ -292,7 +292,7 @@ const QuoteRequestModal: React.FC<QuoteRequestModalProps> = ({
                 </div>
               )}
 
-              {sceneData.products.length > 0 && (
+              {sceneData.products && sceneData.products.length > 0 && (
                 <div className="quote-section">
                   <h3>Selected Products ({sceneData.products.length})</h3>
                   <div className="quote-products-list">
@@ -316,7 +316,7 @@ const QuoteRequestModal: React.FC<QuoteRequestModalProps> = ({
                 </div>
               )}
 
-              {sceneData.coverings.length > 0 && (
+              {sceneData.coverings && sceneData.coverings.length > 0 && (
                 <div className="quote-section">
                   <h3>Wall & Floor Coverings ({sceneData.coverings.length})</h3>
                   <div className="quote-coverings-list">

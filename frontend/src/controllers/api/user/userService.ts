@@ -1,5 +1,5 @@
-import apiClient from '../configuration/apiClient';
-import authService from './auth/authService';
+import apiClient from "../../configuration/apiClient";
+import authService from "../auth/authService";
 
 export interface SceneData {
   id: number;

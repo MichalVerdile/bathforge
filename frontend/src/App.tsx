@@ -67,7 +67,10 @@ function MainApp() {
 
   const handleNavigateHome = () => {
     setCurrentView('planner');
-  };if (isAuthenticated) {
+  };
+
+  const handleNavigateLogin = () => {
+    if (isAuthenticated) {
       navigate('/dashboard');
     } else {
       setIsLoginModalOpen(true);
@@ -75,17 +78,15 @@ function MainApp() {
   };
 
   const handleLoginSuccess = async () => {
-    if (bathroom3DViewerRef) {
-      const snapshot = bathroom3DViewerRef.captureSnapshot();
-      const sceneData = awaitogin = () => {
-    // Login functionality to be implemented later
-    console.log('Login clicked - not yet implemented');
+    setIsAuthenticated(true);
+    setIsLoginModalOpen(false);
+    navigate('/dashboard');
   };
 
-  const handleRequestQuote = () => {
+  const handleRequestQuote = async () => {
     if (bathroom3DViewerRef) {
       const snapshot = bathroom3DViewerRef.captureSnapshot();
-      const sceneData = bathroom3DViewerRef.getSceneData();
+      const sceneData = await bathroom3DViewerRef.getSceneData();
       setQuoteSceneData(sceneData);
       setSceneSnapshot(snapshot || undefined);
       setIsQuoteModalOpen(true);
@@ -185,27 +186,10 @@ function MainApp() {
           showBackButton={true}
           onNavigateBack={() => handleNavigate('planner')}
           title={aiDesignerTitle}
-          showQuoteButton={true}
-          onRequestQuote={handleRequestQuote}
         />
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          <Bathroom3DViewer 
-            onRequestQuote={(sceneData, snapshot) => {
-              setQuoteSceneData(sceneData);
-              setSceneSnapshot(snapshot);
-              setIsQuoteModalOpen(true);
-            }}
-          />
+          <AIDesigner onNavigate={handleNavigate} />
         </div>
-        {quoteSceneData && (
-          <QuoteRequestModal
-            isOpen={isQuoteModalOpen}
-            onClose={() => setIsQuoteModalOpen(false)}
-            sceneData={quoteSceneData}
-            sceneSnapshot={sceneSnapshot}
-            onSubmit={handleQuoteSubmit}
-          />
-        )}
         <LoginModal
           isOpen={isLoginModalOpen}
           onClose={() => setIsLoginModalOpen(false)}
@@ -260,6 +244,7 @@ function MainApp() {
       <Header 
         onNavigateHome={handleNavigateHome}
         onNavigateLogin={handleNavigateLogin}
+      />
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
@@ -276,12 +261,7 @@ function App() {
         <Route path="/" element={<MainApp />} />
         <Route path="/dashboard" element={<UserDashboard />} />
       </Routes>
-    </Routeritle="Home"
-      />
-      <div style={{ flex: 1, overflow: 'hidden' }}>
-        <BathroomPlanner onNavigate={handleNavigate} />
-      </div>
-    </div>
+    </Router>
   );
 }
 

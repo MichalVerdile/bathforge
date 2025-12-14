@@ -1,4 +1,4 @@
-import apiClient from '../configuration/apiClient';
+import apiClient from '../../configuration/apiClient';
 
 export interface LoginRequest {
   email: string;

@@ -87,7 +87,7 @@
   color: #0f172a;
   border-color: #94a3b8;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.3);
+  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.2);
 }
 
 .category-tab.coverings-tab {
@@ -106,7 +106,7 @@
   border-color: #94a3b8;
   border-style: solid;
   color: #cbd5e1;
-  box-shadow: 0 2px 8px rgba(148, 163, 184, 0.4);
+  box-shadow: 0 2px 4px rgba(148, 163, 184, 0.25);
 }
 
 .category-icon {
@@ -122,7 +122,7 @@
   position: absolute;
   bottom: 100%;
   left: 50%;
-  transform: translateX(-50%) translateY(-8px);
+  transform: translateX(-50%);
   background: rgba(30, 41, 59, 0.98);
   color: #f1f5f9;
   padding: 6px 10px;
@@ -132,7 +132,7 @@
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease;
   z-index: 1000;
   border: 1px solid #475569;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
@@ -140,7 +140,7 @@
 
 .category-tab:hover::after {
   opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
+  transform: translateX(-50%);
 }
 
 .model-list {
@@ -198,7 +198,7 @@
 
 .model-item.selected {
   border-color: #94a3b8;
-  box-shadow: 0 4px 15px rgba(148, 163, 184, 0.4);
+  box-shadow: 0 2px 6px rgba(148, 163, 184, 0.25);
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
 }
 
@@ -266,13 +266,11 @@
   font-weight: 600;
   cursor: pointer;
   opacity: 0;
-  transform: translateY(10px);
   transition: all 0.2s ease;
 }
 
 .model-item:hover .add-to-room-button {
   opacity: 1;
-  transform: translateY(0);
 }
 
 .add-to-room-button:hover {
@@ -385,7 +383,6 @@
 
 .retry-button:hover {
   background: #dc2626;
-  transform: translateY(-1px);
 }
 
 .empty-hint {
@@ -465,7 +462,7 @@
 .placed-product-item.selected {
   border-color: #94a3b8;
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  box-shadow: 0 2px 10px rgba(148, 163, 184, 0.3);
+  box-shadow: 0 2px 6px rgba(148, 163, 184, 0.2);
 }
 
 .placed-product-preview {

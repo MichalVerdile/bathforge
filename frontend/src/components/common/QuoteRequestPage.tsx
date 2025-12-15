@@ -5,6 +5,7 @@ import { quoteService } from "../../controllers/api/quote/QuoteService";
 import authService from "../../controllers/api/auth/authService";
 import "./QuoteRequestModal.css";
 import Header from "./Header";
+import HelpModal from "./HelpModal";
 
 const QuoteRequestPage: React.FC = () => {
   const navigate = useNavigate();
@@ -31,6 +32,7 @@ const QuoteRequestPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"form" | "preview">("form");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   useEffect(() => {
     // If no scene data is provided, redirect back
@@ -248,6 +250,7 @@ const QuoteRequestPage: React.FC = () => {
       <Header 
         onNavigateHome={() => navigate("/")}
         onNavigateLogin={() => {}}
+        onOpenHelp={() => setIsHelpModalOpen(true)}
         showBackButton={true}
         onNavigateBack={() => navigate(-1)}
         title="Request for Quote"
@@ -637,6 +640,12 @@ const QuoteRequestPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        currentPage="quote"
+      />
     </div>
     </>
   );

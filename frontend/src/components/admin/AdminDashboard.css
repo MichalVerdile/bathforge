@@ -24,6 +24,28 @@
   margin: 0;
 }
 
+.admin-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-help {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-help:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
+}
+
 .logout-btn {
   padding: 10px 20px;
   background: #ef4444;

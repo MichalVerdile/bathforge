@@ -7,7 +7,7 @@ import TemplateSelection from "./components/configurator/template_selection/Temp
 import "./index.css";
 import CustomRoom from "./components/configurator/custom_room/CustomRoom";
 import AIDesigner from "./components/configurator/ai_designer/AIDesigner";
-import { Header, QuoteRequestPage, SceneData } from "./components/common";
+import { Header, QuoteRequestPage, SceneData, HelpModal } from "./components/common";
 import LoginModal from "./components/common/LoginModal";
 import UserDashboard from "./components/user/UserDashboard";
 import AdminDashboard from "./components/admin/AdminDashboard";
@@ -32,6 +32,7 @@ function MainApp() {
   const [currentView, setCurrentView] = useState<ViewType>("planner");
   const [aiDesignerTitle, setAiDesignerTitle] = useState<string>("AI Designer");
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [sceneIdToLoad, setSceneIdToLoad] = useState<number | null>(null);
 
@@ -109,6 +110,24 @@ function MainApp() {
     }
   };
 
+  const handleOpenHelp = () => {
+    setIsHelpModalOpen(true);
+  };
+
+  const handleCloseHelp = () => {
+    setIsHelpModalOpen(false);
+  };
+
+  // Determine current page for help modal
+  const getCurrentPage = (): string => {
+    if (currentView === "planner") return "home";
+    if (currentView === "template-selection") return "template-selection";
+    if (currentView === "custom-room") return "custom-room";
+    if (currentView === "ai-design") return "ai-design";
+    if (currentView === "3d") return "3d-designer";
+    return "home";
+  };
+
 
   if (currentView === "planner") {
     return (
@@ -116,6 +135,7 @@ function MainApp() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
+          onOpenHelp={handleOpenHelp}
           title="Home"
           disableHomeButton={true}
         />
@@ -127,6 +147,11 @@ function MainApp() {
           onClose={() => setIsLoginModalOpen(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+        <HelpModal
+          isOpen={isHelpModalOpen}
+          onClose={handleCloseHelp}
+          currentPage={getCurrentPage()}
+        />
       </div>
     );
   }
@@ -137,6 +162,7 @@ function MainApp() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
+          onOpenHelp={handleOpenHelp}
           showBackButton={true}
           onNavigateBack={() => handleNavigate('planner')}
           title="Template Selection"
@@ -149,6 +175,11 @@ function MainApp() {
           onClose={() => setIsLoginModalOpen(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+        <HelpModal
+          isOpen={isHelpModalOpen}
+          onClose={handleCloseHelp}
+          currentPage={getCurrentPage()}
+        />
       </div>
     );
   }
@@ -160,6 +191,7 @@ function MainApp() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
+          onOpenHelp={handleOpenHelp}
           showBackButton={true}
           onNavigateBack={() => handleNavigate('planner')}
           title="Custom Room"
@@ -172,6 +204,11 @@ function MainApp() {
           onClose={() => setIsLoginModalOpen(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+        <HelpModal
+          isOpen={isHelpModalOpen}
+          onClose={handleCloseHelp}
+          currentPage={getCurrentPage()}
+        />
       </div>
     );
   }
@@ -182,12 +219,13 @@ function MainApp() {
         <Header
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
+          onOpenHelp={handleOpenHelp}
           showBackButton={true}
           onNavigateBack={() => handleNavigate('planner')}
           title={aiDesignerTitle}
         />
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          <AIDesigner onNavigate={handleNavigate} />
+          <AIDesigner onNavigate={handleNavigate} onOpenHelp={handleOpenHelp} />
         </div>
         <LoginModal
           isOpen={isLoginModalOpen}
@@ -204,6 +242,7 @@ function MainApp() {
         <Header 
           onNavigateHome={handleNavigateHome}
           onNavigateLogin={handleNavigateLogin}
+          onOpenHelp={handleOpenHelp}
           showBackButton={true}
           onNavigateBack={() => handleNavigate('planner')}
           title="3D Designer"
@@ -225,6 +264,11 @@ function MainApp() {
           onClose={() => setIsLoginModalOpen(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+        <HelpModal
+          isOpen={isHelpModalOpen}
+          onClose={handleCloseHelp}
+          currentPage={getCurrentPage()}
+        />
       </div>
     );
   }
@@ -234,11 +278,17 @@ function MainApp() {
       <Header 
         onNavigateHome={handleNavigateHome}
         onNavigateLogin={handleNavigateLogin}
+        onOpenHelp={handleOpenHelp}
       />
       <LoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={handleCloseHelp}
+        currentPage={getCurrentPage()}
       />
     </div>
   );

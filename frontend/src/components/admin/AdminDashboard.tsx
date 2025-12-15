@@ -6,6 +6,7 @@ import authService from '../../controllers/api/auth/authService';
 import { ProductService } from '../../controllers/api/products/ProductService';
 import { CategoryService } from '../../controllers/api/products/CategoryService';
 import { Product, Category } from '../../types/api';
+import { HelpModal } from '../common';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
 const BACKEND_URL = API_BASE_URL.replace('/api', '');
@@ -23,6 +24,7 @@ const AdminDashboard: React.FC = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   // Form states
   const [statusUpdate, setStatusUpdate] = useState('');
@@ -556,9 +558,14 @@ const AdminDashboard: React.FC = () => {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
-        <button onClick={() => { authService.logout(); navigate('/'); }} className="logout-btn">
-          Logout
-        </button>
+        <div className="admin-header-actions">
+          <button className="btn-help" onClick={() => setIsHelpModalOpen(true)} title="Help">
+            \u2753 Help
+          </button>
+          <button onClick={() => { authService.logout(); navigate('/'); }} className="logout-btn">
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="admin-tabs">
@@ -599,6 +606,12 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       {renderProductModal()}
+
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        currentPage="admin"
+      />
     </div>
   );
 };

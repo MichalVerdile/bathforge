@@ -2,6 +2,7 @@ import React from "react";
 import { HiHome } from "react-icons/hi";
 import { HiUser } from "react-icons/hi";
 import { HiDocumentText } from "react-icons/hi";
+import { HiQuestionMarkCircle } from "react-icons/hi";
 import "./Header.css";
 
 interface HeaderProps {
@@ -13,6 +14,7 @@ interface HeaderProps {
   disableHomeButton?: boolean;
   showQuoteButton?: boolean;
   onRequestQuote?: () => void;
+  onOpenHelp?: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -24,6 +26,7 @@ const Header: React.FC<HeaderProps> = ({
   disableHomeButton = false,
   showQuoteButton = false,
   onRequestQuote,
+  onOpenHelp,
 }) => {
   return (
     <header className="app-header">
@@ -56,6 +59,14 @@ const Header: React.FC<HeaderProps> = ({
             <span>Request Quote</span>
           </button>
         )}
+        <button
+          className="header-icon-button help-button"
+          onClick={onOpenHelp}
+          title="Help"
+          aria-label="Open help"
+        >
+          <HiQuestionMarkCircle size={24} />
+        </button>
         <button
           className="header-icon-button login-button"
           onClick={onNavigateLogin}

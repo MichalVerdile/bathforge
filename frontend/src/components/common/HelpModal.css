@@ -1,0 +1,196 @@
+.help-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10000;
+  padding: 20px;
+  overflow: auto;
+}
+
+.help-modal-content {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.help-modal-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.help-modal-header h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.help-modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 32px;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.help-modal-close:hover {
+  color: #fff;
+}
+
+.help-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+}
+
+.help-section {
+  margin-bottom: 32px;
+}
+
+.help-section:last-child {
+  margin-bottom: 0;
+}
+
+.help-section-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #e2e8f0;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-features {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.help-feature {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 18px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s;
+}
+
+.help-feature:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #3b82f6;
+}
+
+.help-feature-name {
+  margin: 0 0 8px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.help-feature-description {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #cbd5e1;
+}
+
+.help-modal-footer {
+  padding: 20px 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.help-modal-close-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+}
+
+.help-modal-close-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.help-modal-close-button:active {
+  transform: translateY(0);
+}
+
+/* Scrollbar styling */
+.help-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.help-modal-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.help-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+.help-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .help-modal-content {
+    max-height: 95vh;
+    margin: 10px;
+  }
+
+  .help-modal-header {
+    padding: 20px;
+  }
+
+  .help-modal-header h2 {
+    font-size: 22px;
+  }
+
+  .help-modal-body {
+    padding: 20px;
+  }
+
+  .help-section-title {
+    font-size: 18px;
+  }
+
+  .help-feature-name {
+    font-size: 16px;
+  }
+
+  .help-feature-description {
+    font-size: 14px;
+  }
+}

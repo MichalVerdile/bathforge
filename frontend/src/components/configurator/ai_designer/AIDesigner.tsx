@@ -5,6 +5,7 @@ import FeaturesStep from "./FeaturesStep";
 import PriceRangeStep from "./PriceRangeStep";
 import RoomStep from "./RoomStep";
 import SummaryStep from "./SummaryStep";
+import { HelpModal } from "../../common";
 import "./AIDesigner.css";
 import type { ColorPaletteId, FeatureId, StyleId, PriceRangeId } from "./data";
 import { aiDesignerController } from "../../../controllers/api/ai/AIDesignerController";
@@ -14,6 +15,7 @@ import type { RoomOpenings } from "../custom_room/DoorWindowTypes";
 interface AIDesignerProps {
   onNavigate: (view: string) => void;
   onTitleChange?: (title: string) => void;
+  onOpenHelp?: () => void;
 }
 
 interface Vertex {
@@ -35,11 +37,12 @@ export interface AIPreferences {
   room?: RoomConfiguration;
 }
 
-const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) => {
+const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange, onOpenHelp }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [preferences, setPreferences] = useState<AIPreferences>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const roomEditorRef = useRef<RoomEditorRef>(null);
 
   const totalSteps = 6;
@@ -210,7 +213,16 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
             </div>
           )}
 
-          <div className="step-content">{renderStep()}</div>
+          <div className="step-content">
+            <button
+              className="ai-help-button"
+              onClick={() => setIsHelpModalOpen(true)}
+              title="Get help with this step"
+            >
+              ❓
+            </button>
+            {renderStep()}
+          </div>
 
           {/* Error message */}
           {error && (
@@ -257,6 +269,13 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
           </div>
         </div>
       </div>
+
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        currentPage="ai-design"
+        aiDesignerStep={currentStep}
+      />
     </div>
   );
 };

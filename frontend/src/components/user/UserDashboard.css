@@ -57,7 +57,8 @@
 }
 
 .btn-create-scene,
-.btn-logout {
+.btn-logout,
+.btn-help {
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
@@ -75,6 +76,16 @@
 .btn-create-scene:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+.btn-help {
+  background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%);
+  color: #fff;
+}
+
+.btn-help:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(168, 85, 247, 0.3);
 }
 
 .btn-logout {

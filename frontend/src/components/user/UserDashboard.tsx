@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../../controllers/api/auth/authService';
 import userService, { SceneData, QuoteRequestHistory, QuoteRequestDetail } from '../../controllers/api/user/userService';
+import { HelpModal } from '../common';
 import './UserDashboard.css';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
@@ -15,6 +16,7 @@ const UserDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'scenes' | 'quotes'>('scenes');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
 
   const user = authService.getCurrentUser();
 
@@ -100,6 +102,9 @@ const UserDashboard: React.FC = () => {
           <p className="user-email">{user?.email}</p>
         </div>
         <div className="dashboard-actions">
+          <button className="btn-help" onClick={() => setIsHelpModalOpen(true)} title="Help">
+            ❓ Help
+          </button>
           <button className="btn-create-scene" onClick={handleCreateNewScene}>
             + Create New Scene
           </button>
@@ -296,6 +301,12 @@ const UserDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        currentPage="dashboard"
+      />
     </div>
   );
 };

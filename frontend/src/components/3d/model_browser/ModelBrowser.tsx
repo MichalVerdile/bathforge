@@ -34,8 +34,8 @@ interface ModelBrowserProps {
 const getCategoryIcon = (
   categoryName: string,
   size: number = 18
-): JSX.Element => {
-  const iconMap: { [key: string]: JSX.Element } = {
+): React.ReactElement => {
+  const iconMap: { [key: string]: React.ReactElement } = {
     bathtubs: <MdBathtub size={size} />,
     basins: <MdWash size={size} />,
     wcs: <FaToilet size={size} />,
@@ -50,8 +50,8 @@ const getCategoryIcon = (
   return iconMap[categoryName.toLowerCase()] || <MdSpa size={size} />;
 };
 
-const getProductIcon = (category: string, size: number = 18): JSX.Element => {
-  const iconMap: { [key: string]: JSX.Element } = {
+const getProductIcon = (category: string, size: number = 18): React.ReactElement => {
+  const iconMap: { [key: string]: React.ReactElement } = {
     bathtub: <MdBathtub size={size} />,
     bathtubs: <MdBathtub size={size} />,
     basin: <MdWash size={size} />,

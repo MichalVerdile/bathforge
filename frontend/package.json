@@ -2,6 +2,9 @@
   "name": "bathforge-frontend",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@react-three/drei": "^9.106.0",
     "@react-three/fiber": "^8.16.8",
@@ -50,14 +53,5 @@
   "proxy": "http://localhost:8080",
   "devDependencies": {
     "@types/three": "^0.180.0"
-  },
-  "overrides": {
-    "ajv-keywords": "3.5.2",
-    "ajv": "^8.12.0",
-    "fork-ts-checker-webpack-plugin": {
-      "schema-utils": "^4.0.0",
-      "ajv": "^8.12.0",
-      "ajv-keywords": "^5.1.0"
-    }
   }
 }

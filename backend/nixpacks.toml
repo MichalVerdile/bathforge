@@ -2,7 +2,7 @@
 nixPkgs = ["openjdk17"]
 
 [phases.build]
-cmds = ["./gradlew build -x test"]
+cmds = ["chmod +x ./gradlew", "./gradlew build -x test"]
 
 [start]
-cmd = "java -jar build/libs/*.jar"
+cmd = "java -jar $(ls build/libs/*.jar | grep -v plain | head -n 1)"

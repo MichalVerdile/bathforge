@@ -96,6 +96,42 @@
   color: #94a3b8;
 }
 
+.tile-format-selector {
+  margin: 10px 0;
+}
+
+.tile-format-selector label {
+  display: block;
+  font-size: 11px;
+  color: #cbd5e1;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.format-select {
+  width: 100%;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #f1f5f9;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 10px;
+}
+
+.format-select:hover {
+  background: #3f4b5f;
+  border-color: #64748b;
+}
+
+.format-select:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
 .deselect-button {
   background: #475569;
   border: none;

@@ -44,9 +44,29 @@ const setRaycastEnabled = (object: THREE.Object3D, enabled: boolean) => {
   object.children.forEach(child => setRaycastEnabled(child, enabled));
 };
 
-const wallMaterial = new THREE.MeshStandardMaterial({ color: "#f1f5f9" });
-const floorMaterial = new THREE.MeshStandardMaterial({ color: "#7b7e81ff" });
-const cornerMaterial = new THREE.MeshStandardMaterial({ color: "#f1f5f9" });
+// Enhanced photorealistic materials for bathroom
+const wallMaterial = new THREE.MeshStandardMaterial({ 
+  color: "#f1f5f9",
+  roughness: 0.6,
+  metalness: 0.0,
+  envMapIntensity: 0.8,
+});
+
+const floorMaterial = new THREE.MeshPhysicalMaterial({ 
+  color: "#7b7e81ff",
+  roughness: 0.4,
+  metalness: 0.0,
+  envMapIntensity: 1.0,
+  clearcoat: 0.2,
+  clearcoatRoughness: 0.4,
+});
+
+const cornerMaterial = new THREE.MeshStandardMaterial({ 
+  color: "#f1f5f9",
+  roughness: 0.6,
+  metalness: 0.0,
+  envMapIntensity: 0.8,
+});
 
 const convert2DTo3D = (
   vertex: Vertex,

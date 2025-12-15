@@ -168,13 +168,24 @@ export async function applyTextureToMesh(
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.set(repeatX, repeatY);
         texture.colorSpace = THREE.SRGBColorSpace;
-
-        const material = new THREE.MeshStandardMaterial({
+        texture.anisotropy = 16; // Maximum anisotropic filtering for sharp textures
+        
+        // Enhanced material with realistic PBR properties using MeshPhysicalMaterial for clearcoat
+        const material = new THREE.MeshPhysicalMaterial({
           map: texture,
           side: THREE.DoubleSide,
+          // Realistic tile/wall material properties
+          roughness: 0.4,
+          metalness: 0.0,
+          envMapIntensity: 1.2,
+          // Enable clearcoat for glossy tiles
+          clearcoat: 0.2,
+          clearcoatRoughness: 0.3,
         });
 
         mesh.material = material;
+        mesh.receiveShadow = true;
+        mesh.castShadow = false; // Walls/floors don't cast shadows
         resolve();
       },
       undefined,

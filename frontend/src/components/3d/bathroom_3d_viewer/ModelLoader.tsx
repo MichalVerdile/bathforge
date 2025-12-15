@@ -69,14 +69,62 @@ export default function ModelLoader({
           child.receiveShadow = receiveShadow;
 
           if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material.forEach((mat) => {
-                if (mat instanceof THREE.MeshStandardMaterial) {
-                  mat.needsUpdate = true;
+            const processMaterial = (mat: THREE.Material) => {
+              if (mat instanceof THREE.MeshPhysicalMaterial) {
+                // Physical materials get full treatment
+                mat.needsUpdate = true;
+                mat.envMapIntensity = 2.5;
+                mat.clearcoat = 0.5;
+                mat.clearcoatRoughness = 0.1;
+              } else if (mat instanceof THREE.MeshStandardMaterial) {
+                // Enable photorealistic properties
+                mat.needsUpdate = true;
+                mat.envMapIntensity = 2.0;
+                
+                // Check material brightness for dark material optimization
+                const colorBrightness = mat.color ? (mat.color.r + mat.color.g + mat.color.b) / 3 : 0.5;
+                const isDarkMaterial = colorBrightness < 0.3;
+                
+                // Compute tangents for normal maps
+                if (child.geometry && mat.normalMap) {
+                  child.geometry.computeTangents();
                 }
-              });
-            } else if (child.material instanceof THREE.MeshStandardMaterial) {
-              child.material.needsUpdate = true;
+                
+                // Enhanced PBR for realism
+                const matName = mat.name?.toLowerCase() || '';
+                
+                // Metallic materials
+                if (matName.includes('chrome') || matName.includes('metal') || 
+                    matName.includes('steel')) {
+                  mat.metalness = 0.95;
+                  mat.roughness = isDarkMaterial ? 0.1 : 0.15;
+                  mat.envMapIntensity = 2.8;
+                }
+                // Glass materials
+                else if (matName.includes('glass')) {
+                  mat.metalness = 0.0;
+                  mat.roughness = 0.05;
+                  mat.envMapIntensity = 2.2;
+                }
+                // Ceramic materials
+                else if (matName.includes('ceramic') || matName.includes('porcelain')) {
+                  mat.metalness = 0.0;
+                  mat.roughness = isDarkMaterial ? 0.2 : 0.25;
+                  mat.envMapIntensity = 1.8;
+                }
+                // Dark materials get special treatment for visibility
+                else if (isDarkMaterial) {
+                  mat.roughness = 0.3;
+                  mat.metalness = 0.1;
+                  mat.envMapIntensity = 2.5;
+                }
+              }
+            };
+            
+            if (Array.isArray(child.material)) {
+              child.material.forEach(processMaterial);
+            } else {
+              processMaterial(child.material);
             }
           }
         }

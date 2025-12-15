@@ -107,8 +107,12 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
       surfaceType: "wall" | "floor";
       repeatX: number;
       repeatY: number;
+      tileFormat?: string;
+      texturePath?: string;
     };
   }>({});
+
+  const [selectedTileFormat, setSelectedTileFormat] = useState<string>("60x60");
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
@@ -971,16 +975,102 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
     return imageExtensions.some((ext) => lowerUrl.endsWith(ext));
   };
 
+  // Calculate texture repeat based on tile format and mesh dimensions
+  const calculateTextureRepeat = (
+    mesh: THREE.Mesh,
+    tileFormat: string
+  ): { repeatX: number; repeatY: number } => {
+    // Parse tile format (e.g., "60x60" -> width: 0.6m, height: 0.6m)
+    const [widthCm, heightCm] = tileFormat.split("x").map((v) => parseFloat(v));
+    const tileWidthMeters = widthCm / 100;
+    const tileHeightMeters = heightCm / 100;
+
+    // Get mesh dimensions
+    const geometry = mesh.geometry;
+    geometry.computeBoundingBox();
+    const boundingBox = geometry.boundingBox;
+    if (!boundingBox) return { repeatX: 3, repeatY: 3 };
+
+    const size = new THREE.Vector3();
+    boundingBox.getSize(size);
+
+    // For walls and floors, calculate how many tiles fit
+    // Use the larger horizontal dimensions (X and Z for floors, X and Y for walls)
+    const meshWidth = Math.max(size.x, size.z);
+    const meshHeight = Math.max(size.y, size.z);
+
+    const repeatX = meshWidth / tileWidthMeters;
+    const repeatY = meshHeight / tileHeightMeters;
+
+    return {
+      repeatX: Math.max(0.5, repeatX),
+      repeatY: Math.max(0.5, repeatY),
+    };
+  };
+
+  // Handle tile format change - re-apply texture if already applied
+  const handleTileFormatChange = async (newFormat: string) => {
+    setSelectedTileFormat(newFormat);
+
+    // If a surface is selected and has a covering applied, re-apply with new format
+    if (selectedSurface) {
+      const surfaceIdentifier = getSurfaceIdentifier(
+        selectedSurface.mesh,
+        selectedSurface.type
+      );
+      const currentCovering = appliedCoverings[surfaceIdentifier];
+
+      if (currentCovering && currentCovering.texturePath) {
+        try {
+          // Calculate new texture repeat based on new tile format
+          const { repeatX, repeatY } = calculateTextureRepeat(
+            selectedSurface.mesh,
+            newFormat
+          );
+
+          // Re-apply the texture with new repeat values
+          await applyTextureToMesh(
+            selectedSurface.mesh,
+            currentCovering.texturePath,
+            repeatX,
+            repeatY
+          );
+
+          // Update the covering data with new format and repeat values
+          setAppliedCoverings((prev) => ({
+            ...prev,
+            [surfaceIdentifier]: {
+              ...currentCovering,
+              repeatX,
+              repeatY,
+              tileFormat: newFormat,
+            },
+          }));
+
+          scheduleAutoSave();
+        } catch (error) {
+          console.error("Failed to re-apply texture with new format:", error);
+        }
+      }
+    }
+  };
+
   const handleModelSelect = async (model: ModelItem) => {
     const isTexture = isImageFile(model.url);
 
     if (isTexture && selectedSurface) {
       try {
+        // Calculate texture repeat based on selected tile format
+        const { repeatX, repeatY } = calculateTextureRepeat(
+          selectedSurface.mesh,
+          selectedTileFormat
+        );
+
         await applyTextureToMesh(
           selectedSurface.mesh,
           model.thumbnail || model.url,
-          3,
-          3
+          repeatX,
+          repeatY
         );
 
         const surfaceIdentifier = getSurfaceIdentifier(
@@ -994,8 +1084,9 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
             productId: model.id,
             surfaceType: selectedSurface.type,
             texturePath: model.thumbnail || model.url,
-            repeatX: 3,
-            repeatY: 3,
+            repeatX,
+            repeatY,
+            tileFormat: selectedTileFormat,
           },
         }));
 
@@ -1024,22 +1115,30 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
     type: "wall" | "floor" | null
   ) => {
     if (selectedSurface) {
-      selectedSurface.mesh.material = selectedSurface.originalMaterial;
+      // Remove highlight effect - restore the material but keep any applied texture
       if (selectedSurface.highlightMaterial) {
+        // Only restore if the current material is the highlight material
+        if (selectedSurface.mesh.material === selectedSurface.highlightMaterial) {
+          selectedSurface.mesh.material = selectedSurface.originalMaterial;
+        }
         (selectedSurface.highlightMaterial as THREE.Material).dispose();
       }
     }
 
     if (mesh && type) {
-      const originalMaterial = Array.isArray(mesh.material)
+      // Get the current material (which might already have a texture applied)
+      const currentMaterial = Array.isArray(mesh.material)
         ? mesh.material[0]
         : mesh.material;
 
-      const clonedOriginal = originalMaterial.clone();
+      // Clone the current material to preserve any existing texture
+      const clonedOriginal = currentMaterial.clone();
 
-      const highlightMaterial = originalMaterial.clone();
+      // Create highlight material based on current material
+      const highlightMaterial = currentMaterial.clone();
 
-      if (highlightMaterial instanceof THREE.MeshStandardMaterial) {
+      if (highlightMaterial instanceof THREE.MeshStandardMaterial || 
+          highlightMaterial instanceof THREE.MeshPhysicalMaterial) {
         highlightMaterial.emissive = new THREE.Color(0xffffff);
         highlightMaterial.emissiveIntensity = 0.3;
         highlightMaterial.opacity = 0.8;
@@ -1047,6 +1146,13 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
       }
 
       mesh.material = highlightMaterial;
+
+      // Check if this surface already has a covering with a specific format
+      const surfaceIdentifier = getSurfaceIdentifier(mesh, type);
+      const existingCovering = appliedCoverings[surfaceIdentifier];
+      if (existingCovering?.tileFormat) {
+        setSelectedTileFormat(existingCovering.tileFormat);
+      }
 
       setSelectedSurface({
         mesh,
@@ -1416,6 +1522,26 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
                   Selected
                 </strong>
                 <p>Select a covering from the browser to apply</p>
+                
+                <div className="tile-format-selector">
+                  <label>Tile Format:</label>
+                  <select
+                    value={selectedTileFormat}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleTileFormatChange(e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    className="format-select"
+                  >
+                    <option value="15x30">15×30 cm</option>
+                    <option value="60x60">60×60 cm</option>
+                    <option value="120x120">120×120 cm</option>
+                    <option value="120x240">120×240 cm</option>
+                  </select>
+                </div>
+                
                 <button
                   className="deselect-button"
                   onClick={() => handleSurfaceSelect(null, null)}

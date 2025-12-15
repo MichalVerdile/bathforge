@@ -1,6 +1,6 @@
 import React, { Suspense, useRef, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Grid, Html, useProgress } from '@react-three/drei';
+import { OrbitControls, Environment, Grid, Html, useProgress, ContactShadows } from '@react-three/drei';
 import { FaSpinner } from 'react-icons/fa';
 import * as THREE from 'three';
 import { detectMeshType } from '../bathroom_3d_viewer/WallFloorSelector';
@@ -216,53 +216,141 @@ function Loader() {
 function Lights() {
   return (
     <>
-      {/* Increased ambient light for better visibility of dark colors */}
-      <ambientLight intensity={0.6} />
+      {/* Increased ambient light for better visibility of dark materials */}
+      <ambientLight intensity={0.8} color="#ffffff" />
 
-      {/* Main directional light with shadow */}
+      {/* Main directional light simulating sun/window light with enhanced shadows */}
       <directionalLight
-        position={[10, 10, 5]}
-        intensity={0.8}
+        position={[10, 15, 5]}
+        intensity={1.8}
+        castShadow
+        shadow-mapSize-width={4096}
+        shadow-mapSize-height={4096}
+        shadow-camera-far={50}
+        shadow-camera-left={-15}
+        shadow-camera-right={15}
+        shadow-camera-top={15}
+        shadow-camera-bottom={-15}
+        shadow-bias={-0.0001}
+        color="#ffffff"
+      />
+
+      {/* Secondary directional light for fill - essential for dark materials */}
+      <directionalLight
+        position={[-10, 10, -5]}
+        intensity={1.2}
+        color="#f0f4ff"
+      />
+
+      {/* Ceiling light simulation - warm white, higher intensity */}
+      <spotLight
+        position={[0, 4, 0]}
+        intensity={3.5}
+        angle={Math.PI / 2.5}
+        penumbra={0.8}
+        distance={12}
+        decay={2}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
+        shadow-bias={-0.0001}
+        color="#fff8f0"
       />
 
-      {/* Fill lights from different angles to reveal details */}
-      <directionalLight
-        position={[-5, 5, -5]}
-        intensity={0.4}
-      />
-      
-      <directionalLight
-        position={[5, 3, -5]}
-        intensity={0.3}
-      />
-      
-      <directionalLight
-        position={[-5, 3, 5]}
-        intensity={0.3}
-      />
-
-      {/* Top light for better illumination */}
+      {/* Additional ceiling lights for even coverage */}
       <spotLight
-        position={[0, 15, 0]}
-        intensity={0.4}
-        angle={0.6}
-        penumbra={0.5}
-        castShadow
+        position={[2, 3.5, 2]}
+        intensity={2.5}
+        angle={Math.PI / 3}
+        penumbra={0.9}
+        distance={10}
+        decay={2}
+        color="#ffffff"
       />
       
-      {/* Hemisphere light for natural color variation */}
+      <spotLight
+        position={[-2, 3.5, -2]}
+        intensity={2.5}
+        angle={Math.PI / 3}
+        penumbra={0.9}
+        distance={10}
+        decay={2}
+        color="#ffffff"
+      />
+
+      {/* Fill light from window - cooler tone, higher intensity */}
+      <rectAreaLight
+        position={[4, 2.5, 0]}
+        width={3}
+        height={4}
+        intensity={4.5}
+        color="#e6f2ff"
+      />
+
+      {/* Bounce light for realism - simulates light reflecting off surfaces */}
+      <pointLight
+        position={[0, 0.5, 0]}
+        intensity={1.5}
+        distance={10}
+        decay={2}
+        color="#ffe5d0"
+      />
+      
+      {/* Multiple accent lights for revealing details in dark materials */}
+      <pointLight
+        position={[-3, 2, 3]}
+        intensity={2.5}
+        distance={8}
+        decay={2}
+        color="#ffffff"
+      />
+      
+      <pointLight
+        position={[3, 2, -3]}
+        intensity={2.5}
+        distance={8}
+        decay={2}
+        color="#ffffff"
+      />
+      
+      <pointLight
+        position={[-3, 2, -3]}
+        intensity={2.0}
+        distance={8}
+        decay={2}
+        color="#f5f5ff"
+      />
+      
+      <pointLight
+        position={[3, 2, 3]}
+        intensity={2.0}
+        distance={8}
+        decay={2}
+        color="#fff5f5"
+      />
+
+      {/* Ground-level fill lights to illuminate from below */}
+      <pointLight
+        position={[0, 0.2, 2]}
+        intensity={1.2}
+        distance={6}
+        decay={2}
+        color="#f0f0f0"
+      />
+      
+      <pointLight
+        position={[0, 0.2, -2]}
+        intensity={1.2}
+        distance={6}
+        decay={2}
+        color="#f0f0f0"
+      />
+
+      {/* Hemisphere light for natural sky/ground color variation - increased */}
       <hemisphereLight
         color="#ffffff"
-        groundColor="#444444"
-        intensity={0.5}
+        groundColor="#a0a0a0"
+        intensity={0.8}
       />
     </>
   );
@@ -270,14 +358,28 @@ function Lights() {
 
 function Ground() {
   return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -0.1, 0]}
-      receiveShadow={false}
-    >
-      <planeGeometry args={[50, 50]} />
-      <shadowMaterial opacity={0.3} />
-    </mesh>
+    <>
+      {/* Contact shadows for realistic object grounding */}
+      <ContactShadows
+        position={[0, -0.01, 0]}
+        opacity={0.35}
+        scale={50}
+        blur={2.0}
+        far={10}
+        resolution={1024}
+        color="#000000"
+      />
+      
+      {/* Shadow receiving plane */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.02, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[100, 100]} />
+        <shadowMaterial opacity={0.25} transparent />
+      </mesh>
+    </>
   );
 }
 
@@ -376,8 +478,22 @@ export default function Scene3D({
         }}
         style={{ background: backgroundColor }}
         onCreated={({ scene, camera, gl }) => {
+          // Enable shadows
           scene.castShadow = true;
           scene.receiveShadow = true;
+
+          // Configure renderer for photorealism
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.2;
+          gl.shadowMap.enabled = true;
+          gl.shadowMap.type = THREE.PCFSoftShadowMap;
+          gl.shadowMap.autoUpdate = true;
+          
+          // Output color space for accurate colors (Three.js r152+)
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          
+          // Pixel ratio for crisp rendering
+          gl.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
           if (onSceneReady) {
             onSceneReady(scene);
@@ -400,11 +516,15 @@ export default function Scene3D({
           <Lights />
 
           {showEnvironment && (
-            <Environment preset="apartment" background={false} />
+            <Environment
+              preset="apartment"
+              background={false}
+              environmentIntensity={1.5}
+            />
           )}
 
           {showGrid && (
-            <Grid infiniteGrid />
+            <Grid infiniteGrid fadeDistance={30} fadeStrength={5} />
           )}
 
           <Ground />

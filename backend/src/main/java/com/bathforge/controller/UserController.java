@@ -1,5 +1,6 @@
 package com.bathforge.controller;
 
+import com.bathforge.dto.QuoteRequestDetailDTO;
 import com.bathforge.dto.quote.QuoteRequestHistoryDTO;
 import com.bathforge.dto.scene.SceneDTO;
 import com.bathforge.model.scene.Scene;
@@ -92,6 +93,31 @@ public class UserController {
             logger.error("Error getting user quote requests", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to retrieve quote requests");
+        }
+    }
+
+    @GetMapping("/quote-requests/{id}")
+    public ResponseEntity<?> getQuoteRequestDetail(@PathVariable Long id) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String userEmail = authentication.getName();
+
+            User user = userService.findByEmail(userEmail)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+
+            QuoteRequestDetailDTO detail = userService.getQuoteRequestDetail(id, user.getId());
+
+            logger.info("Retrieved quote request {} details for user: {}", id, userEmail);
+            return ResponseEntity.ok(detail);
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error getting quote request detail: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error getting quote request detail", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to retrieve quote request details");
         }
     }
 }

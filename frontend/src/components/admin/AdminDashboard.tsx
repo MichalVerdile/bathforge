@@ -7,6 +7,9 @@ import { ProductService } from '../../controllers/api/products/ProductService';
 import { CategoryService } from '../../controllers/api/products/CategoryService';
 import { Product, Category } from '../../types/api';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const BACKEND_URL = API_BASE_URL.replace('/api', '');
+
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'users' | 'scenes' | 'requests' | 'products'>('requests');
@@ -277,7 +280,7 @@ const AdminDashboard: React.FC = () => {
             )}
             {selectedRequest.documentUrl && (
               <p className="document-link">
-                Current document: <a href={selectedRequest.documentUrl} target="_blank" rel="noopener noreferrer">View</a>
+                Current document: <a href={`${BACKEND_URL}${selectedRequest.documentUrl}`} target="_blank" rel="noopener noreferrer">View</a>
               </p>
             )}
           </div>

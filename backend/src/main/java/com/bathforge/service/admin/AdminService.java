@@ -5,8 +5,10 @@ import com.bathforge.dto.admin.UpdateQuoteRequestDTO;
 import com.bathforge.dto.admin.UserDTO;
 import com.bathforge.dto.admin.UserSceneDTO;
 import com.bathforge.model.quote.QuoteRequest;
+import com.bathforge.model.quote.QuoteRequestMessage;
 import com.bathforge.model.scene.Scene;
 import com.bathforge.model.user.User;
+import com.bathforge.repository.QuoteRequestMessageRepository;
 import com.bathforge.repository.quote.QuoteRequestRepository;
 import com.bathforge.repository.scene.SceneRepository;
 import com.bathforge.repository.user.UserRepository;
@@ -42,6 +44,9 @@ public class AdminService {
 
     @Autowired
     private QuoteRequestRepository quoteRequestRepository;
+
+    @Autowired
+    private QuoteRequestMessageRepository quoteRequestMessageRepository;
 
     @Autowired
     private EmailService emailService;
@@ -155,10 +160,19 @@ public class AdminService {
 
         if (updateDTO.getStatus() != null) {
             request.setStatus(updateDTO.getStatus());
+
+            // Create status change message
+            String statusMessage = "Status changed to: " + updateDTO.getStatus();
+            QuoteRequestMessage statusMsg = new QuoteRequestMessage(request, statusMessage, "SYSTEM");
+            quoteRequestMessageRepository.save(statusMsg);
         }
 
-        if (updateDTO.getAdminResponse() != null) {
+        if (updateDTO.getAdminResponse() != null && !updateDTO.getAdminResponse().trim().isEmpty()) {
             request.setAdminResponse(updateDTO.getAdminResponse());
+
+            // Create admin response message
+            QuoteRequestMessage adminMsg = new QuoteRequestMessage(request, updateDTO.getAdminResponse(), "ADMIN");
+            quoteRequestMessageRepository.save(adminMsg);
         }
 
         request = quoteRequestRepository.save(request);
@@ -192,6 +206,11 @@ public class AdminService {
         // Update request with document URL
         request.setDocumentUrl("/uploads/documents/" + filename);
         request = quoteRequestRepository.save(request);
+
+        // Create message about document upload
+        String documentMessage = "Document uploaded: " + file.getOriginalFilename();
+        QuoteRequestMessage docMsg = new QuoteRequestMessage(request, documentMessage, "SYSTEM");
+        quoteRequestMessageRepository.save(docMsg);
 
         logger.info("Document uploaded for quote request {}: {}", requestId, filename);
 

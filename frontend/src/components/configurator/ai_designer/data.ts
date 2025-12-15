@@ -250,3 +250,38 @@ export const FEATURE_LABELS = buildLabelMap(FEATURE_OPTIONS) as Record<
 export type StyleId = StyleOption["id"];
 export type ColorPaletteId = ColorPalette["id"];
 export type FeatureId = FeatureOption["id"];
+
+export interface PriceRangeOption {
+  id: "LOW" | "MEDIUM" | "HIGH";
+  name: string;
+  icon: string;
+  description: string;
+}
+
+export const PRICE_RANGE_OPTIONS: PriceRangeOption[] = [
+  {
+    id: "LOW",
+    name: "Budget Friendly",
+    icon: "€",
+    description: "Affordable quality products for cost-conscious design",
+  },
+  {
+    id: "MEDIUM",
+    name: "Mid-Range",
+    icon: "€€",
+    description: "Balance of quality and value for most projects",
+  },
+  {
+    id: "HIGH",
+    name: "Premium",
+    icon: "€€€",
+    description: "High-end luxury products for premium finishes",
+  },
+];
+
+export const PRICE_RANGE_LABELS = buildLabelMap(PRICE_RANGE_OPTIONS) as Record<
+  PriceRangeOption["id"],
+  string
+>;
+
+export type PriceRangeId = PriceRangeOption["id"];

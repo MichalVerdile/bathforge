@@ -2,6 +2,26 @@ import React, { useState, useRef } from "react";
 import "./CustomRoom.css";
 import { RoomEditor, RoomEditorRef } from "./RoomEditor";
 
+interface Vertex {
+  x: number;
+  y: number;
+}
+
+// Calculate polygon area using Shoelace formula (1 pixel = 0.01 meters)
+const calculateRoomArea = (vertices: Vertex[]): number => {
+  if (vertices.length < 3) return 0;
+  
+  let area = 0;
+  for (let i = 0; i < vertices.length; i++) {
+    const j = (i + 1) % vertices.length;
+    area += vertices[i].x * vertices[j].y;
+    area -= vertices[j].x * vertices[i].y;
+  }
+  
+  // Convert from pixels² to m² (1 pixel = 0.01m, so 1 pixel² = 0.0001m²)
+  return Math.abs(area / 2) * 0.0001;
+};
+
 interface CustomRoomProps {
   onNavigate: (view: string) => void;
 }
@@ -9,10 +29,22 @@ interface CustomRoomProps {
 const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
   const [viewMode, setViewMode] = useState<"2D" | "3D">("2D");
   const roomEditorRef = useRef<RoomEditorRef>(null);
+  const [roomArea, setRoomArea] = useState<number>(0);
 
   const [roomHeight, setRoomHeight] = useState(2); // 2 meters
   const MIN_HEIGHT = 1.5;
   const MAX_HEIGHT = 4;
+
+  // Update area when room changes
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      if (roomEditorRef.current) {
+        const roomData = roomEditorRef.current.getRoomData();
+        setRoomArea(calculateRoomArea(roomData.vertices));
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleReset = () => {
     if (roomEditorRef.current) {
@@ -37,8 +69,23 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
               position: 'absolute',
               top: '2rem',
               right: '2rem',
-              zIndex: 20
+              zIndex: 20,
+              display: 'flex',
+              gap: '10px',
+              alignItems: 'center'
             }}>
+              <div style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                background: 'rgba(30, 41, 59, 0.95)',
+                border: '1px solid rgba(148, 163, 184, 0.3)',
+                backdropFilter: 'blur(10px)',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#cbd5e1'
+              }}>
+                Floor Area: {roomArea.toFixed(2)} m²
+              </div>
               <button
                 onClick={handleReset}
                 style={{
@@ -141,6 +188,16 @@ const CustomRoom: React.FC<CustomRoomProps> = ({ onNavigate }) => {
                 onChange={(e) => setRoomHeight(parseFloat(e.target.value))}
                 style={{ width: '120px' }}
               />
+              <div style={{
+                marginTop: '10px',
+                paddingTop: '10px',
+                borderTop: '1px solid rgba(148, 163, 184, 0.3)',
+                fontSize: '12px',
+                fontWeight: '600',
+                color: '#cbd5e1'
+              }}>
+                Floor Area: {roomArea.toFixed(2)} m²
+              </div>
             </div>
           )}
 

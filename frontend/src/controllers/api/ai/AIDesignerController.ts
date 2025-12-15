@@ -15,6 +15,7 @@ export interface AIDesignRequest {
   style: string;
   colorPalettes: string[];
   features: string[];
+  priceRange?: string;
   roomConfiguration?: RoomConfiguration;
   additionalRequirements?: string;
 }
@@ -55,6 +56,7 @@ class AIDesignerController {
         style: preferences.style || "",
         colorPalettes: preferences.colors || [],
         features: preferences.features || [],
+        priceRange: preferences.priceRange,
         roomConfiguration: preferences.room
           ? {
               vertices: preferences.room.vertices,

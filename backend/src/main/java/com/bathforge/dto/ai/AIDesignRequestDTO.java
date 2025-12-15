@@ -18,6 +18,8 @@ public class AIDesignRequestDTO {
     @NotEmpty(message = "At least one feature is required")
     private List<String> features;
 
+    private String priceRange; // LOW, MEDIUM, or HIGH
+
     @Valid
     private RoomConfigurationDTO roomConfiguration;
 
@@ -32,6 +34,16 @@ public class AIDesignRequestDTO {
         this.style = style;
         this.colorPalettes = colorPalettes;
         this.features = features;
+        this.roomConfiguration = roomConfiguration;
+        this.additionalRequirements = additionalRequirements;
+    }
+
+    public AIDesignRequestDTO(String style, List<String> colorPalettes, List<String> features, String priceRange,
+            RoomConfigurationDTO roomConfiguration, String additionalRequirements) {
+        this.style = style;
+        this.colorPalettes = colorPalettes;
+        this.features = features;
+        this.priceRange = priceRange;
         this.roomConfiguration = roomConfiguration;
         this.additionalRequirements = additionalRequirements;
     }
@@ -61,6 +73,14 @@ public class AIDesignRequestDTO {
         this.features = features;
     }
 
+    public String getPriceRange() {
+        return priceRange;
+    }
+
+    public void setPriceRange(String priceRange) {
+        this.priceRange = priceRange;
+    }
+
     public RoomConfigurationDTO getRoomConfiguration() {
         return roomConfiguration;
     }
@@ -83,6 +103,7 @@ public class AIDesignRequestDTO {
                 "style='" + style + '\'' +
                 ", colorPalettes=" + colorPalettes +
                 ", features=" + features +
+                ", priceRange='" + priceRange + '\'' +
                 ", roomConfiguration=" + roomConfiguration +
                 ", additionalRequirements='" + additionalRequirements + '\'' +
                 '}';

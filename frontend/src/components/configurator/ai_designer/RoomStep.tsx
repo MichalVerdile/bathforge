@@ -7,6 +7,21 @@ interface Vertex {
   y: number;
 }
 
+// Calculate polygon area using Shoelace formula (1 pixel = 0.01 meters)
+const calculateRoomArea = (vertices: Vertex[]): number => {
+  if (vertices.length < 3) return 0;
+  
+  let area = 0;
+  for (let i = 0; i < vertices.length; i++) {
+    const j = (i + 1) % vertices.length;
+    area += vertices[i].x * vertices[j].y;
+    area -= vertices[j].x * vertices[i].y;
+  }
+  
+  // Convert from pixels² to m² (1 pixel = 0.01m, so 1 pixel² = 0.0001m²)
+  return Math.abs(area / 2) * 0.0001;
+};
+
 interface RoomConfiguration {
   vertices: Vertex[];
   height: number;
@@ -30,6 +45,7 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
   const [roomHeight, setRoomHeight] = useState(currentRoom?.height || 2.5);
   const [selectedOpeningId, setSelectedOpeningId] = useState<string | null>(null);
   const [selectedOpeningType, setSelectedOpeningType] = useState<"door" | "window" | null>(null);
+  const [roomArea, setRoomArea] = useState<number>(0);
   const roomEditorRef = useRef<RoomEditorRef>(null);
 
   const MIN_HEIGHT = 1.5;
@@ -58,6 +74,7 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
         height: roomHeight,
         openings: roomData.openings
       };
+      setRoomArea(calculateRoomArea(roomData.vertices));
       onRoomChange(newRoomConfig);
     }
   }, [roomHeight, onRoomChange]);
@@ -72,6 +89,7 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
         height: newHeight,
         openings: roomData.openings
       };
+      setRoomArea(calculateRoomArea(roomData.vertices));
       onRoomChange(newRoomConfig);
     }
   };
@@ -233,7 +251,10 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
           <div style={{
             position: 'absolute',
             bottom: '10px',
-            left: '10px'
+            left: '10px',
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center'
           }}>
             <button
               onClick={handleReset}
@@ -257,6 +278,18 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
             >
               Reset Shape
             </button>
+            <div style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1px solid rgba(148, 163, 184, 0.3)',
+              backdropFilter: 'blur(10px)',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#cbd5e1'
+            }}>
+              Floor Area: {roomArea.toFixed(2)} m²
+            </div>
           </div>
         )}
 
@@ -290,6 +323,16 @@ const RoomStep = forwardRef<RoomStepRef, RoomStepProps>(function RoomStep(
               onChange={(e) => handleHeightChange(parseFloat(e.target.value))}
               style={{ width: '120px' }}
             />
+            <div style={{
+              marginTop: '10px',
+              paddingTop: '10px',
+              borderTop: '1px solid rgba(148, 163, 184, 0.3)',
+              fontSize: '12px',
+              fontWeight: '600',
+              color: '#cbd5e1'
+            }}>
+              Floor Area: {roomArea.toFixed(2)} m²
+            </div>
           </div>
         )}
 

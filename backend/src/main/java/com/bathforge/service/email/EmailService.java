@@ -99,6 +99,21 @@ public class EmailService {
             html.append("<div class='section'>");
             html.append("<h2>Room Dimensions</h2>");
             html.append("<p>").append(emailData.getRoomDimensions()).append("</p>");
+
+            // Wall Lengths
+            if (emailData.getWallLengths() != null && !emailData.getWallLengths().isEmpty()) {
+                html.append("<h3>Wall Lengths</h3>");
+                html.append("<table>");
+                html.append("<tr><th>Wall</th><th>Length (cm)</th></tr>");
+                for (QuoteRequestEmailData.WallLength wall : emailData.getWallLengths()) {
+                    html.append("<tr>");
+                    html.append("<td>Wall ").append(wall.getWall()).append("</td>");
+                    html.append("<td>").append(String.format("%.2f", wall.getLength())).append(" cm</td>");
+                    html.append("</tr>");
+                }
+                html.append("</table>");
+            }
+
             html.append("</div>");
         }
 
@@ -219,6 +234,17 @@ public class EmailService {
             html.append("<p><strong>Room:</strong> ").append(emailData.getRoomDimensions()).append("</p>");
         }
 
+        // Wall Lengths
+        if (emailData.getWallLengths() != null && !emailData.getWallLengths().isEmpty()) {
+            html.append("<p><strong>Wall Lengths:</strong></p>");
+            html.append("<ul>");
+            for (QuoteRequestEmailData.WallLength wall : emailData.getWallLengths()) {
+                html.append("<li>Wall ").append(wall.getWall()).append(": ")
+                        .append(String.format("%.2f", wall.getLength())).append(" cm</li>");
+            }
+            html.append("</ul>");
+        }
+
         if (emailData.getProducts() != null && !emailData.getProducts().isEmpty()) {
             html.append("<p><strong>Products Selected:</strong> ").append(emailData.getProducts().size())
                     .append(" item(s)</p>");
@@ -271,5 +297,21 @@ public class EmailService {
         html.append("</body></html>");
 
         return html.toString();
+    }
+
+    /**
+     * Send a generic email
+     */
+    public void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(fromEmail);
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
+
+        mailSender.send(message);
+        logger.info("Email sent to {} with subject: {}", to, subject);
     }
 }

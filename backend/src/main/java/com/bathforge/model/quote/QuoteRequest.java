@@ -34,9 +34,24 @@ public class QuoteRequest {
     @Column(name = "status")
     private String status = "PENDING"; // PENDING, PROCESSED, QUOTED
 
+    @Column(name = "admin_response", columnDefinition = "TEXT")
+    private String adminResponse;
+
+    @Column(name = "document_url")
+    private String documentUrl;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 
     // Constructors
@@ -115,5 +130,29 @@ public class QuoteRequest {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getAdminResponse() {
+        return adminResponse;
+    }
+
+    public void setAdminResponse(String adminResponse) {
+        this.adminResponse = adminResponse;
+    }
+
+    public String getDocumentUrl() {
+        return documentUrl;
+    }
+
+    public void setDocumentUrl(String documentUrl) {
+        this.documentUrl = documentUrl;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
 }

@@ -9,6 +9,7 @@ public class QuoteRequestEmailData {
     private String userPhone;
     private String userCompany;
     private String roomDimensions;
+    private List<WallLength> wallLengths;
     private List<ProductDetail> products;
     private List<CoveringDetail> coverings;
     private String sceneSnapshot;
@@ -57,6 +58,14 @@ public class QuoteRequestEmailData {
 
     public void setRoomDimensions(String roomDimensions) {
         this.roomDimensions = roomDimensions;
+    }
+
+    public List<WallLength> getWallLengths() {
+        return wallLengths;
+    }
+
+    public void setWallLengths(List<WallLength> wallLengths) {
+        this.wallLengths = wallLengths;
     }
 
     public List<ProductDetail> getProducts() {
@@ -177,6 +186,35 @@ public class QuoteRequestEmailData {
 
         public void setColor(String color) {
             this.color = color;
+        }
+    }
+
+    public static class WallLength {
+        private int wall;
+        private double length;
+
+        public WallLength() {
+        }
+
+        public WallLength(int wall, double length) {
+            this.wall = wall;
+            this.length = length;
+        }
+
+        public int getWall() {
+            return wall;
+        }
+
+        public void setWall(int wall) {
+            this.wall = wall;
+        }
+
+        public double getLength() {
+            return length;
+        }
+
+        public void setLength(double length) {
+            this.length = length;
         }
     }
 }

@@ -53,7 +53,8 @@ public class AuthController {
                     user.getEmail(),
                     user.getId(),
                     user.getFirstName(),
-                    user.getLastName());
+                    user.getLastName(),
+                    user.getRole().name());
 
             logger.info("User logged in successfully: {}", user.getEmail());
             return ResponseEntity.ok(response);
@@ -85,7 +86,8 @@ public class AuthController {
                             user.getEmail(),
                             user.getId(),
                             user.getFirstName(),
-                            user.getLastName());
+                            user.getLastName(),
+                            user.getRole().name());
 
                     return ResponseEntity.ok(response);
                 }

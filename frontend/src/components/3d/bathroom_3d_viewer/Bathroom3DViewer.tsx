@@ -136,6 +136,7 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
   }, []);
 
   // Function to calculate room area in square meters using Shoelace formula
+  // Note: vertices are in cm, so we divide by 10000 to convert cm² to m²
   const calculateRoomArea = useCallback((vertices: Vertex[]): number => {
     if (vertices.length < 3) return 0;
     
@@ -145,7 +146,8 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
       area += vertices[i].x * vertices[j].y;
       area -= vertices[j].x * vertices[i].y;
     }
-    return Math.abs(area / 2);
+    // Convert from cm² to m² by dividing by 10000
+    return Math.abs(area / 2) / 10000;
   }, []);
 
   // Function to get scene data for quote request
@@ -157,6 +159,17 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
         ? product.modelItem.availableColors?.find((c) => c.id === product.selectedColorId)?.name
         : undefined,
       position: `(${(product.positionX || 0).toFixed(2)}, ${(product.positionY || 0).toFixed(2)}, ${(product.positionZ || 0).toFixed(2)})`,
+      productId: product.modelItem.id,
+      colorId: product.selectedColorId,
+      positionX: product.positionX || 0,
+      positionY: product.positionY || 0,
+      positionZ: product.positionZ || 0,
+      rotationX: product.rotationX || 0,
+      rotationY: product.rotationY || 0,
+      rotationZ: product.rotationZ || 0,
+      scaleX: product.scaleX || 1,
+      scaleY: product.scaleY || 1,
+      scaleZ: product.scaleZ || 1,
     }));
 
     // Fetch covering product names
@@ -167,6 +180,10 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
           type: covering.surfaceType === "floor" ? "Floor" : "Wall",
           name: product.name,
           color: undefined,
+          productId: covering.productId,
+          surfaceIdentifier: key,
+          repeatX: covering.repeatX,
+          repeatY: covering.repeatY,
         };
       } catch (error) {
         console.error(`Failed to fetch covering product ${covering.productId}:`, error);
@@ -174,6 +191,10 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
           type: covering.surfaceType === "floor" ? "Floor" : "Wall",
           name: `Product ID: ${covering.productId}`,
           color: undefined,
+          productId: covering.productId,
+          surfaceIdentifier: key,
+          repeatX: covering.repeatX,
+          repeatY: covering.repeatY,
         };
       }
     });
@@ -182,21 +203,51 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
 
     let roomDimensions = "Custom room";
     let roomArea = 0;
+    let wallLengths: Array<{ wall: number; length: number }> = [];
+    let roomData: { verticesData: string; roomHeight: number; roomProperties?: string } | undefined;
     
     if (customRoomData) {
       const vertices = customRoomData.vertices;
       roomArea = calculateRoomArea(vertices);
+      // Calculate wall lengths in cm
+      wallLengths = vertices.map((vertex: Vertex, i: number) => {
+        const nextVertex = vertices[(i + 1) % vertices.length];
+        const dx = nextVertex.x - vertex.x;
+        const dy = nextVertex.y - vertex.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        return { wall: i + 1, length: Math.round(length * 100) / 100 };
+      });
       roomDimensions = `Custom room with ${vertices.length} walls, height: ${customRoomData.height}m, area: ${roomArea.toFixed(2)} m²`;
+      roomData = {
+        verticesData: JSON.stringify(vertices),
+        roomHeight: customRoomData.height,
+        roomProperties: roomOpenings ? JSON.stringify(roomOpenings) : (customRoomData.openings ? JSON.stringify(customRoomData.openings) : undefined),
+      };
     } else if (templateData) {
       const vertices = templateData.roomData?.vertices || [];
       roomArea = calculateRoomArea(vertices);
+      // Calculate wall lengths in cm
+      wallLengths = vertices.map((vertex: Vertex, i: number) => {
+        const nextVertex = vertices[(i + 1) % vertices.length];
+        const dx = nextVertex.x - vertex.x;
+        const dy = nextVertex.y - vertex.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        return { wall: i + 1, length: Math.round(length * 100) / 100 };
+      });
       const height = templateData.roomData?.height ? (templateData.roomData.height / 100) : 0;
       roomDimensions = `Template room with ${vertices.length} walls, height: ${height.toFixed(2)}m, area: ${roomArea.toFixed(2)} m²`;
+      roomData = {
+        verticesData: JSON.stringify(vertices),
+        roomHeight: height,
+        roomProperties: roomOpenings ? JSON.stringify(roomOpenings) : undefined,
+      };
     }
 
     return {
       sceneId: currentScene.id?.toString() || "unsaved",
       roomDimensions,
+      wallLengths,
+      roomData,
       products,
       coverings,
     };
@@ -1044,13 +1095,18 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
           if (scene.roomModel) {
             try {
               const vertices = JSON.parse(scene.roomModel.verticesData);
+              const openings = scene.roomModel.roomProperties 
+                ? JSON.parse(scene.roomModel.roomProperties) 
+                : undefined;
               setCustomRoomData({
                 vertices,
                 height: scene.roomModel.roomHeight,
-                openings: scene.roomModel.roomProperties 
-                  ? JSON.parse(scene.roomModel.roomProperties) 
-                  : undefined,
+                openings,
               });
+              // Also set roomOpenings state so doors/windows are rendered
+              if (openings) {
+                setRoomOpenings(openings);
+              }
             } catch (e) {
               console.error('Failed to parse room data:', e);
             }
@@ -1091,6 +1147,8 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
           // Load coverings if available
           if (scene.sceneCoverings && scene.sceneCoverings.length > 0) {
             const newCoverings: typeof appliedCoverings = {};
+            const coveringApplications: Promise<void>[] = [];
+            
             scene.sceneCoverings.forEach((covering) => {
               if (covering.surfaceIdentifier) {
                 newCoverings[covering.surfaceIdentifier] = {
@@ -1099,9 +1157,45 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
                   repeatX: covering.repeatX || 1,
                   repeatY: covering.repeatY || 1,
                 };
+                
+                // Apply texture to the mesh
+                const applyTexture = async () => {
+                  try {
+                    const product = await ProductService.getById(covering.productId);
+                    const texturePath = product.thumbnail || product.modelPath;
+                    
+                    // Find the mesh with this surface identifier
+                    let targetMesh: THREE.Mesh | null = null;
+                    sceneRef.current?.traverse((child) => {
+                      if (child instanceof THREE.Mesh) {
+                        const meshIdentifier = getSurfaceIdentifier(child, covering.surfaceType as "wall" | "floor");
+                        if (meshIdentifier === covering.surfaceIdentifier) {
+                          targetMesh = child;
+                        }
+                      }
+                    });
+                    
+                    if (targetMesh) {
+                      await applyTextureToMesh(
+                        targetMesh,
+                        texturePath,
+                        covering.repeatX || 1,
+                        covering.repeatY || 1
+                      );
+                    }
+                  } catch (error) {
+                    console.error(`Failed to apply covering ${covering.productId}:`, error);
+                  }
+                };
+                
+                coveringApplications.push(applyTexture());
               }
             });
+            
             setAppliedCoverings(newCoverings);
+            
+            // Wait for all textures to be applied
+            await Promise.all(coveringApplications);
           }
 
           // Notify parent that scene was loaded

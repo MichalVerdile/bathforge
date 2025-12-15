@@ -11,6 +11,7 @@ export interface LoginResponse {
   userId: number;
   firstName: string;
   lastName: string;
+  role: string;
 }
 
 export interface AuthUser {
@@ -18,6 +19,7 @@ export interface AuthUser {
   userId: number;
   firstName: string;
   lastName: string;
+  role: string;
   token: string;
 }
 
@@ -35,7 +37,8 @@ class AuthService {
         email: response.data.email,
         userId: response.data.userId,
         firstName: response.data.firstName,
-        lastName: response.data.lastName
+        lastName: response.data.lastName,
+        role: response.data.role
       }));
     }
     
@@ -78,6 +81,11 @@ class AuthService {
 
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  isAdmin(): boolean {
+    const user = this.getCurrentUser();
+    return user?.role === 'ADMIN';
   }
 
   getAuthHeader(): { Authorization: string } | {} {

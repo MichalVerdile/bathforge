@@ -31,12 +31,14 @@ public class QuoteController {
     public ResponseEntity<QuoteResponseDTO> submitQuoteRequest(@Valid @RequestBody QuoteRequestDTO quoteRequest) {
         try {
             User user = quoteService.processQuoteRequest(quoteRequest);
+            String token = quoteService.generateTokenForUser(user);
 
             QuoteResponseDTO response = new QuoteResponseDTO(
                     true,
                     "Quote request submitted successfully. An account has been created and the request has been sent to our industry partners.",
                     user.getId(),
-                    user.getEmail());
+                    user.getEmail(),
+                    token);
 
             return ResponseEntity.ok(response);
 

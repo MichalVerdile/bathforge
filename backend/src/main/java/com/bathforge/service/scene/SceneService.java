@@ -137,6 +137,35 @@ public class SceneService {
     }
 
     @Transactional
+    public SceneDTO createSceneForUser(CreateSceneDTO createSceneDTO, User user) {
+        Scene scene = fromCreateDTO(createSceneDTO);
+        // Override the user association with the provided user entity
+        scene.setUserEntity(user);
+        scene.setUser(null); // Clear the username string since we have the entity
+        Scene saved = sceneRepository.save(scene);
+
+        if (createSceneDTO.getProducts() != null && !createSceneDTO.getProducts().isEmpty()) {
+            Set<SceneProduct> items = createSceneProducts(saved, createSceneDTO.getProducts());
+            sceneProductRepository.saveAll(items);
+            saved.setSceneProducts(items);
+        }
+
+        // Create room model if provided
+        if (createSceneDTO.getRoomModel() != null) {
+            createOrUpdateRoomModel(saved.getId(), createSceneDTO.getRoomModel());
+        }
+
+        // Create coverings if provided
+        if (createSceneDTO.getCoverings() != null && !createSceneDTO.getCoverings().isEmpty()) {
+            for (CreateSceneCoveringDTO coveringDTO : createSceneDTO.getCoverings()) {
+                createOrUpdateCovering(saved.getId(), coveringDTO);
+            }
+        }
+
+        return toSceneDTO(saved);
+    }
+
+    @Transactional
     public SceneDTO updateScene(Long id, UpdateSceneDTO updateSceneDTO) {
         Scene scene = sceneRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Scene not found with id: " + id));

@@ -4,16 +4,40 @@ import "./QuoteRequestModal.css";
 export interface SceneData {
   sceneId: string;
   roomDimensions?: string;
+  wallLengths?: Array<{
+    wall: number;
+    length: number;
+  }>;
+  roomData?: {
+    verticesData: string;
+    roomHeight: number;
+    roomProperties?: string;
+  };
   products: Array<{
     name: string;
     category: string;
     color?: string;
     position?: string;
+    productId?: number;
+    colorId?: number;
+    positionX?: number;
+    positionY?: number;
+    positionZ?: number;
+    rotationX?: number;
+    rotationY?: number;
+    rotationZ?: number;
+    scaleX?: number;
+    scaleY?: number;
+    scaleZ?: number;
   }>;
   coverings: Array<{
     type: string;
     name: string;
     color?: string;
+    productId?: number;
+    surfaceIdentifier?: string;
+    repeatX?: number;
+    repeatY?: number;
   }>;
 }
 
@@ -35,6 +59,15 @@ export interface QuoteFormData {
   additionalNotes?: string;
   sceneId: string;
   roomDimensions?: string;
+  wallLengths?: Array<{
+    wall: number;
+    length: number;
+  }>;
+  roomData?: {
+    verticesData: string;
+    roomHeight: number;
+    roomProperties?: string;
+  };
   products: any[];
   coverings: any[];
   sceneSnapshot?: string;
@@ -86,6 +119,8 @@ const QuoteRequestModal: React.FC<QuoteRequestModalProps> = ({
         ...formData,
         sceneId: sceneData.sceneId,
         roomDimensions: sceneData.roomDimensions,
+        wallLengths: sceneData.wallLengths,
+        roomData: sceneData.roomData,
         products: sceneData.products,
         coverings: sceneData.coverings,
         sceneSnapshot,

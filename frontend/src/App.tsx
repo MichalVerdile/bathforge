@@ -10,6 +10,7 @@ import AIDesigner from "./components/configurator/ai_designer/AIDesigner";
 import { Header, QuoteRequestPage, SceneData } from "./components/common";
 import LoginModal from "./components/common/LoginModal";
 import UserDashboard from "./components/user/UserDashboard";
+import AdminDashboard from "./components/admin/AdminDashboard";
 import authService from "./controllers/api/auth/authService";
 
 interface ApiStatus {
@@ -88,7 +89,13 @@ function MainApp() {
   const handleLoginSuccess = async () => {
     setIsAuthenticated(true);
     setIsLoginModalOpen(false);
-    navigate('/dashboard');
+    
+    // Check if user is admin and redirect accordingly
+    if (authService.isAdmin()) {
+      navigate('/admin');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleRequestQuote = async () => {
@@ -243,6 +250,7 @@ function App() {
       <Routes>
         <Route path="/" element={<MainApp />} />
         <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/quote" element={<QuoteRequestPage />} />
       </Routes>
     </Router>

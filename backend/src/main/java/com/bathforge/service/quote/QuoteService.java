@@ -3,9 +3,13 @@ package com.bathforge.service.quote;
 import com.bathforge.dto.quote.QuoteRequestDTO;
 import com.bathforge.dto.quote.QuoteRequestHistoryDTO;
 import com.bathforge.dto.scene.CreateSceneDTO;
+import com.bathforge.dto.scene.CreateSceneProductDTO;
+import com.bathforge.dto.scene.CreateSceneRoomModelDTO;
+import com.bathforge.dto.scene.CreateSceneCoveringDTO;
 import com.bathforge.model.quote.QuoteRequest;
 import com.bathforge.model.user.User;
 import com.bathforge.repository.quote.QuoteRequestRepository;
+import com.bathforge.security.JwtUtil;
 import com.bathforge.service.email.EmailService;
 import com.bathforge.service.email.QuoteRequestEmailData;
 import com.bathforge.service.scene.SceneService;
@@ -32,16 +36,18 @@ public class QuoteService {
     private final QuoteRequestRepository quoteRequestRepository;
     private final SceneService sceneService;
     private final ObjectMapper objectMapper;
+    private final JwtUtil jwtUtil;
 
     @Autowired
     public QuoteService(UserService userService, EmailService emailService,
             QuoteRequestRepository quoteRequestRepository, SceneService sceneService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper, JwtUtil jwtUtil) {
         this.userService = userService;
         this.emailService = emailService;
         this.quoteRequestRepository = quoteRequestRepository;
         this.sceneService = sceneService;
         this.objectMapper = objectMapper;
+        this.jwtUtil = jwtUtil;
     }
 
     @Transactional
@@ -53,6 +59,18 @@ public class QuoteService {
             user = userService.findByEmail(quoteRequest.getEmail())
                     .orElseThrow(() -> new IllegalStateException("User exists but could not be retrieved"));
             logger.info("Existing user found: {}", user.getEmail());
+
+            // Update phone and company if provided in the quote request
+            boolean needsUpdate = false;
+            if (quoteRequest.getPhone() != null && !quoteRequest.getPhone().isEmpty()) {
+                user.setPhone(quoteRequest.getPhone());
+                needsUpdate = true;
+            }
+            if (quoteRequest.getCompany() != null && !quoteRequest.getCompany().isEmpty()) {
+                user.setCompany(quoteRequest.getCompany());
+                needsUpdate = true;
+            }
+            // Note: User entity will be saved automatically due to @Transactional on method
         } else {
             // Create new user
             user = new User();
@@ -91,15 +109,60 @@ public class QuoteService {
             sceneDTO.setIsPublic(false);
 
             // Store the quote request data as scene data for reference
-            // Since we don't have proper product IDs from the frontend,
-            // we store the raw data for now
             try {
                 sceneDTO.setSceneData(objectMapper.writeValueAsString(quoteRequest));
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to serialize scene data", e);
             }
 
-            sceneService.createScene(sceneDTO);
+            // Convert room data to CreateSceneRoomModelDTO
+            if (quoteRequest.getRoomData() != null) {
+                CreateSceneRoomModelDTO roomModelDTO = new CreateSceneRoomModelDTO();
+                roomModelDTO.setVerticesData(quoteRequest.getRoomData().getVerticesData());
+                roomModelDTO.setRoomHeight(quoteRequest.getRoomData().getRoomHeight());
+                roomModelDTO.setRoomProperties(quoteRequest.getRoomData().getRoomProperties());
+                sceneDTO.setRoomModel(roomModelDTO);
+            }
+
+            // Convert products to CreateSceneProductDTO
+            if (quoteRequest.getProducts() != null && !quoteRequest.getProducts().isEmpty()) {
+                sceneDTO.setProducts(quoteRequest.getProducts().stream()
+                        .filter(p -> p.getProductId() != null) // Only include products with IDs
+                        .map(p -> {
+                            CreateSceneProductDTO productDTO = new CreateSceneProductDTO();
+                            productDTO.setProductId(p.getProductId());
+                            productDTO.setColorId(p.getColorId());
+                            productDTO.setPositionX(p.getPositionX());
+                            productDTO.setPositionY(p.getPositionY());
+                            productDTO.setPositionZ(p.getPositionZ());
+                            productDTO.setRotationX(p.getRotationX());
+                            productDTO.setRotationY(p.getRotationY());
+                            productDTO.setRotationZ(p.getRotationZ());
+                            productDTO.setScaleX(p.getScaleX());
+                            productDTO.setScaleY(p.getScaleY());
+                            productDTO.setScaleZ(p.getScaleZ());
+                            return productDTO;
+                        })
+                        .collect(Collectors.toList()));
+            }
+
+            // Convert coverings to CreateSceneCoveringDTO
+            if (quoteRequest.getCoverings() != null && !quoteRequest.getCoverings().isEmpty()) {
+                sceneDTO.setCoverings(quoteRequest.getCoverings().stream()
+                        .filter(c -> c.getProductId() != null) // Only include coverings with IDs
+                        .map(c -> {
+                            CreateSceneCoveringDTO coveringDTO = new CreateSceneCoveringDTO();
+                            coveringDTO.setProductId(c.getProductId());
+                            coveringDTO.setSurfaceType(c.getType().toLowerCase());
+                            coveringDTO.setSurfaceIdentifier(c.getSurfaceIdentifier());
+                            coveringDTO.setRepeatX(c.getRepeatX());
+                            coveringDTO.setRepeatY(c.getRepeatY());
+                            return coveringDTO;
+                        })
+                        .collect(Collectors.toList()));
+            }
+
+            sceneService.createSceneForUser(sceneDTO, user);
             logger.info("Scene created for quote request user: {}", user.getEmail());
         } catch (Exception e) {
             // Log error but don't fail the entire request if scene creation fails
@@ -113,6 +176,14 @@ public class QuoteService {
         emailData.setUserPhone(user.getPhone());
         emailData.setUserCompany(user.getCompany());
         emailData.setRoomDimensions(quoteRequest.getRoomDimensions());
+
+        // Convert wall lengths
+        if (quoteRequest.getWallLengths() != null) {
+            emailData.setWallLengths(quoteRequest.getWallLengths().stream()
+                    .map(w -> new QuoteRequestEmailData.WallLength(w.getWall(), w.getLength()))
+                    .collect(Collectors.toList()));
+        }
+
         emailData.setSceneSnapshot(quoteRequest.getSceneSnapshot());
         emailData.setAdditionalNotes(quoteRequest.getAdditionalNotes());
 
@@ -158,5 +229,14 @@ public class QuoteService {
                         qr.getCreatedAt(),
                         qr.getStatus()))
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Generate a JWT token for the given user.
+     * This is used to automatically log in new users after they submit a quote
+     * request.
+     */
+    public String generateTokenForUser(User user) {
+        return jwtUtil.generateToken(user.getEmail(), user.getId());
     }
 }

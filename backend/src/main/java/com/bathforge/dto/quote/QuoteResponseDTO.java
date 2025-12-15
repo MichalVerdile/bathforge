@@ -6,6 +6,7 @@ public class QuoteResponseDTO {
     private String message;
     private Long userId;
     private String userEmail;
+    private String token;
 
     public QuoteResponseDTO() {
     }
@@ -20,6 +21,14 @@ public class QuoteResponseDTO {
         this.message = message;
         this.userId = userId;
         this.userEmail = userEmail;
+    }
+
+    public QuoteResponseDTO(boolean success, String message, Long userId, String userEmail, String token) {
+        this.success = success;
+        this.message = message;
+        this.userId = userId;
+        this.userEmail = userEmail;
+        this.token = token;
     }
 
     public boolean isSuccess() {
@@ -52,5 +61,13 @@ public class QuoteResponseDTO {
 
     public void setUserEmail(String userEmail) {
         this.userEmail = userEmail;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 }

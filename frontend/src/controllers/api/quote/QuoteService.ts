@@ -30,6 +30,7 @@ export interface QuoteResponse {
   message: string;
   userId?: number;
   userEmail?: string;
+  token?: string;
 }
 
 class QuoteService {

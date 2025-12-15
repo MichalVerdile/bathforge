@@ -46,6 +46,8 @@ export type ViewType = "2D" | "3D-Person" | "3D-Free";
 interface Bathroom3DViewerProps {
   style?: React.CSSProperties;
   onRequestQuote?: (sceneData: SceneData, snapshot?: string) => void;
+  sceneIdToLoad?: number | null;
+  onSceneLoaded?: () => void;
 }
 
 export interface Bathroom3DViewerHandle {
@@ -53,7 +55,8 @@ export interface Bathroom3DViewerHandle {
   getSceneData: () => Promise<SceneData>;
 }
 
-const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProps>(({ style, onRequestQuote }, ref) => {
+const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProps>(
+  ({ style, onRequestQuote, sceneIdToLoad, onSceneLoaded }, ref) => {
   const [selectedModel, setSelectedModel] = useState<ModelItem | null>(null);
   const [sceneProducts, setSceneProducts] = useState<SceneProduct3D[]>([]);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(
@@ -1026,6 +1029,97 @@ const Bathroom3DViewer = forwardRef<Bathroom3DViewerHandle, Bathroom3DViewerProp
       handleSurfaceSelect(null, null);
     }
   }, [selectedBrowserCategory]);
+
+  // Load scene when sceneIdToLoad is provided
+  useEffect(() => {
+    const loadScene = async () => {
+      if (sceneIdToLoad) {
+        try {
+          const scene = await sceneService.getSceneById(sceneIdToLoad);
+          
+          // Set scene name
+          setCurrentScene({ id: scene.id, name: scene.name });
+
+          // Load room model if available
+          if (scene.roomModel) {
+            try {
+              const vertices = JSON.parse(scene.roomModel.verticesData);
+              setCustomRoomData({
+                vertices,
+                height: scene.roomModel.roomHeight,
+                openings: scene.roomModel.roomProperties 
+                  ? JSON.parse(scene.roomModel.roomProperties) 
+                  : undefined,
+              });
+            } catch (e) {
+              console.error('Failed to parse room data:', e);
+            }
+          }
+
+          // Load products if available
+          if (scene.sceneProducts && scene.sceneProducts.length > 0) {
+            const productPromises = scene.sceneProducts.map(async (sceneProduct) => {
+              try {
+                const product = await ProductService.getById(sceneProduct.productId);
+                const sceneProduct3D: SceneProduct3D = {
+                  ...sceneProduct,
+                  uniqueId: `product-${sceneProduct.id || Date.now()}-${Math.random()}`,
+                  modelItem: {
+                    id: product.id,
+                    name: product.name,
+                    url: product.modelPath,
+                    category: product.categoryName,
+                    categoryId: product.categoryId,
+                    priceRange: product.priceRange,
+                    mountingType: product.mountingType,
+                    availableColors: product.availableColors,
+                    thumbnail: product.thumbnail,
+                  },
+                  selectedColorId: sceneProduct.colorId,
+                };
+                return sceneProduct3D;
+              } catch (error) {
+                console.error(`Failed to load product ${sceneProduct.productId}:`, error);
+                return null;
+              }
+            });
+            const products = await Promise.all(productPromises);
+            const validProducts = products.filter((p): p is SceneProduct3D => p !== null);
+            setSceneProducts(validProducts);
+          }
+
+          // Load coverings if available
+          if (scene.sceneCoverings && scene.sceneCoverings.length > 0) {
+            const newCoverings: typeof appliedCoverings = {};
+            scene.sceneCoverings.forEach((covering) => {
+              if (covering.surfaceIdentifier) {
+                newCoverings[covering.surfaceIdentifier] = {
+                  productId: covering.productId,
+                  surfaceType: covering.surfaceType as "wall" | "floor",
+                  repeatX: covering.repeatX || 1,
+                  repeatY: covering.repeatY || 1,
+                };
+              }
+            });
+            setAppliedCoverings(newCoverings);
+          }
+
+          // Notify parent that scene was loaded
+          if (onSceneLoaded) {
+            onSceneLoaded();
+          }
+        } catch (error) {
+          console.error('Failed to load scene:', error);
+          alert('Failed to load scene. Please try again.');
+          if (onSceneLoaded) {
+            onSceneLoaded();
+          }
+        }
+      }
+    };
+
+    loadScene();
+  }, [sceneIdToLoad, onSceneLoaded]);
 
   return (
     <div className="bathroom-3d-viewer" style={style}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { systemController } from "./controllers/configuration";
 import { Bathroom3DViewer } from "./components/3d";
 import BathroomPlanner from "./components/configurator/bathroom_planner/BathroomPlanner";
@@ -7,8 +7,7 @@ import TemplateSelection from "./components/configurator/template_selection/Temp
 import "./index.css";
 import CustomRoom from "./components/configurator/custom_room/CustomRoom";
 import AIDesigner from "./components/configurator/ai_designer/AIDesigner";
-import { Header, QuoteRequestModal, SceneData, QuoteFormData } from "./components/common";
-import { quoteService } from "./controllers/api/quote/QuoteService";
+import { Header, QuoteRequestPage, SceneData } from "./components/common";
 import LoginModal from "./components/common/LoginModal";
 import UserDashboard from "./components/user/UserDashboard";
 import authService from "./controllers/api/auth/authService";
@@ -27,14 +26,13 @@ type ViewType =
 
 function MainApp() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
   const [currentView, setCurrentView] = useState<ViewType>("planner");
   const [aiDesignerTitle, setAiDesignerTitle] = useState<string>("AI Designer");
-  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [quoteSceneData, setQuoteSceneData] = useState<SceneData | null>(null);
-  const [sceneSnapshot, setSceneSnapshot] = useState<string | undefined>(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [sceneIdToLoad, setSceneIdToLoad] = useState<number | null>(null);
 
   // Ref to communicate with Bathroom3DViewer
   const [bathroom3DViewerRef, setBathroom3DViewerRef] = useState<any>(null);
@@ -60,6 +58,16 @@ function MainApp() {
 
     testBackendConnection();
   }, []);
+
+  // Handle sceneId from navigation state (when loading a scene from dashboard)
+  useEffect(() => {
+    if (location.state && location.state.sceneId) {
+      setSceneIdToLoad(location.state.sceneId);
+      setCurrentView('3d');
+      // Clear the state to avoid reloading on subsequent renders
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const handleNavigate = (view: string) => {
     setCurrentView(view as ViewType);
@@ -87,29 +95,13 @@ function MainApp() {
     if (bathroom3DViewerRef) {
       const snapshot = bathroom3DViewerRef.captureSnapshot();
       const sceneData = await bathroom3DViewerRef.getSceneData();
-      setQuoteSceneData(sceneData);
-      setSceneSnapshot(snapshot || undefined);
-      setIsQuoteModalOpen(true);
+      navigate('/quote', { state: { sceneData, sceneSnapshot: snapshot, returnPath: '/' } });
     } else {
       // Fallback if ref is not ready
-      setIsQuoteModalOpen(true);
+      navigate('/quote', { state: { returnPath: '/' } });
     }
   };
 
-  const handleQuoteSubmit = async (formData: QuoteFormData) => {
-    try {
-      const response = await quoteService.submitQuoteRequest(formData);
-      
-      if (response.success) {
-        alert(`Quote request submitted successfully!\n\nAn account has been created with email: ${response.userEmail}\n\nYour quote request has been sent to our industry partners.`);
-        setIsQuoteModalOpen(false);
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (error: any) {
-      throw error; // Re-throw to be handled by the modal
-    }
-  };
 
   if (currentView === "planner") {
     return (
@@ -214,22 +206,13 @@ function MainApp() {
         <div style={{ flex: 1, overflow: 'hidden' }}>
           <Bathroom3DViewer 
             ref={setBathroom3DViewerRef}
+            sceneIdToLoad={sceneIdToLoad}
+            onSceneLoaded={() => setSceneIdToLoad(null)}
             onRequestQuote={(sceneData, snapshot) => {
-              setQuoteSceneData(sceneData);
-              setSceneSnapshot(snapshot);
-              setIsQuoteModalOpen(true);
+              navigate('/quote', { state: { sceneData, sceneSnapshot: snapshot, returnPath: '/' } });
             }}
           />
         </div>
-        {quoteSceneData && (
-          <QuoteRequestModal
-            isOpen={isQuoteModalOpen}
-            onClose={() => setIsQuoteModalOpen(false)}
-            sceneData={quoteSceneData}
-            sceneSnapshot={sceneSnapshot}
-            onSubmit={handleQuoteSubmit}
-          />
-        )}
         <LoginModal
           isOpen={isLoginModalOpen}
           onClose={() => setIsLoginModalOpen(false)}
@@ -260,6 +243,7 @@ function App() {
       <Routes>
         <Route path="/" element={<MainApp />} />
         <Route path="/dashboard" element={<UserDashboard />} />
+        <Route path="/quote" element={<QuoteRequestPage />} />
       </Routes>
     </Router>
   );

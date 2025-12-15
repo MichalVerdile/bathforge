@@ -2,11 +2,13 @@ package com.bathforge.service.quote;
 
 import com.bathforge.dto.quote.QuoteRequestDTO;
 import com.bathforge.dto.quote.QuoteRequestHistoryDTO;
+import com.bathforge.dto.scene.CreateSceneDTO;
 import com.bathforge.model.quote.QuoteRequest;
 import com.bathforge.model.user.User;
 import com.bathforge.repository.quote.QuoteRequestRepository;
 import com.bathforge.service.email.EmailService;
 import com.bathforge.service.email.QuoteRequestEmailData;
+import com.bathforge.service.scene.SceneService;
 import com.bathforge.service.user.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,14 +30,17 @@ public class QuoteService {
     private final UserService userService;
     private final EmailService emailService;
     private final QuoteRequestRepository quoteRequestRepository;
+    private final SceneService sceneService;
     private final ObjectMapper objectMapper;
 
     @Autowired
     public QuoteService(UserService userService, EmailService emailService,
-            QuoteRequestRepository quoteRequestRepository, ObjectMapper objectMapper) {
+            QuoteRequestRepository quoteRequestRepository, SceneService sceneService,
+            ObjectMapper objectMapper) {
         this.userService = userService;
         this.emailService = emailService;
         this.quoteRequestRepository = quoteRequestRepository;
+        this.sceneService = sceneService;
         this.objectMapper = objectMapper;
     }
 
@@ -75,6 +80,30 @@ public class QuoteService {
             logger.info("Quote request saved to database for user: {}", user.getEmail());
         } catch (JsonProcessingException e) {
             logger.error("Failed to save quote request to database", e);
+        }
+
+        // Create a scene for the user so they can load it later
+        try {
+            CreateSceneDTO sceneDTO = new CreateSceneDTO();
+            sceneDTO.setName("Quote Request - " + user.getFirstName() + " " + user.getLastName());
+            sceneDTO.setDescription("Scene from quote request on " + java.time.LocalDateTime.now());
+            sceneDTO.setUser(user.getEmail());
+            sceneDTO.setIsPublic(false);
+
+            // Store the quote request data as scene data for reference
+            // Since we don't have proper product IDs from the frontend,
+            // we store the raw data for now
+            try {
+                sceneDTO.setSceneData(objectMapper.writeValueAsString(quoteRequest));
+            } catch (JsonProcessingException e) {
+                logger.warn("Failed to serialize scene data", e);
+            }
+
+            sceneService.createScene(sceneDTO);
+            logger.info("Scene created for quote request user: {}", user.getEmail());
+        } catch (Exception e) {
+            // Log error but don't fail the entire request if scene creation fails
+            logger.error("Failed to create scene for quote request user {}: {}", user.getEmail(), e.getMessage(), e);
         }
 
         // Prepare email data

@@ -1,12 +1,11 @@
 [phases.setup]
 nixPkgs = ["nodejs_20"]
 
+[phases.install]
+cmds = ["npm install --legacy-peer-deps", "npm install -g serve"]
+
 [phases.build]
-cmds = ["npm install --legacy-peer-deps", "npm run build"]
+cmds = ["npm run build"]
 
 [start]
 cmd = "npx serve -s build -l $PORT"
-
-[phases.install]
-dependsOn = ["setup"]
-cmds = ["npm install -g serve"]

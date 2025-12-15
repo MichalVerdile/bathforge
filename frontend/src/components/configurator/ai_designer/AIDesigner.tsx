@@ -2,10 +2,12 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import StyleStep from "./StyleStep";
 import ColorStep from "./ColorStep";
 import FeaturesStep from "./FeaturesStep";
+import PriceRangeStep from "./PriceRangeStep";
 import RoomStep from "./RoomStep";
 import SummaryStep from "./SummaryStep";
+import { HelpModal } from "../../common";
 import "./AIDesigner.css";
-import type { ColorPaletteId, FeatureId, StyleId } from "./data";
+import type { ColorPaletteId, FeatureId, StyleId, PriceRangeId } from "./data";
 import { aiDesignerController } from "../../../controllers/api/ai/AIDesignerController";
 import type { RoomEditorRef } from "../custom_room/RoomEditor";
 import type { RoomOpenings } from "../custom_room/DoorWindowTypes";
@@ -13,6 +15,7 @@ import type { RoomOpenings } from "../custom_room/DoorWindowTypes";
 interface AIDesignerProps {
   onNavigate: (view: string) => void;
   onTitleChange?: (title: string) => void;
+  onOpenHelp?: () => void;
 }
 
 interface Vertex {
@@ -30,17 +33,19 @@ export interface AIPreferences {
   style?: StyleId;
   colors?: ColorPaletteId[];
   features?: FeatureId[];
+  priceRange?: PriceRangeId;
   room?: RoomConfiguration;
 }
 
-const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) => {
+const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange, onOpenHelp }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [preferences, setPreferences] = useState<AIPreferences>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isHelpModalOpen, setIsHelpModalOpen] = useState(false);
   const roomEditorRef = useRef<RoomEditorRef>(null);
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const updatePreferences = useCallback(<Key extends keyof AIPreferences>(
     key: Key,
@@ -106,8 +111,10 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
       case 3:
         return !!preferences.features && preferences.features.length > 0;
       case 4:
-        return !!preferences.room && preferences.room.vertices.length > 0;
+        return !!preferences.priceRange;
       case 5:
+        return !!preferences.room && preferences.room.vertices.length > 0;
+      case 6:
         return true;
       default:
         return false;
@@ -123,8 +130,10 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
       case 3:
         return "Pick Your Features";
       case 4:
-        return "Design Your Room Shape";
+        return "Select Price Range";
       case 5:
+        return "Design Your Room Shape";
+      case 6:
         return "Review Your Preferences";
       default:
         return "AI Bathroom Designer";
@@ -168,13 +177,22 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
         );
       case 4:
         return (
+          <PriceRangeStep
+            selectedPriceRange={preferences.priceRange}
+            onPriceRangeSelect={(priceRange) =>
+              updatePreferences("priceRange", priceRange)
+            }
+          />
+        );
+      case 5:
+        return (
           <RoomStep
             ref={roomEditorRef}
             currentRoom={preferences.room}
             onRoomChange={handleRoomChange}
           />
         );
-      case 5:
+      case 6:
         return <SummaryStep preferences={preferences} />;
       default:
         return null;
@@ -195,7 +213,16 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
             </div>
           )}
 
-          <div className="step-content">{renderStep()}</div>
+          <div className="step-content">
+            <button
+              className="ai-help-button"
+              onClick={() => setIsHelpModalOpen(true)}
+              title="Get help with this step"
+            >
+              ❓
+            </button>
+            {renderStep()}
+          </div>
 
           {/* Error message */}
           {error && (
@@ -213,7 +240,7 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
 
           <div
             className={`action-buttons ${
-              currentStep === 5 ? "summary-spacing" : ""
+              currentStep === 6 ? "summary-spacing" : ""
             }`}
           >
             <button className="go-back-button" onClick={handleBack}>
@@ -242,6 +269,13 @@ const AIDesigner: React.FC<AIDesignerProps> = ({ onNavigate, onTitleChange }) =>
           </div>
         </div>
       </div>
+
+      <HelpModal
+        isOpen={isHelpModalOpen}
+        onClose={() => setIsHelpModalOpen(false)}
+        currentPage="ai-design"
+        aiDesignerStep={currentStep}
+      />
     </div>
   );
 };

@@ -7,12 +7,16 @@ import com.bathforge.model.scene.Scene;
 import com.bathforge.model.scene.SceneProduct;
 import com.bathforge.model.scene.SceneRoomModel;
 import com.bathforge.model.scene.SceneCovering;
+import com.bathforge.model.user.User;
 import com.bathforge.repository.products.ColorRepository;
 import com.bathforge.repository.products.ProductRepository;
 import com.bathforge.repository.scene.SceneProductRepository;
 import com.bathforge.repository.scene.SceneRepository;
 import com.bathforge.repository.scene.SceneRoomModelRepository;
 import com.bathforge.repository.scene.SceneCoveringRepository;
+import com.bathforge.service.user.UserService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,19 +33,22 @@ public class SceneService {
     private final SceneCoveringRepository sceneCoveringRepository;
     private final ProductRepository productRepository;
     private final ColorRepository colorRepository;
+    private final UserService userService;
 
     public SceneService(SceneRepository sceneRepository,
             SceneProductRepository sceneProductRepository,
             SceneRoomModelRepository sceneRoomModelRepository,
             SceneCoveringRepository sceneCoveringRepository,
             ProductRepository productRepository,
-            ColorRepository colorRepository) {
+            ColorRepository colorRepository,
+            UserService userService) {
         this.sceneRepository = sceneRepository;
         this.sceneProductRepository = sceneProductRepository;
         this.sceneRoomModelRepository = sceneRoomModelRepository;
         this.sceneCoveringRepository = sceneCoveringRepository;
         this.productRepository = productRepository;
         this.colorRepository = colorRepository;
+        this.userService = userService;
     }
 
     @Transactional(readOnly = true)
@@ -106,6 +113,35 @@ public class SceneService {
     @Transactional
     public SceneDTO createScene(CreateSceneDTO createSceneDTO) {
         Scene scene = fromCreateDTO(createSceneDTO);
+        Scene saved = sceneRepository.save(scene);
+
+        if (createSceneDTO.getProducts() != null && !createSceneDTO.getProducts().isEmpty()) {
+            Set<SceneProduct> items = createSceneProducts(saved, createSceneDTO.getProducts());
+            sceneProductRepository.saveAll(items);
+            saved.setSceneProducts(items);
+        }
+
+        // Create room model if provided
+        if (createSceneDTO.getRoomModel() != null) {
+            createOrUpdateRoomModel(saved.getId(), createSceneDTO.getRoomModel());
+        }
+
+        // Create coverings if provided
+        if (createSceneDTO.getCoverings() != null && !createSceneDTO.getCoverings().isEmpty()) {
+            for (CreateSceneCoveringDTO coveringDTO : createSceneDTO.getCoverings()) {
+                createOrUpdateCovering(saved.getId(), coveringDTO);
+            }
+        }
+
+        return toSceneDTO(saved);
+    }
+
+    @Transactional
+    public SceneDTO createSceneForUser(CreateSceneDTO createSceneDTO, User user) {
+        Scene scene = fromCreateDTO(createSceneDTO);
+        // Override the user association with the provided user entity
+        scene.setUserEntity(user);
+        scene.setUser(null); // Clear the username string since we have the entity
         Scene saved = sceneRepository.save(scene);
 
         if (createSceneDTO.getProducts() != null && !createSceneDTO.getProducts().isEmpty()) {
@@ -210,7 +246,24 @@ public class SceneService {
         Scene s = new Scene();
         s.setName(dto.getName());
         s.setDescription(dto.getDescription());
-        s.setUser(dto.getUser() != null ? dto.getUser() : "guest");
+
+        // Check if user is authenticated
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()
+                && !"anonymousUser".equals(authentication.getPrincipal())) {
+            String userEmail = authentication.getName();
+            User user = userService.findByEmail(userEmail).orElse(null);
+            if (user != null) {
+                s.setUserEntity(user);
+            } else {
+                // Fallback to username string if user not found
+                s.setUser(dto.getUser() != null ? dto.getUser() : "guest");
+            }
+        } else {
+            // Not authenticated, use guest or provided username
+            s.setUser(dto.getUser() != null ? dto.getUser() : "guest");
+        }
+
         s.setSceneData(dto.getSceneData());
         s.setCameraPosition(dto.getCameraPosition());
         s.setLightingSettings(dto.getLightingSettings());

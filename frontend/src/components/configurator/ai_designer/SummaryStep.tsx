@@ -1,6 +1,6 @@
 import React from "react";
 import { AIPreferences } from "./AIDesigner";
-import { COLOR_LABELS, FEATURE_LABELS, STYLE_LABELS } from "./data";
+import { COLOR_LABELS, FEATURE_LABELS, STYLE_LABELS, PRICE_RANGE_LABELS } from "./data";
 
 interface SummaryStepProps {
   preferences: AIPreferences;
@@ -26,6 +26,11 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ preferences }) => {
       ? STYLE_LABELS[preferences.style]
       : "Not selected";
 
+  const priceRangeName =
+    preferences.priceRange && PRICE_RANGE_LABELS[preferences.priceRange]
+      ? PRICE_RANGE_LABELS[preferences.priceRange]
+      : "Not selected";
+
   return (
     <div className="summary-step">
       <div className="summary-content">
@@ -46,6 +51,11 @@ const SummaryStep: React.FC<SummaryStepProps> = ({ preferences }) => {
           <p className="summary-section-value">
             {formatSelection(preferences.features, FEATURE_LABELS)}
           </p>
+        </div>
+
+        <div className="summary-section">
+          <h3 className="summary-section-title">Price Range</h3>
+          <p className="summary-section-value">{priceRangeName}</p>
         </div>
 
         <div className="summary-section">

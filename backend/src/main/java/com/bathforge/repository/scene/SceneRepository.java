@@ -1,6 +1,7 @@
 package com.bathforge.repository.scene;
 
 import com.bathforge.model.scene.Scene;
+import com.bathforge.model.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,6 +17,16 @@ public interface SceneRepository extends JpaRepository<Scene, Long> {
      * Find scenes by user
      */
     List<Scene> findByUsername(String user);
+
+    /**
+     * Find scenes by user entity
+     */
+    List<Scene> findByUser(User user);
+
+    /**
+     * Find scenes by user ID ordered by creation date descending
+     */
+    List<Scene> findByUserIdOrderByCreatedAtDesc(Long userId);
 
     /**
      * Find public scenes

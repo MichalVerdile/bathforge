@@ -90,7 +90,6 @@ public class AIDesignService {
         return response;
     }
 
-
     /**
      * Generate product and covering recommendations based on requested features
      */
@@ -103,6 +102,17 @@ public class AIDesignService {
         logger.debug("Fetching showcase products and coverings for AI selection...");
         List<ProductDTO> allProducts = productService.getProductsForAISelection();
         logger.info("Found {} products available for AI selection", allProducts.size());
+
+        // Filter products by price range if specified
+        if (request.getPriceRange() != null && !request.getPriceRange().isEmpty()) {
+            logger.debug("Filtering products by price range: {}", request.getPriceRange());
+            String priceRangeUpper = request.getPriceRange().toUpperCase();
+            allProducts = allProducts.stream()
+                    .filter(product -> product.getPriceRange() != null &&
+                            product.getPriceRange().name().equals(priceRangeUpper))
+                    .collect(Collectors.toList());
+            logger.info("After price range filter: {} products available", allProducts.size());
+        }
 
         // Format products as JSON for the prompt (includes coverings with descriptions)
         String productsJson = formatProductsForPrompt(allProducts);
@@ -118,7 +128,6 @@ public class AIDesignService {
                 response.getProductRecommendations().size(),
                 response.getCoveringRecommendations() != null ? response.getCoveringRecommendations().size() : 0);
     }
-
 
     /**
      * Save the AI-generated design as a scene in the database
@@ -198,13 +207,17 @@ public class AIDesignService {
                 // Add doors and windows to room properties
                 try {
                     Map<String, Object> roomProperties = new HashMap<>();
-                    if (request.getRoomConfiguration().getDoors() != null && !request.getRoomConfiguration().getDoors().isEmpty()) {
+                    if (request.getRoomConfiguration().getDoors() != null
+                            && !request.getRoomConfiguration().getDoors().isEmpty()) {
                         roomProperties.put("doors", request.getRoomConfiguration().getDoors());
-                        logger.debug("Added {} doors to room properties", request.getRoomConfiguration().getDoors().size());
+                        logger.debug("Added {} doors to room properties",
+                                request.getRoomConfiguration().getDoors().size());
                     }
-                    if (request.getRoomConfiguration().getWindows() != null && !request.getRoomConfiguration().getWindows().isEmpty()) {
+                    if (request.getRoomConfiguration().getWindows() != null
+                            && !request.getRoomConfiguration().getWindows().isEmpty()) {
                         roomProperties.put("windows", request.getRoomConfiguration().getWindows());
-                        logger.debug("Added {} windows to room properties", request.getRoomConfiguration().getWindows().size());
+                        logger.debug("Added {} windows to room properties",
+                                request.getRoomConfiguration().getWindows().size());
                     }
                     if (!roomProperties.isEmpty()) {
                         String roomPropertiesJson = objectMapper.writeValueAsString(roomProperties);
@@ -267,22 +280,22 @@ public class AIDesignService {
 
         Map<String, String> paletteDescriptions = new HashMap<>();
         paletteDescriptions.put("spa-serenity",
-            "Light blue-gray, soft beige, pale tones");
+                "Light blue-gray, soft beige, pale tones");
         paletteDescriptions.put("modern-monochrome",
-            "Black, white, gray");
+                "Black, white, gray");
         paletteDescriptions.put("natural-warmth",
-            "Warm beige, brown, cream");
+                "Warm beige, brown, cream");
         paletteDescriptions.put("urban-chic",
-            "Gray, silver, chrome");
+                "Gray, silver, chrome");
         paletteDescriptions.put("luxe-dark",
-            "Dark charcoal, gold, navy");
+                "Dark charcoal, gold, navy");
         paletteDescriptions.put("sage-stone",
-            "Sage green, stone gray, taupe");
+                "Sage green, stone gray, taupe");
 
         StringBuilder result = new StringBuilder();
         for (String palette : colorPalettes) {
             String description = paletteDescriptions.getOrDefault(palette.toLowerCase(),
-                "Neutral colors (White, Gray, Beige)");
+                    "Neutral colors (White, Gray, Beige)");
             result.append(description).append(". ");
         }
 
@@ -385,7 +398,6 @@ public class AIDesignService {
         return bounds;
     }
 
-
     /**
      * Calculate positions for AI-recommended products using smart placement.
      * Uses actual room vertices for L-shaped, U-shaped, and irregular rooms.
@@ -412,17 +424,20 @@ public class AIDesignService {
         // Other large items also sorted by size so largest items get placed last
         products.sort((a, b) -> {
             boolean aIsBathtub = "bathtubs".equalsIgnoreCase(a.getCategory()) ||
-                                 "bath tubs".equalsIgnoreCase(a.getCategory()) ||
-                                 a.getCategory().toLowerCase().contains("bathtub");
+                    "bath tubs".equalsIgnoreCase(a.getCategory()) ||
+                    a.getCategory().toLowerCase().contains("bathtub");
             boolean bIsBathtub = "bathtubs".equalsIgnoreCase(b.getCategory()) ||
-                                 "bath tubs".equalsIgnoreCase(b.getCategory()) ||
-                                 b.getCategory().toLowerCase().contains("bathtub");
+                    "bath tubs".equalsIgnoreCase(b.getCategory()) ||
+                    b.getCategory().toLowerCase().contains("bathtub");
 
             // Bathtubs always go last (to center)
-            if (aIsBathtub && !bIsBathtub) return 1;
-            if (!aIsBathtub && bIsBathtub) return -1;
+            if (aIsBathtub && !bIsBathtub)
+                return 1;
+            if (!aIsBathtub && bIsBathtub)
+                return -1;
 
-            // For non-bathtubs, sort by footprint (smaller first, so larger ones go toward center)
+            // For non-bathtubs, sort by footprint (smaller first, so larger ones go toward
+            // center)
             ProductDimensions dimsA = ProductDimensions.forCategory(a.getCategory());
             ProductDimensions dimsB = ProductDimensions.forCategory(b.getCategory());
             return Double.compare(dimsA.getFootprint(), dimsB.getFootprint());
@@ -445,15 +460,15 @@ public class AIDesignService {
 
             // Check if this is a bathtub (should go in center)
             boolean isBathtub = "bathtubs".equalsIgnoreCase(product.getCategory()) ||
-                               "bath tubs".equalsIgnoreCase(product.getCategory()) ||
-                               product.getCategory().toLowerCase().contains("bathtub");
+                    "bath tubs".equalsIgnoreCase(product.getCategory()) ||
+                    product.getCategory().toLowerCase().contains("bathtub");
 
             // Find a valid position for this product
             Position3D position = findValidPosition(room, dims, usedPositions, SAFETY_BUFFER, isBathtub);
 
             if (position == null) {
                 logger.warn("Could not find valid position for product '{}', using center as fallback",
-                           product.getProductName());
+                        product.getProductName());
                 position = room.getCenter();
             }
 
@@ -489,8 +504,8 @@ public class AIDesignService {
      * 4. Spreads items evenly across the room
      */
     private Position3D findValidPosition(RoomBounds room, ProductDimensions dims,
-                                          List<BoundingBox2D> usedPositions,
-                                          double safetyBuffer, boolean preferCenter) {
+            List<BoundingBox2D> usedPositions,
+            double safetyBuffer, boolean preferCenter) {
         double offset = Math.max(dims.getWidth(), dims.getDepth()) / 2.0 + safetyBuffer;
 
         // If product should be in center (bathtubs), try center first
@@ -520,7 +535,8 @@ public class AIDesignService {
         candidates.add(new Position3D(room.getMinX() + offset, 0, midZ)); // Left-middle
         candidates.add(new Position3D(room.getMaxX() - offset, 0, midZ)); // Right-middle
 
-        // Strategy 3: Use actual room vertices if available (for L, U, irregular shapes)
+        // Strategy 3: Use actual room vertices if available (for L, U, irregular
+        // shapes)
         // These provide additional placement options specific to the room shape
         if (room.hasVertices()) {
             List<Position3D> vertices = room.getVertices();
@@ -550,8 +566,8 @@ public class AIDesignService {
         for (Position3D candidate : candidates) {
             if (isValidPosition(candidate, dims, room, usedPositions)) {
                 logger.debug("Found valid position at ({}, {})",
-                    String.format("%.2f", candidate.x),
-                    String.format("%.2f", candidate.z));
+                        String.format("%.2f", candidate.x),
+                        String.format("%.2f", candidate.z));
                 return candidate;
             }
         }
@@ -565,7 +581,7 @@ public class AIDesignService {
      * - Product must not collide with already placed products
      */
     private boolean isValidPosition(Position3D position, ProductDimensions dims,
-                                     RoomBounds room, List<BoundingBox2D> usedPositions) {
+            RoomBounds room, List<BoundingBox2D> usedPositions) {
         // Create bounding box for this product at this position
         BoundingBox2D productBox = new BoundingBox2D(position, dims);
 
@@ -595,10 +611,10 @@ public class AIDesignService {
         }
 
         return switch (mountingType) {
-            case "WALL" -> 0.38;         // Wall-mounted items at 38cm
-            case "FLOOR" -> 0.08;        // Floor items at 8cm
+            case "WALL" -> 0.38; // Wall-mounted items at 38cm
+            case "FLOOR" -> 0.08; // Floor items at 8cm
             case "FREESTANDING" -> 0.08; // Freestanding items at 8cm
-            default -> 0.08;             // Default to floor level
+            default -> 0.08; // Default to floor level
         };
     }
 
@@ -634,8 +650,11 @@ public class AIDesignService {
                     rec.setProductName(actualProduct.getName());
                     rec.setCategory(actualProduct.getCategoryName());
                     rec.setCategoryId(actualProduct.getCategoryId());
-                    rec.setPriceRange(actualProduct.getPriceRange() != null ? actualProduct.getPriceRange().toString() : null);
-                    rec.setMountingType(actualProduct.getMountingType() != null ? actualProduct.getMountingType().toString() : null);
+                    rec.setPriceRange(
+                            actualProduct.getPriceRange() != null ? actualProduct.getPriceRange().toString() : null);
+                    rec.setMountingType(
+                            actualProduct.getMountingType() != null ? actualProduct.getMountingType().toString()
+                                    : null);
                     rec.setColor(color);
 
                     products.add(rec);

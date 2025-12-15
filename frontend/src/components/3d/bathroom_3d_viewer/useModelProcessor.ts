@@ -185,7 +185,7 @@ function centerModel(model: THREE.Group) {
 }
 
 /**
- * Apply materials to model
+ * Apply materials to model with photorealistic properties
  */
 function applyMaterials(
   model: THREE.Group,
@@ -202,6 +202,7 @@ function applyMaterials(
       if (child.geometry) {
         child.geometry.computeVertexNormals();
         child.geometry.computeBoundingSphere();
+        child.geometry.computeTangents();
       }
 
       const applyColor = (mat: THREE.Material) => {
@@ -211,20 +212,92 @@ function applyMaterials(
           mat.transparent = false;
           mat.opacity = 1;
           mat.depthWrite = true;
-          mat.side = THREE.DoubleSide;
-
+          mat.side = THREE.FrontSide;
+          
+          // Enhanced PBR properties for photorealism with better visibility
+          mat.envMapIntensity = 2.0; // Increased for better reflections on dark materials
+          
           if (color) {
             try {
               mat.color.set(color);
             } catch {}
           }
 
-          if (typeof mat.roughness === 'number') {
-            mat.roughness = Math.min(1, Math.max(0, mat.roughness ?? 0.6));
+          // Realistic material property ranges
+          // Bathroom fixtures are typically ceramic/porcelain or metal
+          const matName = mat.name?.toLowerCase() || '';
+          
+          // Check material color brightness to adjust properties for dark materials
+          const colorBrightness = mat.color ? (mat.color.r + mat.color.g + mat.color.b) / 3 : 0.5;
+          const isDarkMaterial = colorBrightness < 0.3;
+          
+          // Check if material is metallic (faucets, handles, etc.)
+          if (matName.includes('chrome') || matName.includes('metal') || 
+              matName.includes('steel') || matName.includes('brass')) {
+            mat.metalness = 0.95;
+            mat.roughness = isDarkMaterial ? 0.1 : 0.15; // Smoother for dark metals
+            mat.envMapIntensity = 2.5;
           }
-          if (typeof mat.metalness === 'number') {
-            mat.metalness = Math.min(1, Math.max(0, mat.metalness ?? 0.1));
+          // Check if material is glass or mirror
+          else if (matName.includes('glass') || matName.includes('mirror')) {
+            mat.metalness = 0.0;
+            mat.roughness = 0.05;
+            mat.envMapIntensity = 2.2;
+            mat.transparent = true;
+            mat.opacity = 0.3;
           }
+          // Check if material is ceramic/porcelain (sinks, toilets, bathtubs)
+          else if (matName.includes('ceramic') || matName.includes('porcelain') || 
+                   matName.includes('white') || matName.includes('enamel')) {
+            mat.metalness = 0.0;
+            mat.roughness = isDarkMaterial ? 0.2 : 0.25;
+            mat.envMapIntensity = 1.8;
+          }
+          // Check if material is wood (furniture, cabinets)
+          else if (matName.includes('wood') || matName.includes('oak') || 
+                   matName.includes('walnut')) {
+            mat.metalness = 0.0;
+            mat.roughness = isDarkMaterial ? 0.6 : 0.7;
+            mat.envMapIntensity = isDarkMaterial ? 1.2 : 0.8;
+          }
+          // Check if material is tile
+          else if (matName.includes('tile') || matName.includes('marble') || 
+                   matName.includes('granite')) {
+            mat.metalness = 0.0;
+            mat.roughness = isDarkMaterial ? 0.25 : 0.3;
+            mat.envMapIntensity = 1.8;
+          }
+          // Default material properties with better handling for dark materials
+          else {
+            // For dark materials, reduce roughness to show more reflections\n            
+            if (isDarkMaterial) {
+              mat.roughness = 0.3;
+              mat.metalness = 0.1;
+              mat.envMapIntensity = 2.5;
+            } else {
+              // Use existing values if reasonable, otherwise set defaults
+              if (typeof mat.roughness === 'number' && mat.roughness > 0) {
+                mat.roughness = Math.min(1, Math.max(0.2, mat.roughness));
+              } else {
+                mat.roughness = 0.4;
+              }
+              
+              if (typeof mat.metalness === 'number') {
+                mat.metalness = Math.min(0.3, Math.max(0, mat.metalness));
+              } else {
+                mat.metalness = 0.0;
+              }
+              
+              mat.envMapIntensity = 1.5;
+            }
+          }
+        } else if (mat instanceof THREE.MeshPhysicalMaterial) {
+          // For physical materials, enhance even further
+          mat.needsUpdate = true;
+          mat.clearcoat = 0.5;
+          mat.clearcoatRoughness = 0.1;
+          mat.reflectivity = 0.9;
+          mat.envMapIntensity = 2.5;
         }
       };
 

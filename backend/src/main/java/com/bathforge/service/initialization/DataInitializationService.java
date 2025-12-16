@@ -209,6 +209,18 @@ public class DataInitializationService implements CommandLineRunner {
     }
 
     private Optional<Path> findAssetsDirectory() {
+        // First try to find assets in backend resources (for production/Railway)
+        try {
+            Path resourcesAssets = Paths.get("src/main/resources/static/assets").toAbsolutePath().normalize();
+            if (Files.isDirectory(resourcesAssets) && hasAnySubdirectory(resourcesAssets)) {
+                log.info("Found assets in backend resources: {}", resourcesAssets);
+                return Optional.of(resourcesAssets);
+            }
+        } catch (Exception e) {
+            log.debug("Backend resources assets not found: {}", e.getMessage());
+        }
+
+        // Fallback to frontend paths for local development
         List<String> candidates = List.of(
                 "../frontend/public/assets",
                 "frontend/public/assets",

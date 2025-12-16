@@ -8,7 +8,7 @@ import { CategoryService } from '../../controllers/api/products/CategoryService'
 import { Product, Category } from '../../types/api';
 import { HelpModal } from '../common';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const BACKEND_URL = API_BASE_URL.replace('/api', '');
 
 const AdminDashboard: React.FC = () => {

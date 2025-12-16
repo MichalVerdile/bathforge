@@ -64,4 +64,4 @@ task copyAssets(type: Copy) {
     into 'build/resources/main/static/assets'
 }
 
-bootJar.dependsOn copyAssets
+processResources.dependsOn copyAssets

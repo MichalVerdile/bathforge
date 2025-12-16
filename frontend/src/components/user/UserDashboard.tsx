@@ -5,7 +5,7 @@ import userService, { SceneData, QuoteRequestHistory, QuoteRequestDetail } from 
 import { HelpModal } from '../common';
 import './UserDashboard.css';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 const BACKEND_URL = API_BASE_URL.replace('/api', '');
 
 const UserDashboard: React.FC = () => {

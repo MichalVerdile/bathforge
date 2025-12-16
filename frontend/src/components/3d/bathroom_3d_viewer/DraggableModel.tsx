@@ -7,8 +7,8 @@ import React, {
   useMemo,
 } from "react";
 import { ThreeEvent, useThree, useLoader } from "@react-three/fiber";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import * as THREE from "three";
 import { useModelProcessor } from "./useModelProcessor";
 import {

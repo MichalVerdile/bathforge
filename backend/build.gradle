@@ -57,3 +57,11 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Copy frontend assets to backend resources during build
+task copyAssets(type: Copy) {
+    from '../frontend/public/assets'
+    into 'build/resources/main/static/assets'
+}
+
+bootJar.dependsOn copyAssets

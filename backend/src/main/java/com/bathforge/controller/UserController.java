@@ -20,6 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * REST controller for user-specific operations and data retrieval.
+ */
 @RestController
 @RequestMapping("/api/user")
 @CrossOrigin(origins = "*")
@@ -36,6 +39,11 @@ public class UserController {
     @Autowired
     private QuoteService quoteService;
 
+    /**
+     * Retrieves all scenes for the authenticated user.
+     *
+     * @return response entity with list of user's scenes or error message
+     */
     @GetMapping("/scenes")
     public ResponseEntity<?> getUserScenes() {
         try {
@@ -75,6 +83,11 @@ public class UserController {
         }
     }
 
+    /**
+     * Retrieves all quote requests for the authenticated user.
+     *
+     * @return response entity with list of user's quote requests or error message
+     */
     @GetMapping("/quote-requests")
     public ResponseEntity<?> getUserQuoteRequests() {
         try {
@@ -96,6 +109,12 @@ public class UserController {
         }
     }
 
+    /**
+     * Retrieves detailed information for a specific quote request.
+     *
+     * @param id the quote request ID
+     * @return response entity with quote request details or error message
+     */
     @GetMapping("/quote-requests/{id}")
     public ResponseEntity<?> getQuoteRequestDetail(@PathVariable Long id) {
         try {

@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST controller for managing bathroom scenes and their components.
+ */
 @RestController
 @RequestMapping("/api/scenes")
 @CrossOrigin(origins = "*")
@@ -25,7 +28,9 @@ public class SceneController {
     }
 
     /**
-     * Get all scenes
+     * Retrieves all scenes.
+     *
+     * @return response entity with list of all scenes
      */
     @GetMapping
     public ResponseEntity<List<SceneDTO>> getAllScenes() {
@@ -34,7 +39,10 @@ public class SceneController {
     }
 
     /**
-     * Get scene by ID
+     * Retrieves a scene by its ID.
+     *
+     * @param id the scene ID
+     * @return response entity with the scene if found, or 404 if not found
      */
     @GetMapping("/{id}")
     public ResponseEntity<SceneDTO> getSceneById(@PathVariable Long id) {
@@ -44,7 +52,10 @@ public class SceneController {
     }
 
     /**
-     * Get scenes by user
+     * Retrieves scenes by user.
+     *
+     * @param user the username
+     * @return response entity with list of scenes for the user
      */
     @GetMapping("/user/{user}")
     public ResponseEntity<List<SceneDTO>> getScenesByUser(@PathVariable String user) {
@@ -53,7 +64,9 @@ public class SceneController {
     }
 
     /**
-     * Get public scenes
+     * Retrieves public scenes.
+     *
+     * @return response entity with list of public scenes
      */
     @GetMapping("/public")
     public ResponseEntity<List<SceneDTO>> getPublicScenes() {
@@ -62,7 +75,10 @@ public class SceneController {
     }
 
     /**
-     * Search scenes by name or description
+     * Searches scenes by name or description.
+     *
+     * @param query the search query
+     * @return response entity with list of matching scenes
      */
     @GetMapping("/search")
     public ResponseEntity<List<SceneDTO>> searchScenes(@RequestParam String query) {
@@ -71,7 +87,11 @@ public class SceneController {
     }
 
     /**
-     * Get recent scenes by user
+     * Retrieves recent scenes by user.
+     *
+     * @param user  the username
+     * @param limit the maximum number of scenes to return (default: 10)
+     * @return response entity with list of recent scenes
      */
     @GetMapping("/user/{user}/recent")
     public ResponseEntity<List<SceneDTO>> getRecentScenesByUser(
@@ -82,7 +102,10 @@ public class SceneController {
     }
 
     /**
-     * Count scenes by user
+     * Counts scenes by user.
+     *
+     * @param user the username
+     * @return response entity with the count of user's scenes
      */
     @GetMapping("/user/{user}/count")
     public ResponseEntity<Long> countScenesByUser(@PathVariable String user) {
@@ -91,7 +114,11 @@ public class SceneController {
     }
 
     /**
-     * Create new scene
+     * Creates a new scene.
+     *
+     * @param createSceneDTO the scene data to create
+     * @return response entity with the created scene and 201 status, or 400 if
+     *         invalid
      */
     @PostMapping
     public ResponseEntity<SceneDTO> createScene(@Valid @RequestBody CreateSceneDTO createSceneDTO) {
@@ -104,7 +131,11 @@ public class SceneController {
     }
 
     /**
-     * Update existing scene
+     * Updates an existing scene.
+     *
+     * @param id             the scene ID to update
+     * @param updateSceneDTO the updated scene data
+     * @return response entity with 200 status if successful, or 404 if not found
      */
     @PutMapping("/{id}")
     public ResponseEntity<Void> updateScene(@PathVariable Long id,
@@ -118,7 +149,10 @@ public class SceneController {
     }
 
     /**
-     * Delete scene
+     * Deletes a scene by its ID.
+     *
+     * @param id the scene ID to delete
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteScene(@PathVariable Long id) {
@@ -131,7 +165,11 @@ public class SceneController {
     }
 
     /**
-     * Get products in scene
+     * Retrieves products in a scene.
+     *
+     * @param id the scene ID
+     * @return response entity with list of products in the scene, or 404 if scene
+     *         not found
      */
     @GetMapping("/{id}/products")
     public ResponseEntity<List<SceneProductDTO>> getProductsInScene(@PathVariable Long id) {
@@ -144,7 +182,12 @@ public class SceneController {
     }
 
     /**
-     * Add product to scene
+     * Adds a product to a scene.
+     *
+     * @param id         the scene ID
+     * @param productDTO the product data to add
+     * @return response entity with the added product and 201 status, or 400 if
+     *         invalid
      */
     @PostMapping("/{id}/products")
     public ResponseEntity<SceneProductDTO> addProductToScene(@PathVariable Long id,
@@ -158,7 +201,12 @@ public class SceneController {
     }
 
     /**
-     * Update product in scene
+     * Updates a product in a scene.
+     *
+     * @param sceneId        the scene ID
+     * @param sceneProductId the scene product ID to update
+     * @param updateDTO      the updated product data
+     * @return response entity with the updated product, or 404 if not found
      */
     @PutMapping("/{sceneId}/products/{sceneProductId}")
     public ResponseEntity<SceneProductDTO> updateSceneProduct(
@@ -174,7 +222,11 @@ public class SceneController {
     }
 
     /**
-     * Remove product from scene
+     * Removes a product from a scene.
+     *
+     * @param sceneId        the scene ID
+     * @param sceneProductId the scene product ID to remove
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{sceneId}/products/{sceneProductId}")
     public ResponseEntity<Void> removeProductFromScene(@PathVariable Long sceneId,
@@ -188,7 +240,11 @@ public class SceneController {
     }
 
     /**
-     * Create or update room model for a scene
+     * Creates or updates the room model for a scene.
+     *
+     * @param sceneId      the scene ID
+     * @param roomModelDTO the room model data
+     * @return response entity with the saved room model, or 400 if invalid
      */
     @PostMapping("/{sceneId}/room-model")
     public ResponseEntity<SceneRoomModelDTO> createOrUpdateRoomModel(@PathVariable Long sceneId,
@@ -202,7 +258,10 @@ public class SceneController {
     }
 
     /**
-     * Get room model for a scene
+     * Retrieves the room model for a scene.
+     *
+     * @param sceneId the scene ID
+     * @return response entity with the room model if found, or 404 if not found
      */
     @GetMapping("/{sceneId}/room-model")
     public ResponseEntity<SceneRoomModelDTO> getRoomModel(@PathVariable Long sceneId) {
@@ -211,7 +270,10 @@ public class SceneController {
     }
 
     /**
-     * Delete room model from scene
+     * Deletes the room model from a scene.
+     *
+     * @param sceneId the scene ID
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{sceneId}/room-model")
     public ResponseEntity<Void> deleteRoomModel(@PathVariable Long sceneId) {
@@ -224,7 +286,11 @@ public class SceneController {
     }
 
     /**
-     * Create or update covering for a scene
+     * Creates or updates a covering for a scene.
+     *
+     * @param sceneId     the scene ID
+     * @param coveringDTO the covering data
+     * @return response entity with the saved covering, or 400 if invalid
      */
     @PostMapping("/{sceneId}/coverings")
     public ResponseEntity<SceneCoveringDTO> createOrUpdateCovering(@PathVariable Long sceneId,
@@ -238,7 +304,10 @@ public class SceneController {
     }
 
     /**
-     * Get all coverings for a scene
+     * Retrieves all coverings for a scene.
+     *
+     * @param sceneId the scene ID
+     * @return response entity with list of coverings for the scene
      */
     @GetMapping("/{sceneId}/coverings")
     public ResponseEntity<List<SceneCoveringDTO>> getCoverings(@PathVariable Long sceneId) {
@@ -247,7 +316,11 @@ public class SceneController {
     }
 
     /**
-     * Delete covering from scene
+     * Deletes a covering from a scene.
+     *
+     * @param sceneId    the scene ID
+     * @param coveringId the covering ID to delete
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{sceneId}/coverings/{coveringId}")
     public ResponseEntity<Void> deleteCovering(@PathVariable Long sceneId,
@@ -261,7 +334,10 @@ public class SceneController {
     }
 
     /**
-     * Delete all coverings from scene
+     * Deletes all coverings from a scene.
+     *
+     * @param sceneId the scene ID
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{sceneId}/coverings")
     public ResponseEntity<Void> deleteAllCoverings(@PathVariable Long sceneId) {

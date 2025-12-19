@@ -14,9 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for authentication operations.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -33,21 +35,24 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
+    /**
+     * Authenticates a user and generates a JWT token.
+     *
+     * @param loginRequest the login credentials
+     * @return response entity with authentication token and user details, or error
+     *         message
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
         try {
-            // Authenticate user
-            Authentication authentication = authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
 
-            // Get user details
             User user = userService.findByEmail(loginRequest.getEmail())
                     .orElseThrow(() -> new RuntimeException("User not found"));
 
-            // Generate JWT token
             String token = jwtUtil.generateToken(user.getEmail(), user.getId());
 
-            // Create response
             LoginResponseDTO response = new LoginResponseDTO(
                     token,
                     user.getEmail(),
@@ -70,6 +75,12 @@ public class AuthController {
         }
     }
 
+    /**
+     * Validates a JWT token and returns user information.
+     *
+     * @param authHeader the Authorization header containing the Bearer token
+     * @return response entity with user details if token is valid, or error message
+     */
     @GetMapping("/validate")
     public ResponseEntity<?> validateToken(@RequestHeader("Authorization") String authHeader) {
         try {

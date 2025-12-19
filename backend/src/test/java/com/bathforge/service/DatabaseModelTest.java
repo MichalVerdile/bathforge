@@ -33,7 +33,6 @@ public class DatabaseModelTest {
 
     @Test
     public void testCreateCategoryAndColors() {
-        // Create a test category
         CategoryDTO categoryDTO = new CategoryDTO("test_category", "Test category for unit testing");
         CategoryDTO createdCategory = categoryService.createCategory(categoryDTO);
 
@@ -41,7 +40,6 @@ public class DatabaseModelTest {
         assertEquals("test_category", createdCategory.getName());
         assertEquals("Test category for unit testing", createdCategory.getDescription());
 
-        // Create colors for the category
         ColorDTO colorDTO1 = new ColorDTO("Test White", "#ffffff", createdCategory.getId());
         ColorDTO createdColor1 = colorService.createColor(colorDTO1);
 
@@ -60,18 +58,15 @@ public class DatabaseModelTest {
 
     @Test
     public void testCreateProductWithColors() {
-        // Create category first
         CategoryDTO categoryDTO = new CategoryDTO("test_basins", "Test basins category");
         CategoryDTO createdCategory = categoryService.createCategory(categoryDTO);
 
-        // Create colors
         ColorDTO colorDTO1 = new ColorDTO("White", "#ffffff", createdCategory.getId());
         ColorDTO createdColor1 = colorService.createColor(colorDTO1);
 
         ColorDTO colorDTO2 = new ColorDTO("Black", "#000000", createdCategory.getId());
         ColorDTO createdColor2 = colorService.createColor(colorDTO2);
 
-        // Create product
         ProductDTO productDTO = new ProductDTO(
                 "Test Basin Model",
                 "A test basin for unit testing",
@@ -88,15 +83,12 @@ public class DatabaseModelTest {
         assertEquals(MountingType.WALL, createdProduct.getMountingType());
         assertEquals(createdCategory.getId(), createdProduct.getCategoryId());
 
-        // Add colors to product
         productService.addColorToProduct(createdProduct.getId(), createdColor1.getId());
         productService.addColorToProduct(createdProduct.getId(), createdColor2.getId());
 
-        // Verify colors are associated
         var productColors = productService.getColorsForProduct(createdProduct.getId());
         assertEquals(2, productColors.size());
 
-        // Verify product has colors when retrieved
         var retrievedProduct = productService.getProductById(createdProduct.getId());
         assertTrue(retrievedProduct.isPresent());
         assertEquals(2, retrievedProduct.get().getAvailableColors().size());
@@ -104,18 +96,15 @@ public class DatabaseModelTest {
 
     @Test
     public void testDataValidation() {
-        // Test category validation - duplicate name
         CategoryDTO validCategory = new CategoryDTO("duplicate_test", "Valid category");
         CategoryDTO createdCategory = categoryService.createCategory(validCategory);
 
-        // Try to create another category with the same name
         CategoryDTO duplicateCategory = new CategoryDTO("duplicate_test", "Another category with same name");
 
         assertThrows(IllegalArgumentException.class, () -> {
             categoryService.createCategory(duplicateCategory);
         });
 
-        // Test color validation - duplicate color in same category
         ColorDTO validColor = new ColorDTO("Valid Color", "#123456", createdCategory.getId());
         colorService.createColor(validColor);
 
@@ -128,11 +117,9 @@ public class DatabaseModelTest {
 
     @Test
     public void testRepositoryQueries() {
-        // Create test data
         CategoryDTO categoryDTO = new CategoryDTO("query_test", "Query test category");
         CategoryDTO createdCategory = categoryService.createCategory(categoryDTO);
 
-        // Test category queries
         var foundCategory = categoryService.getCategoryByName("query_test");
         assertTrue(foundCategory.isPresent());
         assertEquals(createdCategory.getId(), foundCategory.get().getId());
@@ -140,7 +127,6 @@ public class DatabaseModelTest {
         assertTrue(categoryService.existsByName("query_test"));
         assertFalse(categoryService.existsByName("non_existent_category"));
 
-        // Test with colors
         ColorDTO colorDTO = new ColorDTO("Query Color", "#123456", createdCategory.getId());
         ColorDTO createdColor = colorService.createColor(colorDTO);
 

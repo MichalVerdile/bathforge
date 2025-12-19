@@ -23,6 +23,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing 3D bathroom scenes and their components.
+ * Handles CRUD operations for scenes, products within scenes, room models, and
+ * surface coverings.
+ * Supports both public and user-specific scenes with full transformation and
+ * customization capabilities.
+ */
 @Service
 @Transactional
 public class SceneService {
@@ -51,6 +58,11 @@ public class SceneService {
         this.userService = userService;
     }
 
+    /**
+     * Retrieves all scenes in the system.
+     *
+     * @return list of all scenes as DTOs
+     */
     @Transactional(readOnly = true)
     public List<SceneDTO> getAllScenes() {
         return sceneRepository.findAll()
@@ -59,11 +71,24 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a scene by its unique identifier.
+     *
+     * @param id the scene ID
+     * @return an Optional containing the scene DTO if found, empty otherwise
+     */
     @Transactional(readOnly = true)
     public Optional<SceneDTO> getSceneById(Long id) {
         return sceneRepository.findById(id).map(this::toSceneDTO);
     }
 
+    /**
+     * Retrieves all scenes belonging to a specific user, ordered by last update
+     * time.
+     *
+     * @param user the username
+     * @return list of scenes owned by the user
+     */
     @Transactional(readOnly = true)
     public List<SceneDTO> getScenesByUser(String user) {
         return sceneRepository.findByUsernameOrderByUpdatedAtDesc(user)
@@ -72,6 +97,11 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all public scenes available for viewing by any user.
+     *
+     * @return list of public scenes ordered by creation date
+     */
     @Transactional(readOnly = true)
     public List<SceneDTO> getPublicScenes() {
         return sceneRepository.findByIsPublicTrueOrderByCreatedAtDesc()
@@ -80,6 +110,13 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Searches for scenes by name or description.
+     *
+     * @param searchText the search term to match against scene names and
+     *                   descriptions
+     * @return list of scenes matching the search criteria
+     */
     @Transactional(readOnly = true)
     public List<SceneDTO> searchScenes(String searchText) {
         return sceneRepository.searchByNameOrDescription(searchText)
@@ -88,6 +125,13 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all products placed within a specific scene.
+     *
+     * @param sceneId the scene ID
+     * @return list of products in the scene with their positions, rotations, and
+     *         colors
+     */
     @Transactional(readOnly = true)
     public List<SceneProductDTO> getProductsInScene(Long sceneId) {
         return sceneProductRepository.findBySceneIdWithDetails(sceneId)
@@ -96,6 +140,13 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves the most recent scenes for a specific user.
+     *
+     * @param user  the username
+     * @param limit the maximum number of scenes to return
+     * @return list of recent scenes, limited to the specified count
+     */
     @Transactional(readOnly = true)
     public List<SceneDTO> getRecentScenesByUser(String user, int limit) {
         return sceneRepository.findRecentScenesByUser(user)
@@ -105,11 +156,25 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Counts the total number of scenes created by a specific user.
+     *
+     * @param user the username
+     * @return the count of scenes owned by the user
+     */
     @Transactional(readOnly = true)
     public long countScenesByUser(String user) {
         return sceneRepository.countByUsername(user);
     }
 
+    /**
+     * Creates a new scene with products, room model, and coverings.
+     * Associates the scene with the currently authenticated user if available.
+     *
+     * @param createSceneDTO the scene data including products, room model, and
+     *                       coverings
+     * @return the created scene as a DTO
+     */
     @Transactional
     public SceneDTO createScene(CreateSceneDTO createSceneDTO) {
         Scene scene = fromCreateDTO(createSceneDTO);
@@ -121,12 +186,10 @@ public class SceneService {
             saved.setSceneProducts(items);
         }
 
-        // Create room model if provided
         if (createSceneDTO.getRoomModel() != null) {
             createOrUpdateRoomModel(saved.getId(), createSceneDTO.getRoomModel());
         }
 
-        // Create coverings if provided
         if (createSceneDTO.getCoverings() != null && !createSceneDTO.getCoverings().isEmpty()) {
             for (CreateSceneCoveringDTO coveringDTO : createSceneDTO.getCoverings()) {
                 createOrUpdateCovering(saved.getId(), coveringDTO);
@@ -136,12 +199,20 @@ public class SceneService {
         return toSceneDTO(saved);
     }
 
+    /**
+     * Creates a new scene for a specific user (bypassing authentication).
+     * Used when creating scenes programmatically for quote requests.
+     *
+     * @param createSceneDTO the scene data including products, room model, and
+     *                       coverings
+     * @param user           the user entity to associate the scene with
+     * @return the created scene as a DTO
+     */
     @Transactional
     public SceneDTO createSceneForUser(CreateSceneDTO createSceneDTO, User user) {
         Scene scene = fromCreateDTO(createSceneDTO);
-        // Override the user association with the provided user entity
         scene.setUserEntity(user);
-        scene.setUser(null); // Clear the username string since we have the entity
+        scene.setUser(null);
         Scene saved = sceneRepository.save(scene);
 
         if (createSceneDTO.getProducts() != null && !createSceneDTO.getProducts().isEmpty()) {
@@ -150,12 +221,10 @@ public class SceneService {
             saved.setSceneProducts(items);
         }
 
-        // Create room model if provided
         if (createSceneDTO.getRoomModel() != null) {
             createOrUpdateRoomModel(saved.getId(), createSceneDTO.getRoomModel());
         }
 
-        // Create coverings if provided
         if (createSceneDTO.getCoverings() != null && !createSceneDTO.getCoverings().isEmpty()) {
             for (CreateSceneCoveringDTO coveringDTO : createSceneDTO.getCoverings()) {
                 createOrUpdateCovering(saved.getId(), coveringDTO);
@@ -165,6 +234,14 @@ public class SceneService {
         return toSceneDTO(saved);
     }
 
+    /**
+     * Updates an existing scene's properties, products, room model, and coverings.
+     *
+     * @param id             the scene ID to update
+     * @param updateSceneDTO the updated scene data
+     * @return the updated scene as a DTO
+     * @throws IllegalArgumentException if the scene is not found
+     */
     @Transactional
     public SceneDTO updateScene(Long id, UpdateSceneDTO updateSceneDTO) {
         Scene scene = sceneRepository.findById(id)
@@ -174,12 +251,10 @@ public class SceneService {
         Scene updated = sceneRepository.save(scene);
 
         if (updateSceneDTO.getProducts() != null) {
-            // Clear existing products properly
             if (updated.getSceneProducts() != null) {
                 updated.getSceneProducts().clear();
             }
 
-            // Create new products and add them to the existing collection
             Set<SceneProduct> newItems = createSceneProducts(updated, updateSceneDTO.getProducts());
             if (updated.getSceneProducts() == null) {
                 updated.setSceneProducts(new LinkedHashSet<>());
@@ -187,16 +262,12 @@ public class SceneService {
             updated.getSceneProducts().addAll(newItems);
         }
 
-        // Update room model if provided
         if (updateSceneDTO.getRoomModel() != null) {
             createOrUpdateRoomModel(id, updateSceneDTO.getRoomModel());
         }
 
-        // Update coverings if provided
         if (updateSceneDTO.getCoverings() != null) {
-            // Clear existing coverings first
             sceneCoveringRepository.deleteBySceneId(id);
-            // Add new coverings
             for (CreateSceneCoveringDTO coveringDTO : updateSceneDTO.getCoverings()) {
                 createOrUpdateCovering(id, coveringDTO);
             }
@@ -205,6 +276,12 @@ public class SceneService {
         return toSceneDTO(updated);
     }
 
+    /**
+     * Deletes a scene and all its associated products, room model, and coverings.
+     *
+     * @param id the scene ID to delete
+     * @throws IllegalArgumentException if the scene is not found
+     */
     public void deleteScene(Long id) {
         if (!sceneRepository.existsById(id)) {
             throw new IllegalArgumentException("Scene not found with id: " + id);
@@ -212,6 +289,14 @@ public class SceneService {
         sceneRepository.deleteById(id);
     }
 
+    /**
+     * Adds a product to a scene with position, rotation, scale, and color.
+     *
+     * @param sceneId    the scene ID
+     * @param productDTO the product data including transformations
+     * @return the added scene product as a DTO
+     * @throws IllegalArgumentException if the scene or product is not found
+     */
     @Transactional
     public SceneProductDTO addProductToScene(Long sceneId, CreateSceneProductDTO productDTO) {
         Scene scene = sceneRepository.findById(sceneId)
@@ -222,6 +307,14 @@ public class SceneService {
         return toSceneProductDTO(saved);
     }
 
+    /**
+     * Removes a product from a scene.
+     *
+     * @param sceneId        the scene ID
+     * @param sceneProductId the scene product ID to remove
+     * @throws IllegalArgumentException if the scene product is not found or doesn't
+     *                                  belong to the scene
+     */
     @Transactional
     public void removeProductFromScene(Long sceneId, Long sceneProductId) {
         SceneProduct sp = sceneProductRepository.findById(sceneProductId)
@@ -232,6 +325,15 @@ public class SceneService {
         sceneProductRepository.delete(sp);
     }
 
+    /**
+     * Updates a product's properties within a scene (color, position, rotation,
+     * scale).
+     *
+     * @param sceneProductId the scene product ID to update
+     * @param updateDTO      the updated product data
+     * @return the updated scene product as a DTO
+     * @throws IllegalArgumentException if the scene product is not found
+     */
     @Transactional
     public SceneProductDTO updateSceneProduct(Long sceneProductId, CreateSceneProductDTO updateDTO) {
         SceneProduct sp = sceneProductRepository.findById(sceneProductId)
@@ -242,12 +344,19 @@ public class SceneService {
         return toSceneProductDTO(saved);
     }
 
+    /**
+     * Converts a CreateSceneDTO to a Scene entity.
+     * Automatically associates the scene with the currently authenticated user if
+     * available.
+     *
+     * @param dto the scene creation data
+     * @return the scene entity
+     */
     private Scene fromCreateDTO(CreateSceneDTO dto) {
         Scene s = new Scene();
         s.setName(dto.getName());
         s.setDescription(dto.getDescription());
 
-        // Check if user is authenticated
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal())) {
@@ -256,11 +365,9 @@ public class SceneService {
             if (user != null) {
                 s.setUserEntity(user);
             } else {
-                // Fallback to username string if user not found
                 s.setUser(dto.getUser() != null ? dto.getUser() : "guest");
             }
         } else {
-            // Not authenticated, use guest or provided username
             s.setUser(dto.getUser() != null ? dto.getUser() : "guest");
         }
 
@@ -272,6 +379,13 @@ public class SceneService {
         return s;
     }
 
+    /**
+     * Applies updates from an UpdateSceneDTO to an existing Scene entity.
+     * Only updates fields that are non-null in the DTO.
+     *
+     * @param s   the scene entity to update
+     * @param dto the update data
+     */
     private void applyUpdate(Scene s, UpdateSceneDTO dto) {
         if (dto.getName() != null)
             s.setName(dto.getName());
@@ -289,12 +403,28 @@ public class SceneService {
             s.setIsPublic(dto.getIsPublic());
     }
 
+    /**
+     * Creates a set of SceneProduct entities from DTOs.
+     *
+     * @param scene the scene to associate products with
+     * @param items the list of product DTOs
+     * @return set of SceneProduct entities
+     */
     private Set<SceneProduct> createSceneProducts(Scene scene, List<CreateSceneProductDTO> items) {
         return items.stream()
                 .map(dto -> buildSceneProduct(scene, dto))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+    /**
+     * Builds a SceneProduct entity from a DTO, resolving product and color
+     * references.
+     *
+     * @param scene the scene to associate the product with
+     * @param dto   the product data
+     * @return the SceneProduct entity
+     * @throws IllegalArgumentException if the product or color is not found
+     */
     private SceneProduct buildSceneProduct(Scene scene, CreateSceneProductDTO dto) {
         Product product = productRepository.findById(dto.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + dto.getProductId()));
@@ -322,6 +452,13 @@ public class SceneService {
         return sp;
     }
 
+    /**
+     * Applies updates from a DTO to an existing SceneProduct entity.
+     * Only updates fields that are non-null in the DTO.
+     *
+     * @param sp  the scene product entity to update
+     * @param dto the update data
+     */
     private void applySceneProductUpdate(SceneProduct sp, CreateSceneProductDTO dto) {
         if (dto.getColorId() != null) {
             Color color = colorRepository.findById(dto.getColorId())
@@ -350,6 +487,13 @@ public class SceneService {
             sp.setCustomProperties(dto.getCustomProperties());
     }
 
+    /**
+     * Converts a Scene entity to a SceneDTO with all related products, room model,
+     * and coverings.
+     *
+     * @param s the scene entity
+     * @return the scene DTO
+     */
     private SceneDTO toSceneDTO(Scene s) {
         SceneDTO dto = new SceneDTO();
         dto.setId(s.getId());
@@ -371,12 +515,10 @@ public class SceneService {
                             .collect(Collectors.toList()));
         }
 
-        // Include room model if it exists
         if (s.getRoomModel() != null) {
             dto.setRoomModel(toSceneRoomModelDTO(s.getRoomModel()));
         }
 
-        // Include coverings if they exist
         if (s.getSceneCoverings() != null && !s.getSceneCoverings().isEmpty()) {
             dto.setSceneCoverings(
                     s.getSceneCoverings().stream()
@@ -387,6 +529,12 @@ public class SceneService {
         return dto;
     }
 
+    /**
+     * Converts a SceneProduct entity to a SceneProductDTO.
+     *
+     * @param sp the scene product entity
+     * @return the scene product DTO
+     */
     private SceneProductDTO toSceneProductDTO(SceneProduct sp) {
         SceneProductDTO dto = new SceneProductDTO();
         dto.setId(sp.getId());
@@ -414,6 +562,16 @@ public class SceneService {
         return dto;
     }
 
+    /**
+     * Creates or updates the room model for a scene.
+     * If a room model already exists for the scene, it is updated; otherwise, a new
+     * one is created.
+     *
+     * @param sceneId      the scene ID
+     * @param roomModelDTO the room model data including vertices and height
+     * @return the created or updated room model as a DTO
+     * @throws IllegalArgumentException if the scene is not found
+     */
     @Transactional
     public SceneRoomModelDTO createOrUpdateRoomModel(Long sceneId, CreateSceneRoomModelDTO roomModelDTO) {
         Scene scene = sceneRepository.findById(sceneId)
@@ -423,7 +581,6 @@ public class SceneService {
 
         SceneRoomModel roomModel;
         if (existingRoomModel != null) {
-            // Update existing room model
             roomModel = existingRoomModel;
             roomModel.setVerticesData(roomModelDTO.getVerticesData());
             roomModel.setRoomHeight(roomModelDTO.getRoomHeight());
@@ -431,7 +588,6 @@ public class SceneService {
             roomModel.setTemplatePath(roomModelDTO.getTemplatePath());
             roomModel.setRoomProperties(roomModelDTO.getRoomProperties());
         } else {
-            // Create new room model
             roomModel = new SceneRoomModel(scene, roomModelDTO.getVerticesData(), roomModelDTO.getRoomHeight());
             roomModel.setModelType(roomModelDTO.getModelType());
             roomModel.setTemplatePath(roomModelDTO.getTemplatePath());
@@ -442,24 +598,41 @@ public class SceneService {
         return toSceneRoomModelDTO(saved);
     }
 
+    /**
+     * Retrieves the room model for a specific scene.
+     *
+     * @param sceneId the scene ID
+     * @return the room model DTO, or null if no room model exists for the scene
+     */
     @Transactional
     public SceneRoomModelDTO getRoomModelBySceneId(Long sceneId) {
         SceneRoomModel roomModel = sceneRoomModelRepository.findBySceneId(sceneId);
         return roomModel != null ? toSceneRoomModelDTO(roomModel) : null;
     }
 
+    /**
+     * Deletes the room model associated with a scene.
+     *
+     * @param sceneId the scene ID
+     */
     @Transactional
     public void deleteRoomModel(Long sceneId) {
         sceneRoomModelRepository.deleteBySceneId(sceneId);
     }
 
+    /**
+     * Creates or updates a surface covering for a scene.
+     * If a covering already exists for the specified surface identifier, it is
+     * updated.
+     *
+     * @param sceneId     the scene ID
+     * @param coveringDTO the covering data including product, surface type, and
+     *                    repeat values
+     * @return the created or updated covering as a DTO
+     * @throws IllegalArgumentException if the scene or product is not found
+     */
     @Transactional
     public SceneCoveringDTO createOrUpdateCovering(Long sceneId, CreateSceneCoveringDTO coveringDTO) {
-        System.out.println("DEBUG: Creating/updating covering for scene " + sceneId +
-                ", surface: " + coveringDTO.getSurfaceIdentifier() +
-                ", type: " + coveringDTO.getSurfaceType() +
-                ", productId: " + coveringDTO.getProductId());
-
         Scene scene = sceneRepository.findById(sceneId)
                 .orElseThrow(() -> new IllegalArgumentException("Scene not found with id: " + sceneId));
 
@@ -467,21 +640,14 @@ public class SceneService {
                 .orElseThrow(
                         () -> new IllegalArgumentException("Product not found with id: " + coveringDTO.getProductId()));
 
-        // Check if a covering already exists for this surface
         SceneCovering existingCovering = null;
         if (coveringDTO.getSurfaceIdentifier() != null) {
-            System.out.println("DEBUG: Looking for existing covering with surface identifier: "
-                    + coveringDTO.getSurfaceIdentifier());
             existingCovering = sceneCoveringRepository.findBySceneIdAndSurfaceIdentifier(sceneId,
                     coveringDTO.getSurfaceIdentifier());
-            System.out.println("DEBUG: Found existing covering: "
-                    + (existingCovering != null ? existingCovering.getId() : "null"));
         }
 
         SceneCovering covering;
         if (existingCovering != null) {
-            // Update existing covering
-            System.out.println("DEBUG: Updating existing covering with ID: " + existingCovering.getId());
             covering = existingCovering;
             covering.setProduct(product);
             covering.setSurfaceType(coveringDTO.getSurfaceType());
@@ -489,8 +655,6 @@ public class SceneService {
             covering.setRepeatY(coveringDTO.getRepeatY());
             covering.setMaterialProperties(coveringDTO.getMaterialProperties());
         } else {
-            // Create new covering
-            System.out.println("DEBUG: Creating new covering");
             covering = new SceneCovering(scene, product, coveringDTO.getSurfaceType(),
                     coveringDTO.getSurfaceIdentifier());
             covering.setRepeatX(coveringDTO.getRepeatX());
@@ -499,10 +663,15 @@ public class SceneService {
         }
 
         SceneCovering saved = sceneCoveringRepository.save(covering);
-        System.out.println("DEBUG: Saved covering with ID: " + saved.getId());
         return toSceneCoveringDTO(saved);
     }
 
+    /**
+     * Retrieves all surface coverings for a specific scene.
+     *
+     * @param sceneId the scene ID
+     * @return list of coverings in the scene
+     */
     public List<SceneCoveringDTO> getCoveringsBySceneId(Long sceneId) {
         List<SceneCovering> coverings = sceneCoveringRepository.findBySceneId(sceneId);
         return coverings.stream()
@@ -510,14 +679,30 @@ public class SceneService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Deletes a specific covering by its ID.
+     *
+     * @param coveringId the covering ID to delete
+     */
     public void deleteCovering(Long coveringId) {
         sceneCoveringRepository.deleteById(coveringId);
     }
 
+    /**
+     * Deletes all coverings associated with a specific scene.
+     *
+     * @param sceneId the scene ID
+     */
     public void deleteCoveringsBySceneId(Long sceneId) {
         sceneCoveringRepository.deleteBySceneId(sceneId);
     }
 
+    /**
+     * Converts a SceneRoomModel entity to a SceneRoomModelDTO.
+     *
+     * @param roomModel the room model entity
+     * @return the room model DTO
+     */
     private SceneRoomModelDTO toSceneRoomModelDTO(SceneRoomModel roomModel) {
         SceneRoomModelDTO dto = new SceneRoomModelDTO();
         dto.setId(roomModel.getId());
@@ -530,6 +715,12 @@ public class SceneService {
         return dto;
     }
 
+    /**
+     * Converts a SceneCovering entity to a SceneCoveringDTO.
+     *
+     * @param covering the scene covering entity
+     * @return the scene covering DTO
+     */
     private SceneCoveringDTO toSceneCoveringDTO(SceneCovering covering) {
         SceneCoveringDTO dto = new SceneCoveringDTO();
         dto.setId(covering.getId());

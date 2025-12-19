@@ -12,6 +12,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing product categories.
+ * Provides CRUD operations and conversion between Category entities and DTOs.
+ */
 @Service
 @Transactional
 public class CategoryService {
@@ -24,7 +28,9 @@ public class CategoryService {
     }
 
     /**
-     * Get all categories
+     * Retrieves all categories ordered alphabetically by name.
+     *
+     * @return list of all categories as DTOs
      */
     @Transactional(readOnly = true)
     public List<CategoryDTO> getAllCategories() {
@@ -35,7 +41,10 @@ public class CategoryService {
     }
 
     /**
-     * Get category by ID
+     * Retrieves a category by its unique identifier.
+     *
+     * @param id the category ID
+     * @return an Optional containing the category DTO if found, empty otherwise
      */
     @Transactional(readOnly = true)
     public Optional<CategoryDTO> getCategoryById(Long id) {
@@ -44,7 +53,10 @@ public class CategoryService {
     }
 
     /**
-     * Get category by name
+     * Retrieves a category by its name (case-insensitive).
+     *
+     * @param name the category name to search for
+     * @return an Optional containing the category DTO if found, empty otherwise
      */
     @Transactional(readOnly = true)
     public Optional<CategoryDTO> getCategoryByName(String name) {
@@ -53,7 +65,12 @@ public class CategoryService {
     }
 
     /**
-     * Create new category
+     * Creates a new category.
+     *
+     * @param categoryDTO the category data to create
+     * @return the created category as a DTO
+     * @throws IllegalArgumentException if a category with the same name already
+     *                                  exists
      */
     public CategoryDTO createCategory(CategoryDTO categoryDTO) {
         if (categoryRepository.existsByNameIgnoreCase(categoryDTO.getName())) {
@@ -66,13 +83,18 @@ public class CategoryService {
     }
 
     /**
-     * Update existing category
+     * Updates an existing category.
+     *
+     * @param id          the ID of the category to update
+     * @param categoryDTO the updated category data
+     * @return the updated category as a DTO
+     * @throws IllegalArgumentException if the category is not found or if the new
+     *                                  name already exists
      */
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category existingCategory = categoryRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found with ID: " + id));
 
-        // Check if name is being changed and if new name already exists
         if (!existingCategory.getName().equalsIgnoreCase(categoryDTO.getName()) &&
                 categoryRepository.existsByNameIgnoreCase(categoryDTO.getName())) {
             throw new IllegalArgumentException("Category with name '" + categoryDTO.getName() + "' already exists");
@@ -86,7 +108,10 @@ public class CategoryService {
     }
 
     /**
-     * Delete category
+     * Deletes a category by its ID.
+     *
+     * @param id the ID of the category to delete
+     * @throws IllegalArgumentException if the category is not found
      */
     public void deleteCategory(Long id) {
         if (!categoryRepository.existsById(id)) {
@@ -96,7 +121,10 @@ public class CategoryService {
     }
 
     /**
-     * Check if category exists by name
+     * Checks if a category exists with the given name (case-insensitive).
+     *
+     * @param name the category name to check
+     * @return true if a category with this name exists, false otherwise
      */
     @Transactional(readOnly = true)
     public boolean existsByName(String name) {
@@ -104,7 +132,11 @@ public class CategoryService {
     }
 
     /**
-     * Get category entity by ID (for internal use)
+     * Retrieves a category entity by its ID for internal service use.
+     *
+     * @param id the category ID
+     * @return the category entity
+     * @throws IllegalArgumentException if the category is not found
      */
     @Transactional(readOnly = true)
     public Category getCategoryEntityById(Long id) {
@@ -112,7 +144,12 @@ public class CategoryService {
                 .orElseThrow(() -> new IllegalArgumentException("Category not found with ID: " + id));
     }
 
-    // Helper methods for conversion
+    /**
+     * Converts a Category entity to a CategoryDTO.
+     *
+     * @param category the category entity
+     * @return the category DTO
+     */
     private CategoryDTO convertToDTO(Category category) {
         return new CategoryDTO(
                 category.getId(),
@@ -120,6 +157,12 @@ public class CategoryService {
                 category.getDescription());
     }
 
+    /**
+     * Converts a CategoryDTO to a Category entity.
+     *
+     * @param categoryDTO the category DTO
+     * @return the category entity
+     */
     private Category convertToEntity(CategoryDTO categoryDTO) {
         Category category = new Category();
         category.setName(categoryDTO.getName());

@@ -7,6 +7,9 @@ import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
 
+/**
+ * Configuration class for OpenAI service integration.
+ */
 @Configuration
 public class OpenAIConfig {
 
@@ -16,6 +19,11 @@ public class OpenAIConfig {
     @Value("${openai.api.timeout:30}")
     private int timeoutSeconds;
 
+    /**
+     * Creates and configures the OpenAI service bean.
+     *
+     * @return configured OpenAiService instance
+     */
     @Bean
     public OpenAiService openAiService() {
         return new OpenAiService(apiKey, Duration.ofSeconds(timeoutSeconds));

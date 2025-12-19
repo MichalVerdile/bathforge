@@ -1,6 +1,5 @@
 package com.bathforge.service.initialization;
 
-import com.bathforge.model.products.Product;
 import com.bathforge.repository.products.ProductRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +8,12 @@ import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Component that initializes AI-curated product descriptions for showcase
+ * items.
+ * Runs after application startup to populate descriptive content for selected
+ * products.
+ */
 @Component
 public class ProductDescriptionInitializer {
 
@@ -20,6 +25,12 @@ public class ProductDescriptionInitializer {
         this.productRepository = productRepository;
     }
 
+    /**
+     * Initializes descriptive content for showcase products once the application is
+     * ready.
+     * Updates specific products with curated descriptions for AI presentation and
+     * style matching.
+     */
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void initializeDescriptions() {
@@ -27,67 +38,68 @@ public class ProductDescriptionInitializer {
 
         long updatedCount = 0;
 
-        // BASINS
         updatedCount += updateProductDescription("Basins 1",
-            "Floating cabinet, dark walnut veneer, white vessel sink. Japandi, Organic Modern. Warm, textured wood.");
+                "Floating cabinet, dark walnut veneer, white vessel sink. Japandi, Organic Modern. Warm, textured wood.");
 
         updatedCount += updateProductDescription("Basins 5",
-            "Cylindrical pedestal basin, matte stone resin. Zen, Luxury Minimalist. Totem-like, pure form.");
+                "Cylindrical pedestal basin, matte stone resin. Zen, Luxury Minimalist. Totem-like, pure form.");
 
         updatedCount += updateProductDescription("Basins 7",
-            "Asymmetrical geometric wall-hung vanity. Ultra-Modern, Futurist. Matte grey. Sharp, avant-garde.");
+                "Asymmetrical geometric wall-hung vanity. Ultra-Modern, Futurist. Matte grey. Sharp, avant-garde.");
 
-        // BATHTUBS
         updatedCount += updateProductDescription("Bathtubs 4",
-            "Soft-rectangular freestanding tub, matte white. Scandi, Zen. Smooth, calming, rounded corners.");
+                "Soft-rectangular freestanding tub, matte white. Scandi, Zen. Smooth, calming, rounded corners.");
 
         updatedCount += updateProductDescription("Bathtubs 3",
-            "Oval natural marble tub, heavy veining. Opulent, Classic Luxury. Bold, dramatic stone statement.");
+                "Oval natural marble tub, heavy veining. Opulent, Classic Luxury. Bold, dramatic stone statement.");
 
-        // TOWEL RADIATORS
         updatedCount += updateProductDescription("Towel_radiators 13",
-            "Modular square ribbed tile radiator. Industrial Chic, Post-Modern. Geometric, tactile checkerboard.");
+                "Modular square ribbed tile radiator. Industrial Chic, Post-Modern. Geometric, tactile checkerboard.");
 
         updatedCount += updateProductDescription("Towel_radiators 7",
-            "Vertical waffle-grid radiator, wood accents. Japandi, Soft Minimalist. Cozy, textured.");
+                "Vertical waffle-grid radiator, wood accents. Japandi, Soft Minimalist. Cozy, textured.");
 
-        // WCS
         updatedCount += updateProductDescription("Wcs 8",
-            "Toilet suite, tall rectangular exposed cistern. Architectural, Contemporary. Geometric, formal, structural.");
+                "Toilet suite, tall rectangular exposed cistern. Architectural, Contemporary. Geometric, formal, structural.");
 
         updatedCount += updateProductDescription("Wcs 5",
-            "Back-to-wall toilet, tapered silhouette. Minimalist, Modern. Clean, curvy, unobtrusive.");
+                "Back-to-wall toilet, tapered silhouette. Minimalist, Modern. Clean, curvy, unobtrusive.");
 
-        // FURNITURE
         updatedCount += updateProductDescription("Furniture 4",
-            "Tall open shelving unit, matte taupe. Minimalist Utility. Linear, vertical storage.");
+                "Tall open shelving unit, matte taupe. Minimalist Utility. Linear, vertical storage.");
 
         updatedCount += updateProductDescription("Furniture 8",
-            "Low blocky chest of drawers, matte taupe. Modern Modular. Solid, grounded, horizontal.");
+                "Low blocky chest of drawers, matte taupe. Modern Modular. Solid, grounded, horizontal.");
 
-        // COVERINGS
         updatedCount += updateProductDescription("Coverings 2",
-            "Gray and white mixed tiles. Contemporary, Classic. Neutral, timeless. Wall-only.");
+                "Gray and white mixed tiles. Contemporary, Classic. Neutral, timeless. Wall-only.");
 
         updatedCount += updateProductDescription("Coverings 4",
-            "White matte bricks. Scandi, Modern Farmhouse. Bright, airy, crisp. Wall-only.");
+                "White matte bricks. Scandi, Modern Farmhouse. Bright, airy, crisp. Wall-only.");
 
         log.info("Product description initialization completed. Updated {} products.", updatedCount);
     }
 
+    /**
+     * Updates the description for a single product identified by name.
+     *
+     * @param productName the exact product name to search for (case-insensitive)
+     * @param description the description text to set
+     * @return 1 if the product was found and updated, 0 otherwise
+     */
     private long updateProductDescription(String productName, String description) {
         try {
             return productRepository.findByNameIgnoreCase(productName)
-                .map(product -> {
-                    product.setDescription(description);
-                    productRepository.save(product);
-                    log.debug("Updated description for product: {}", productName);
-                    return 1L;
-                })
-                .orElseGet(() -> {
-                    log.warn("Product not found for description update: {}", productName);
-                    return 0L;
-                });
+                    .map(product -> {
+                        product.setDescription(description);
+                        productRepository.save(product);
+                        log.debug("Updated description for product: {}", productName);
+                        return 1L;
+                    })
+                    .orElseGet(() -> {
+                        log.warn("Product not found for description update: {}", productName);
+                        return 0L;
+                    });
         } catch (Exception e) {
             log.error("Error updating description for product {}: {}", productName, e.getMessage());
             return 0L;

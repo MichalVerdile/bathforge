@@ -7,66 +7,99 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+/**
+ * Entity representing a bathroom configurator scene.
+ * A scene contains the complete configuration of a bathroom including products,
+ * room model, and coverings.
+ */
 @Entity
 @Table(name = "scenes")
 public class Scene {
 
+    /** The unique identifier of the scene */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** The name of the scene */
     @NotBlank(message = "Scene name is required")
     @Column(nullable = false)
     private String name;
 
+    /** Optional description of the scene */
     @Column(length = 1000)
     private String description;
 
+    /** The user who owns this scene */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
 
-    // Legacy username field for backwards compatibility (will be removed in future)
+    /**
+     * Legacy username field for backwards compatibility (will be removed in future)
+     */
     @Column(name = "username")
     private String username;
 
+    /** JSON string containing complete scene configuration data */
     @Column(name = "scene_data", columnDefinition = "TEXT")
     private String sceneData;
 
+    /** JSON string containing camera position */
     @Column(name = "camera_position")
     private String cameraPosition;
 
+    /** JSON string containing lighting configuration */
     @Column(name = "lighting_settings")
     private String lightingSettings;
 
+    /** Hex color code for the background */
     @Column(name = "background_color")
     private String backgroundColor;
 
+    /** Whether the scene is publicly visible */
     @Column(name = "is_public")
     private Boolean isPublic = false;
 
+    /** Timestamp when the scene was created */
     @NotNull
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    /** Timestamp when the scene was last updated */
     @NotNull
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
+    /** Set of products placed in this scene */
     @OneToMany(mappedBy = "scene", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<SceneProduct> sceneProducts;
 
+    /** The room model configuration for this scene */
     @OneToOne(mappedBy = "scene", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private SceneRoomModel roomModel;
 
+    /** Set of surface coverings applied in this scene */
     @OneToMany(mappedBy = "scene", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Set<SceneCovering> sceneCoverings;
 
+    /**
+     * Default constructor.
+     * Initializes creation and update timestamps.
+     */
     public Scene() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
+    /**
+     * Constructs a Scene with name, description, and username.
+     * Used for backwards compatibility with legacy username-based scenes.
+     *
+     * @param name        the scene name
+     * @param description the scene description
+     * @param username    the username of the scene owner
+     */
     public Scene(String name, String description, String username) {
         this();
         this.name = name;
@@ -74,6 +107,13 @@ public class Scene {
         this.username = username;
     }
 
+    /**
+     * Constructs a Scene with name, description, and user entity.
+     *
+     * @param name        the scene name
+     * @param description the scene description
+     * @param user        the user entity owning this scene
+     */
     public Scene(String name, String description, User user) {
         this();
         this.name = name;
@@ -81,6 +121,10 @@ public class Scene {
         this.user = user;
     }
 
+    /**
+     * Lifecycle callback executed before updating a scene.
+     * Updates the last modified timestamp.
+     */
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
@@ -206,6 +250,11 @@ public class Scene {
         this.sceneCoverings = sceneCoverings;
     }
 
+    /**
+     * Returns a string representation of this scene.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "Scene{" +

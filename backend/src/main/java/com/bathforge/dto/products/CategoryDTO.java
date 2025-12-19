@@ -2,13 +2,19 @@ package com.bathforge.dto.products;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * Data Transfer Object for product categories.
+ */
 public class CategoryDTO {
 
+    /** The unique identifier of the category */
     private Long id;
 
+    /** The name of the category */
     @NotBlank(message = "Category name is required")
     private String name;
 
+    /** The description of the category */
     private String description;
 
     public CategoryDTO() {

@@ -165,7 +165,6 @@ public class CategoryServiceTest {
 
         assertTrue(categories.size() >= 3);
 
-        // Find the three categories we just created
         List<String> createdCategories = categories.stream()
                 .map(CategoryDTO::getName)
                 .filter(name -> name.equals("alpha") || name.equals("middle") || name.equals("zebra"))

@@ -5,12 +5,18 @@ import java.util.Map;
 
 /**
  * Provides approximate dimensions for bathroom products based on category.
- * Dimensions are in meters and match frontend scaling patterns from modelScalingConfig.ts.
+ * Dimensions are in meters and match frontend scaling patterns from
+ * modelScalingConfig.ts.
  */
 public class ProductDimensions {
-    private final double width;   // X-axis (meters)
-    private final double depth;   // Z-axis (meters)
-    private final double height;  // Y-axis (meters)
+    /** Width of the product along the X-axis in meters */
+    private final double width;
+
+    /** Depth of the product along the Z-axis in meters */
+    private final double depth;
+
+    /** Height of the product along the Y-axis in meters */
+    private final double height;
 
     private static final Map<String, ProductDimensions> CATEGORY_DIMENSIONS;
 
@@ -36,9 +42,15 @@ public class ProductDimensions {
     /**
      * Conservative default for unknown categories: 50cm x 50cm x 80cm
      */
-    private static final ProductDimensions DEFAULT_DIMENSIONS =
-        new ProductDimensions(0.50, 0.50, 0.80);
+    private static final ProductDimensions DEFAULT_DIMENSIONS = new ProductDimensions(0.50, 0.50, 0.80);
 
+    /**
+     * Constructs ProductDimensions with specified measurements.
+     *
+     * @param width  the width in meters (X-axis)
+     * @param depth  the depth in meters (Z-axis)
+     * @param height the height in meters (Y-axis)
+     */
     public ProductDimensions(double width, double depth, double height) {
         this.width = width;
         this.depth = depth;
@@ -47,7 +59,8 @@ public class ProductDimensions {
 
     /**
      * Get dimensions for a product category.
-     * Category names are normalized (lowercased, spaces/underscores/hyphens removed).
+     * Category names are normalized (lowercased, spaces/underscores/hyphens
+     * removed).
      *
      * @param category The product category (e.g., "Basins", "Bath Tubs", "WCs")
      * @return ProductDimensions for the category, or default dimensions if unknown
@@ -59,7 +72,7 @@ public class ProductDimensions {
 
         // Normalize: lowercase, remove spaces, underscores, hyphens
         String normalized = category.toLowerCase()
-            .replaceAll("[\\s_-]", "");
+                .replaceAll("[\\s_-]", "");
 
         return CATEGORY_DIMENSIONS.getOrDefault(normalized, DEFAULT_DIMENSIONS);
     }

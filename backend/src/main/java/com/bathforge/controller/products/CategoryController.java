@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST controller for managing product categories.
+ */
 @RestController
 @RequestMapping("/api/categories")
 @CrossOrigin(origins = "*")
@@ -25,7 +28,9 @@ public class CategoryController {
     }
 
     /**
-     * Get all categories
+     * Retrieves all categories.
+     *
+     * @return response entity with list of all categories
      */
     @GetMapping
     public ResponseEntity<List<CategoryDTO>> getAllCategories() {
@@ -34,7 +39,10 @@ public class CategoryController {
     }
 
     /**
-     * Get category by ID
+     * Retrieves a category by its ID.
+     *
+     * @param id the category ID
+     * @return response entity with the category if found, or 404 if not found
      */
     @GetMapping("/{id}")
     public ResponseEntity<CategoryDTO> getCategoryById(@PathVariable Long id) {
@@ -44,7 +52,10 @@ public class CategoryController {
     }
 
     /**
-     * Get category by name
+     * Retrieves a category by its name.
+     *
+     * @param name the category name
+     * @return response entity with the category if found, or 404 if not found
      */
     @GetMapping("/name/{name}")
     public ResponseEntity<CategoryDTO> getCategoryByName(@PathVariable String name) {
@@ -54,7 +65,11 @@ public class CategoryController {
     }
 
     /**
-     * Create new category
+     * Creates a new category.
+     *
+     * @param categoryDTO the category data to create
+     * @return response entity with the created category and 201 status, or 400 if
+     *         invalid
      */
     @PostMapping
     public ResponseEntity<CategoryDTO> createCategory(@Valid @RequestBody CategoryDTO categoryDTO) {
@@ -67,7 +82,11 @@ public class CategoryController {
     }
 
     /**
-     * Update existing category
+     * Updates an existing category.
+     *
+     * @param id          the category ID to update
+     * @param categoryDTO the updated category data
+     * @return response entity with the updated category, or 400 if invalid
      */
     @PutMapping("/{id}")
     public ResponseEntity<CategoryDTO> updateCategory(@PathVariable Long id,
@@ -81,7 +100,10 @@ public class CategoryController {
     }
 
     /**
-     * Delete category
+     * Deletes a category by its ID.
+     *
+     * @param id the category ID to delete
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
@@ -94,7 +116,10 @@ public class CategoryController {
     }
 
     /**
-     * Check if category exists by name
+     * Checks if a category exists by name.
+     *
+     * @param name the category name to check
+     * @return response entity with boolean indicating if category exists
      */
     @GetMapping("/exists/{name}")
     public ResponseEntity<Boolean> existsByName(@PathVariable String name) {

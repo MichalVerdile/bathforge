@@ -5,7 +5,6 @@ import com.bathforge.model.user.UserRole;
 import com.bathforge.repository.user.UserRepository;
 import com.bathforge.service.user.UserService;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +38,6 @@ public class SecurityTest {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // ===== Password Hashing Tests =====
-
     @Test
     @DisplayName("Security: Passwords are stored as BCrypt hashes")
     public void testPasswordsStoredAsBCryptHashes() {
@@ -55,14 +52,11 @@ public class SecurityTest {
 
         User savedUser = userService.createUser(user);
 
-        // Verify password was hashed
         assertNotEquals(plainPassword, savedUser.getPassword());
 
-        // Verify it's a BCrypt hash (starts with $2a$, $2b$, or $2y$)
         assertTrue(savedUser.getPassword().startsWith("$2"),
                 "Password should be BCrypt hashed");
 
-        // Verify BCrypt hash length (approximately 60 characters)
         assertEquals(60, savedUser.getPassword().length(),
                 "BCrypt hash should be 60 characters");
     }
@@ -81,11 +75,9 @@ public class SecurityTest {
 
         User savedUser = userService.createUser(user);
 
-        // Verify password matches
         assertTrue(passwordEncoder.matches(plainPassword, savedUser.getPassword()),
                 "Plain password should match hashed password");
 
-        // Verify wrong password doesn't match
         assertFalse(passwordEncoder.matches("WrongPassword", savedUser.getPassword()),
                 "Wrong password should not match");
     }
@@ -102,16 +94,13 @@ public class SecurityTest {
         user.setLastName("Text");
         user.setRole(UserRole.CUSTOMER);
 
-        User savedUser = userService.createUser(user);
+        userService.createUser(user);
 
-        // Retrieve from database
         Optional<User> retrieved = userRepository.findByEmail("plaintext@test.com");
         assertTrue(retrieved.isPresent());
 
-        // Verify stored password is NOT plaintext
         assertNotEquals(plainPassword, retrieved.get().getPassword());
 
-        // Verify it doesn't contain the plaintext anywhere
         assertFalse(retrieved.get().getPassword().contains(plainPassword),
                 "Hashed password should not contain plaintext");
     }
@@ -137,12 +126,9 @@ public class SecurityTest {
         user2.setRole(UserRole.CUSTOMER);
         User savedUser2 = userService.createUser(user2);
 
-        // Even with same password, hashes should be different (due to salt)
         assertNotEquals(savedUser1.getPassword(), savedUser2.getPassword(),
                 "Same password should produce different hashes due to unique salts");
     }
-
-    // ===== JWT Token Tests =====
 
     @Test
     @DisplayName("JWT: Token generation works correctly")
@@ -201,15 +187,12 @@ public class SecurityTest {
 
         String token = jwtUtil.generateToken(username, userId);
 
-        // Tamper with the token
         String tamperedToken = token.substring(0, token.length() - 5) + "XXXXX";
 
         assertThrows(Exception.class, () -> {
             jwtUtil.validateToken(tamperedToken, username);
         }, "Tampered token should throw exception");
     }
-
-    // ===== User Authentication Tests =====
 
     @Test
     @DisplayName("Auth: User can be loaded by username")
@@ -262,8 +245,6 @@ public class SecurityTest {
         assertEquals(UserRole.ADMIN, savedAdmin.getRole());
     }
 
-    // ===== Security Constraints Tests =====
-
     @Test
     @DisplayName("Constraints: Email must be unique")
     public void testUniqueEmailConstraint() {
@@ -292,7 +273,6 @@ public class SecurityTest {
     public void testPasswordRequired() {
         User user = new User();
         user.setEmail("nopass@test.com");
-        // No password set
         user.setFirstName("No");
         user.setLastName("Pass");
         user.setRole(UserRole.CUSTOMER);
@@ -306,7 +286,6 @@ public class SecurityTest {
     @DisplayName("Constraints: User must have email")
     public void testEmailRequired() {
         User user = new User();
-        // No email set
         user.setPassword("Password123");
         user.setFirstName("No");
         user.setLastName("Email");
@@ -317,16 +296,11 @@ public class SecurityTest {
         });
     }
 
-    // ===== Password Security Best Practices =====
-
     @Test
     @DisplayName("Password: BCrypt uses appropriate cost factor")
     public void testBCryptCostFactor() {
         String password = "TestPassword123";
         String hashed = passwordEncoder.encode(password);
-
-        // BCrypt hash format: $2a$10$...
-        // Cost factor should be at least 10
         String[] parts = hashed.split("\\$");
         int costFactor = Integer.parseInt(parts[2]);
 
@@ -342,11 +316,9 @@ public class SecurityTest {
         String encoded1 = passwordEncoder.encode(password);
         String encoded2 = passwordEncoder.encode(password);
 
-        // Different salts mean different hashes
         assertNotEquals(encoded1, encoded2,
                 "Same password should produce different hashes");
 
-        // But both should match the original
         assertTrue(passwordEncoder.matches(password, encoded1));
         assertTrue(passwordEncoder.matches(password, encoded2));
     }

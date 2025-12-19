@@ -1,14 +1,26 @@
 package com.bathforge.dto.admin;
 
+/**
+ * Data Transfer Object for user scene information in admin views.
+ */
 public class UserSceneDTO {
+    /** The unique identifier for the scene */
     private Long sceneId;
+    /** The name of the scene */
     private String sceneName;
+    /** The description of the scene */
     private String sceneDescription;
+    /** The user ID who created the scene */
     private Long userId;
+    /** The email address of the user */
     private String userEmail;
+    /** The full name of the user */
     private String userFullName;
+    /** Whether the scene is public */
     private Boolean isPublic;
+    /** Timestamp when the scene was created */
     private String createdAt;
+    /** Timestamp when the scene was last updated */
     private String updatedAt;
 
     public UserSceneDTO() {

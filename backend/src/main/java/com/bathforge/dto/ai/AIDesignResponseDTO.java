@@ -3,21 +3,39 @@ package com.bathforge.dto.ai;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Data Transfer Object for AI-powered bathroom design generation responses.
+ */
 public class AIDesignResponseDTO {
 
+    /** The unique identifier for the generated design */
     private String designId;
+    /** The description of the generated design */
     private String description;
+    /** The style of the generated design */
     private String style;
+    /** The color palettes used in the design */
     private List<String> colorPalettes;
+    /** The features included in the design */
     private List<String> features;
+    /** Product recommendations for the design */
     private List<ProductRecommendationDTO> productRecommendations;
+    /** Covering recommendations for the design */
     private List<CoveringRecommendationDTO> coveringRecommendations;
+    /** Timestamp when the design was generated */
     private LocalDateTime generatedAt;
+    /** The status of the design generation process */
     private GenerationStatus status;
 
+    /**
+     * Enum representing the status of design generation.
+     */
     public enum GenerationStatus {
+        /** Design generation is pending */
         PENDING,
+        /** Design has been successfully generated */
         GENERATED,
+        /** Design generation has failed */
         FAILED
     }
 

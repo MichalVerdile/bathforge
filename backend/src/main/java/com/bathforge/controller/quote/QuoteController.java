@@ -13,6 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for handling quote requests.
+ */
 @RestController
 @RequestMapping("/api/quote")
 @CrossOrigin(origins = "http://localhost:3000")
@@ -27,6 +30,13 @@ public class QuoteController {
         this.quoteService = quoteService;
     }
 
+    /**
+     * Submits a quote request and creates a user account.
+     *
+     * @param quoteRequest the quote request data
+     * @return response entity with quote submission result and user authentication
+     *         token
+     */
     @PostMapping("/request")
     public ResponseEntity<QuoteResponseDTO> submitQuoteRequest(@Valid @RequestBody QuoteRequestDTO quoteRequest) {
         try {

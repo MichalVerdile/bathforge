@@ -5,61 +5,96 @@ import com.bathforge.model.products.Color;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
+/**
+ * Entity representing a product placed in a scene.
+ * Stores the product reference along with its position, rotation, and scale
+ * transformations.
+ */
 @Entity
 @Table(name = "scene_products")
 public class SceneProduct {
 
+    /** The unique identifier of the scene product */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** The scene this product belongs to */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "scene_id", nullable = false)
     @NotNull(message = "Scene is required")
     private Scene scene;
 
+    /** The product placed in the scene */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
     @NotNull(message = "Product is required")
     private Product product;
 
+    /** The color variant applied to the product (can be null) */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "color_id")
-    private Color color; // Can be null if no specific color is chosen
+    private Color color;
 
+    /** X-coordinate position in 3D space */
     @Column(name = "position_x")
     private Double positionX;
 
+    /** Y-coordinate position in 3D space */
     @Column(name = "position_y")
     private Double positionY;
 
+    /** Z-coordinate position in 3D space */
     @Column(name = "position_z")
     private Double positionZ;
 
+    /** Rotation around X-axis in degrees */
     @Column(name = "rotation_x")
     private Double rotationX;
 
+    /** Rotation around Y-axis in degrees */
     @Column(name = "rotation_y")
     private Double rotationY;
 
+    /** Rotation around Z-axis in degrees */
     @Column(name = "rotation_z")
     private Double rotationZ;
 
+    /** Scale factor along X-axis */
     @Column(name = "scale_x")
     private Double scaleX = 1.0;
 
+    /** Scale factor along Y-axis */
     @Column(name = "scale_y")
     private Double scaleY = 1.0;
 
+    /** Scale factor along Z-axis */
     @Column(name = "scale_z")
     private Double scaleZ = 1.0;
 
+    /** JSON string for any additional custom properties */
     @Column(name = "custom_properties", columnDefinition = "TEXT")
-    private String customProperties; // JSON string for any additional properties
+    private String customProperties;
 
+    /**
+     * Default constructor.
+     */
     public SceneProduct() {
     }
 
+    /**
+     * Constructs a SceneProduct with transformation data.
+     *
+     * @param scene     the scene this product belongs to
+     * @param product   the product to place
+     * @param color     the color variant to apply
+     * @param positionX X position
+     * @param positionY Y position
+     * @param positionZ Z position
+     * @param rotationX X rotation
+     * @param rotationY Y rotation
+     * @param rotationZ Z rotation
+     */
     public SceneProduct(Scene scene, Product product, Color color,
             Double positionX, Double positionY, Double positionZ,
             Double rotationX, Double rotationY, Double rotationZ) {
@@ -74,7 +109,6 @@ public class SceneProduct {
         this.rotationZ = rotationZ;
     }
 
-    // Getters and setters
     public Long getId() {
         return id;
     }
@@ -187,6 +221,11 @@ public class SceneProduct {
         this.customProperties = customProperties;
     }
 
+    /**
+     * Returns a string representation of this scene product.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "SceneProduct{" +

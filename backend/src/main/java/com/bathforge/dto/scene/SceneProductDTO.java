@@ -2,49 +2,88 @@ package com.bathforge.dto.scene;
 
 import jakarta.validation.constraints.NotNull;
 
+/**
+ * Data Transfer Object for scene products.
+ * Represents a product placed in a scene with full details including
+ * transformation and color information.
+ */
 public class SceneProductDTO {
 
+    /** The unique identifier of the scene product */
     private Long id;
 
+    /** The ID of the scene this product belongs to */
     @NotNull(message = "Scene ID is required")
     private Long sceneId;
 
+    /** The ID of the product */
     @NotNull(message = "Product ID is required")
     private Long productId;
 
+    /** The name of the product */
     private String productName;
 
+    /** The path to the product's 3D model */
     private String productModelPath;
 
+    /** The color variant ID for the product */
     private Long colorId;
 
+    /** The name of the color */
     private String colorName;
 
+    /** The hex code of the color */
     private String colorHexCode;
 
+    /** X-coordinate position in 3D space */
     private Double positionX;
 
+    /** Y-coordinate position in 3D space */
     private Double positionY;
 
+    /** Z-coordinate position in 3D space */
     private Double positionZ;
 
+    /** Rotation around X-axis in degrees */
     private Double rotationX;
 
+    /** Rotation around Y-axis in degrees */
     private Double rotationY;
 
+    /** Rotation around Z-axis in degrees */
     private Double rotationZ;
 
+    /** Scale factor along X-axis */
     private Double scaleX = 1.0;
 
+    /** Scale factor along Y-axis */
     private Double scaleY = 1.0;
 
+    /** Scale factor along Z-axis */
     private Double scaleZ = 1.0;
 
+    /** JSON string containing custom product properties */
     private String customProperties;
 
+    /**
+     * Default constructor.
+     */
     public SceneProductDTO() {
     }
 
+    /**
+     * Constructs a SceneProductDTO with transformation data.
+     *
+     * @param sceneId   the scene ID
+     * @param productId the product ID
+     * @param colorId   the color variant ID
+     * @param positionX X position
+     * @param positionY Y position
+     * @param positionZ Z position
+     * @param rotationX X rotation
+     * @param rotationY Y rotation
+     * @param rotationZ Z rotation
+     */
     public SceneProductDTO(Long sceneId, Long productId, Long colorId,
             Double positionX, Double positionY, Double positionZ,
             Double rotationX, Double rotationY, Double rotationZ) {
@@ -203,6 +242,11 @@ public class SceneProductDTO {
         this.customProperties = customProperties;
     }
 
+    /**
+     * Returns a string representation of this scene product.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "SceneProductDTO{" +

@@ -2,17 +2,31 @@ package com.bathforge.dto.admin;
 
 import java.time.LocalDateTime;
 
+/**
+ * Data Transfer Object for user information in admin views.
+ */
 public class UserDTO {
+    /** The unique identifier for the user */
     private Long id;
+    /** The email address of the user */
     private String email;
+    /** The first name of the user */
     private String firstName;
+    /** The last name of the user */
     private String lastName;
+    /** The company name of the user */
     private String company;
+    /** The phone number of the user */
     private String phone;
+    /** The role of the user */
     private String role;
+    /** Whether the user account is enabled */
     private boolean enabled;
+    /** Timestamp when the user was created */
     private LocalDateTime createdAt;
+    /** The number of scenes created by the user */
     private int sceneCount;
+    /** The number of quote requests made by the user */
     private int quoteRequestCount;
 
     public UserDTO() {

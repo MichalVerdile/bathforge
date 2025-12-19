@@ -12,11 +12,18 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Global exception handler for the application.
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Handle validation errors
+     * Handles validation errors from method argument validation.
+     *
+     * @param ex      the validation exception
+     * @param request the web request
+     * @return response entity containing validation error details
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
@@ -42,7 +49,11 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle illegal argument exceptions
+     * Handles illegal argument exceptions.
+     *
+     * @param ex      the illegal argument exception
+     * @param request the web request
+     * @return response entity containing error details
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(
@@ -59,7 +70,11 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handle general exceptions
+     * Handles general exceptions not caught by other handlers.
+     *
+     * @param ex      the exception
+     * @param request the web request
+     * @return response entity containing error details
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneralException(

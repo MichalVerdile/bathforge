@@ -3,34 +3,59 @@ package com.bathforge.dto.scene;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
+/**
+ * Data Transfer Object for creating a new scene.
+ * Contains all information needed to create a bathroom configurator scene.
+ */
 public class CreateSceneDTO {
 
+    /** The name of the scene */
     @NotBlank(message = "Scene name is required")
     private String name;
 
+    /** Optional description of the scene */
     private String description;
 
+    /** The user who created the scene, defaults to "guest" */
     private String user = "guest";
 
+    /** JSON string containing scene configuration data */
     private String sceneData;
 
+    /** JSON string containing camera position */
     private String cameraPosition;
 
+    /** JSON string containing lighting configuration */
     private String lightingSettings;
 
+    /** Hex color code for the background */
     private String backgroundColor;
 
+    /** Whether the scene is publicly visible */
     private Boolean isPublic = false;
 
+    /** List of products placed in the scene */
     private List<CreateSceneProductDTO> products;
 
+    /** The room model configuration */
     private CreateSceneRoomModelDTO roomModel;
 
+    /** List of surface coverings applied to the room */
     private List<CreateSceneCoveringDTO> coverings;
 
+    /**
+     * Default constructor.
+     */
     public CreateSceneDTO() {
     }
 
+    /**
+     * Constructs a CreateSceneDTO with basic information.
+     *
+     * @param name        the scene name
+     * @param description the scene description
+     * @param user        the user creating the scene
+     */
     public CreateSceneDTO(String name, String description, String user) {
         this.name = name;
         this.description = description;
@@ -125,6 +150,11 @@ public class CreateSceneDTO {
         this.coverings = coverings;
     }
 
+    /**
+     * Returns a string representation of this scene.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "CreateSceneDTO{" +

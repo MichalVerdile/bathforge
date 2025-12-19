@@ -16,6 +16,12 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Service that initializes essential data on application startup.
+ * Responsible for creating categories, colors, and triggering automatic asset
+ * import
+ * based on configuration settings.
+ */
 @Component
 public class DataInitializationService implements CommandLineRunner {
 
@@ -99,6 +105,12 @@ public class DataInitializationService implements CommandLineRunner {
             new ColorData("Chrom", "#a7aab1"),
             new ColorData("Black Opac", "#25262a"));
 
+    /**
+     * Executes on application startup to initialize categories, colors, and assets.
+     * Runs as part of the Spring Boot CommandLineRunner lifecycle.
+     *
+     * @param args command line arguments (not used)
+     */
     @Override
     @Transactional
     public void run(String... args) {
@@ -111,6 +123,10 @@ public class DataInitializationService implements CommandLineRunner {
         log.info("BathForge data initialization completed!");
     }
 
+    /**
+     * Initializes all product categories in the database if they don't already
+     * exist.
+     */
     private void initializeCategories() {
         for (String name : CATEGORY_NAMES) {
             if (!categoryRepository.existsByNameIgnoreCase(name)) {
@@ -120,6 +136,11 @@ public class DataInitializationService implements CommandLineRunner {
         }
     }
 
+    /**
+     * Initializes color palettes for all categories.
+     * Maps specific color collections to each product category based on predefined
+     * palettes.
+     */
     private void initializeColors() {
         Map<String, List<ColorData>> colorByCategory = Map.of(
                 "accessoires", PALETTE_WHITE_CONCRETE,
@@ -145,6 +166,12 @@ public class DataInitializationService implements CommandLineRunner {
         });
     }
 
+    /**
+     * Saves color entries for a specific category if they don't already exist.
+     *
+     * @param category   the category to associate colors with
+     * @param colorsData the list of color data to create
+     */
     private void saveColorsForCategory(Category category, List<ColorData> colorsData) {
         for (ColorData data : colorsData) {
             if (!colorRepository.existsByNameIgnoreCaseAndCategory(data.name, category)) {
@@ -154,6 +181,12 @@ public class DataInitializationService implements CommandLineRunner {
         }
     }
 
+    /**
+     * Conditionally imports assets based on configuration settings and existing
+     * product count.
+     * Searches for the assets directory and triggers the import process if
+     * conditions are met.
+     */
     private void importAssetsIfNeeded() {
         try {
             if (!autoImportEnabled) {
@@ -208,8 +241,14 @@ public class DataInitializationService implements CommandLineRunner {
         }
     }
 
+    /**
+     * Searches for the assets directory in common locations.
+     * Checks backend resources first, then various frontend public directory paths.
+     *
+     * @return an Optional containing the assets directory path if found, empty
+     *         otherwise
+     */
     private Optional<Path> findAssetsDirectory() {
-        // First try to find assets in backend resources (for production/Railway)
         try {
             Path resourcesAssets = Paths.get("src/main/resources/static/assets").toAbsolutePath().normalize();
             if (Files.isDirectory(resourcesAssets) && hasAnySubdirectory(resourcesAssets)) {
@@ -220,7 +259,6 @@ public class DataInitializationService implements CommandLineRunner {
             log.debug("Backend resources assets not found: {}", e.getMessage());
         }
 
-        // Fallback to frontend paths for local development
         List<String> candidates = List.of(
                 "../frontend/public/assets",
                 "frontend/public/assets",
@@ -235,6 +273,13 @@ public class DataInitializationService implements CommandLineRunner {
                 .findFirst();
     }
 
+    /**
+     * Checks if a directory contains any subdirectories.
+     *
+     * @param dir the directory to check
+     * @return true if the directory contains at least one subdirectory, false
+     *         otherwise
+     */
     private boolean hasAnySubdirectory(Path dir) {
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, Files::isDirectory)) {
             return ds.iterator().hasNext();
@@ -244,6 +289,10 @@ public class DataInitializationService implements CommandLineRunner {
         }
     }
 
+    /**
+     * Internal data structure for holding color name and hex code pairs during
+     * initialization.
+     */
     private static final class ColorData {
         final String name;
         final String hexCode;

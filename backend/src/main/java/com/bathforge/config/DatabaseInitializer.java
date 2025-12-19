@@ -24,6 +24,12 @@ public class DatabaseInitializer implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    /**
+     * Executes database initialization tasks on application startup.
+     *
+     * @param args command line arguments passed to the application
+     * @throws Exception if an error occurs during initialization
+     */
     @Override
     public void run(String... args) throws Exception {
         createAdminUser();

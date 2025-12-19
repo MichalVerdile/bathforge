@@ -2,6 +2,12 @@ package com.bathforge.service.email;
 
 import java.util.List;
 
+/**
+ * Data transfer object containing all information needed for quote request
+ * emails.
+ * Includes customer information, room dimensions, selected products, coverings,
+ * and additional notes.
+ */
 public class QuoteRequestEmailData {
 
     private String userFullName;
@@ -101,6 +107,10 @@ public class QuoteRequestEmailData {
     }
 
     // Inner classes for product and covering details
+    /**
+     * Represents details of a product selected in the bathroom configuration.
+     * Includes product name, category, color, and position information.
+     */
     public static class ProductDetail {
         private String name;
         private String category;
@@ -150,6 +160,11 @@ public class QuoteRequestEmailData {
         }
     }
 
+    /**
+     * Represents details of a wall or floor covering selected in the bathroom
+     * configuration.
+     * Includes covering type, name, and color information.
+     */
     public static class CoveringDetail {
         private String type;
         private String name;
@@ -189,6 +204,11 @@ public class QuoteRequestEmailData {
         }
     }
 
+    /**
+     * Represents the length measurement of a specific wall in the bathroom
+     * configuration.
+     * Contains wall identifier and length in centimeters.
+     */
     public static class WallLength {
         private int wall;
         private double length;

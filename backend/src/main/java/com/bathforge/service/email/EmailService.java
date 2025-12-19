@@ -13,6 +13,12 @@ import jakarta.mail.util.ByteArrayDataSource;
 
 import java.util.Base64;
 
+/**
+ * Service responsible for sending emails related to quote requests and user
+ * confirmations.
+ * Handles email composition, attachment processing, and email delivery using
+ * Spring's JavaMailSender.
+ */
 @Service
 public class EmailService {
 
@@ -31,6 +37,15 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
+    /**
+     * Sends a quote request email to the industry contact with detailed customer
+     * and configuration information.
+     * Includes an optional scene snapshot attachment if provided.
+     *
+     * @param emailData the quote request data containing customer information, room
+     *                  dimensions, products, and scene snapshot
+     * @throws MessagingException if there is an error creating or sending the email
+     */
     public void sendQuoteRequest(QuoteRequestEmailData emailData) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -42,10 +57,8 @@ public class EmailService {
         String htmlContent = buildQuoteRequestHtml(emailData);
         helper.setText(htmlContent, true);
 
-        // Attach scene snapshot if provided
         if (emailData.getSceneSnapshot() != null && !emailData.getSceneSnapshot().isEmpty()) {
             try {
-                // Remove data URL prefix if present
                 String base64Image = emailData.getSceneSnapshot();
                 if (base64Image.contains(",")) {
                     base64Image = base64Image.split(",")[1];
@@ -63,6 +76,15 @@ public class EmailService {
         logger.info("Quote request email sent to {} for user {}", industryEmail, emailData.getUserEmail());
     }
 
+    /**
+     * Builds the HTML content for the quote request email sent to the industry
+     * contact.
+     * Includes customer information, room dimensions, selected products, coverings,
+     * and additional notes.
+     *
+     * @param emailData the quote request data to format into HTML
+     * @return HTML string formatted for email display
+     */
     private String buildQuoteRequestHtml(QuoteRequestEmailData emailData) {
         StringBuilder html = new StringBuilder();
 
@@ -79,7 +101,6 @@ public class EmailService {
 
         html.append("<h1>New Quote Request from BathForge</h1>");
 
-        // Customer Information
         html.append("<div class='section'>");
         html.append("<h2>Customer Information</h2>");
         html.append("<table>");
@@ -94,13 +115,11 @@ public class EmailService {
         html.append("</table>");
         html.append("</div>");
 
-        // Room Dimensions
         if (emailData.getRoomDimensions() != null) {
             html.append("<div class='section'>");
             html.append("<h2>Room Dimensions</h2>");
             html.append("<p>").append(emailData.getRoomDimensions()).append("</p>");
 
-            // Wall Lengths
             if (emailData.getWallLengths() != null && !emailData.getWallLengths().isEmpty()) {
                 html.append("<h3>Wall Lengths</h3>");
                 html.append("<table>");
@@ -117,7 +136,6 @@ public class EmailService {
             html.append("</div>");
         }
 
-        // Products
         if (emailData.getProducts() != null && !emailData.getProducts().isEmpty()) {
             html.append("<div class='section'>");
             html.append("<h2>Selected Products</h2>");
@@ -136,7 +154,6 @@ public class EmailService {
             html.append("</div>");
         }
 
-        // Coverings
         if (emailData.getCoverings() != null && !emailData.getCoverings().isEmpty()) {
             html.append("<div class='section'>");
             html.append("<h2>Wall and Floor Coverings</h2>");
@@ -152,7 +169,6 @@ public class EmailService {
             html.append("</div>");
         }
 
-        // Additional Notes
         if (emailData.getAdditionalNotes() != null && !emailData.getAdditionalNotes().isEmpty()) {
             html.append("<div class='section'>");
             html.append("<h2>Additional Notes</h2>");
@@ -169,6 +185,14 @@ public class EmailService {
         return html.toString();
     }
 
+    /**
+     * Sends a confirmation email to the user who submitted a quote request.
+     * Includes account information, request summary, and next steps.
+     *
+     * @param emailData the quote request data containing user information and
+     *                  request details
+     * @throws MessagingException if there is an error creating or sending the email
+     */
     public void sendUserConfirmation(QuoteRequestEmailData emailData) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -184,6 +208,14 @@ public class EmailService {
         logger.info("Confirmation email sent to user {}", emailData.getUserEmail());
     }
 
+    /**
+     * Builds the HTML content for the user confirmation email.
+     * Includes account credentials, request summary, and information about next
+     * steps.
+     *
+     * @param emailData the quote request data to format into HTML
+     * @return HTML string formatted for email display
+     */
     private String buildUserConfirmationHtml(QuoteRequestEmailData emailData) {
         StringBuilder html = new StringBuilder();
 
@@ -214,27 +246,24 @@ public class EmailService {
         html.append(
                 "<p>We have successfully received your quote request for your bathroom design. Our team will review your requirements and get back to you shortly.</p>");
 
-        // Account Information
         html.append("<div class='credentials'>");
-        html.append("<h2>🔐 Your Account Information</h2>");
+        html.append("<h2>Your Account Information</h2>");
         html.append("<p>An account has been created for you to track your quote request:</p>");
         html.append("<table>");
         html.append("<tr><th>Email (Username)</th><td>").append(emailData.getUserEmail()).append("</td></tr>");
         html.append("<tr><th>Password</th><td>The password you provided during registration</td></tr>");
         html.append("</table>");
         html.append(
-                "<p><strong>⚠️ Important:</strong> Please save your password securely. You will need it to log in and track your quote request.</p>");
+                "<p><strong>Important:</strong> Please save your password securely. You will need it to log in and track your quote request.</p>");
         html.append("</div>");
 
-        // Request Summary
         html.append("<div class='info-box'>");
-        html.append("<h2>📋 Your Request Summary</h2>");
+        html.append("<h2>Your Request Summary</h2>");
 
         if (emailData.getRoomDimensions() != null) {
             html.append("<p><strong>Room:</strong> ").append(emailData.getRoomDimensions()).append("</p>");
         }
 
-        // Wall Lengths
         if (emailData.getWallLengths() != null && !emailData.getWallLengths().isEmpty()) {
             html.append("<p><strong>Wall Lengths:</strong></p>");
             html.append("<ul>");
@@ -266,16 +295,14 @@ public class EmailService {
 
         html.append("</div>");
 
-        // Additional Notes
         if (emailData.getAdditionalNotes() != null && !emailData.getAdditionalNotes().isEmpty()) {
             html.append("<div class='info-box'>");
-            html.append("<h2>💬 Your Notes</h2>");
+            html.append("<h2>Your Notes</h2>");
             html.append("<p>").append(emailData.getAdditionalNotes().replace("\n", "<br>")).append("</p>");
             html.append("</div>");
         }
 
-        // Next Steps
-        html.append("<h2>📌 What Happens Next?</h2>");
+        html.append("<h2>What Happens Next?</h2>");
         html.append("<ol>");
         html.append("<li>Our team will review your design and requirements</li>");
         html.append("<li>We will prepare a detailed quote for your project</li>");
@@ -283,7 +310,6 @@ public class EmailService {
         html.append("<li>You can log in to your account to track the status of your request</li>");
         html.append("</ol>");
 
-        // Footer
         html.append("<div class='footer'>");
         html.append(
                 "<p>If you have any questions or need to make changes to your request, please don't hesitate to contact us.</p>");
@@ -300,7 +326,12 @@ public class EmailService {
     }
 
     /**
-     * Send a generic email
+     * Sends a generic email with HTML content to a specified recipient.
+     *
+     * @param to          the recipient's email address
+     * @param subject     the email subject line
+     * @param htmlContent the HTML content of the email body
+     * @throws MessagingException if there is an error creating or sending the email
      */
     public void sendEmail(String to, String subject, String htmlContent) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();

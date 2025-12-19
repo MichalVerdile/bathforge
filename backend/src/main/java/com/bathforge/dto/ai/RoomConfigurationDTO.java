@@ -7,21 +7,28 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
+/**
+ * Data Transfer Object for room configuration specifications.
+ */
 public class RoomConfigurationDTO {
 
+    /** The vertices defining the room shape (minimum 3 required) */
     @Valid
     @NotNull(message = "Room vertices are required")
     @Size(min = 3, message = "Room must have at least 3 vertices")
     private List<VertexDTO> vertices;
 
+    /** The height of the room in meters (1.5 to 4.0) */
     @NotNull(message = "Room height is required")
     @DecimalMin(value = "1.5", message = "Room height must be at least 1.5 meters")
     @DecimalMax(value = "4.0", message = "Room height cannot exceed 4.0 meters")
     private Double height;
 
+    /** The doors in the room */
     @Valid
     private List<DoorDTO> doors;
 
+    /** The windows in the room */
     @Valid
     private List<WindowDTO> windows;
 
@@ -75,7 +82,9 @@ public class RoomConfigurationDTO {
     }
 
     /**
-     * Calculate room area based on vertices (using shoelace formula)
+     * Calculates room area based on vertices using the shoelace formula.
+     *
+     * @return the area of the room in square meters
      */
     public double calculateArea() {
         if (vertices == null || vertices.size() < 3) {
@@ -95,7 +104,9 @@ public class RoomConfigurationDTO {
     }
 
     /**
-     * Calculate room volume
+     * Calculates room volume based on area and height.
+     *
+     * @return the volume of the room in cubic meters
      */
     public double calculateVolume() {
         return calculateArea() * (height != null ? height : 2.5);
@@ -120,11 +131,16 @@ public class RoomConfigurationDTO {
         return sb.toString();
     }
 
+    /**
+     * Data Transfer Object for 2D vertex coordinates.
+     */
     public static class VertexDTO {
 
+        /** The X coordinate of the vertex */
         @NotNull(message = "Vertex X coordinate is required")
         private Double x;
 
+        /** The Y coordinate of the vertex */
         @NotNull(message = "Vertex Y coordinate is required")
         private Double y;
 

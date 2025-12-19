@@ -1,7 +1,5 @@
 package com.bathforge.controller;
 
-import com.bathforge.controller.products.ProductController;
-import com.bathforge.dto.products.ColorDTO;
 import com.bathforge.dto.products.ProductDTO;
 import com.bathforge.model.products.Product.MountingType;
 import com.bathforge.model.products.Product.PriceRange;
@@ -18,8 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -44,17 +40,12 @@ public class ProductControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private ProductDTO testProduct;
     private Long testCategoryId;
 
     @BeforeEach
     public void setup() {
-        // Note: In a real scenario, you'd also create a test category
-        // For simplicity, assuming category with ID 1 exists or using service to create
         testCategoryId = 1L;
     }
-
-    // ===== Status Code Tests =====
 
     @Test
     @DisplayName("REST API - GET /api/products returns 200 OK")
@@ -67,7 +58,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - GET /api/products/{id} returns 200 OK when product exists")
     public void testGetProductByIdReturns200() throws Exception {
-        // Create a test product first
         ProductDTO product = new ProductDTO(
                 "Test Product",
                 "Test description",
@@ -114,7 +104,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - PUT /api/products/{id} returns 200 OK on successful update")
     public void testUpdateProductReturns200() throws Exception {
-        // Create product first
         ProductDTO product = new ProductDTO(
                 "Original Product",
                 "Original description",
@@ -124,7 +113,6 @@ public class ProductControllerTest {
                 testCategoryId);
         ProductDTO created = productService.createProduct(product);
 
-        // Update product
         ProductDTO updateDTO = new ProductDTO(
                 "Updated Product",
                 "Updated description",
@@ -144,7 +132,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - DELETE /api/products/{id} returns 204 NO CONTENT on successful deletion")
     public void testDeleteProductReturns204() throws Exception {
-        // Create product first
         ProductDTO product = new ProductDTO(
                 "Product to Delete",
                 "Will be deleted",
@@ -165,12 +152,9 @@ public class ProductControllerTest {
                 .andExpect(status().isNotFound());
     }
 
-    // ===== Validation Handling Tests =====
-
     @Test
     @DisplayName("REST API - POST with invalid data returns 400 BAD REQUEST")
     public void testCreateProductWithInvalidDataReturns400() throws Exception {
-        // Product with missing required fields (name is null)
         String invalidJson = "{\"priceRange\": \"MEDIUM\", \"mountingType\": \"WALL\"}";
 
         mockMvc.perform(post("/api/products")
@@ -188,7 +172,7 @@ public class ProductControllerTest {
                 PriceRange.MEDIUM,
                 "assets/test/invalid.glb",
                 MountingType.WALL,
-                999999L // Non-existent category
+                999999L
         );
 
         mockMvc.perform(post("/api/products")
@@ -200,7 +184,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - PUT with invalid data returns 400 BAD REQUEST")
     public void testUpdateProductWithInvalidDataReturns400() throws Exception {
-        // Create valid product first
         ProductDTO product = new ProductDTO(
                 "Valid Product",
                 "Valid description",
@@ -210,14 +193,13 @@ public class ProductControllerTest {
                 testCategoryId);
         ProductDTO created = productService.createProduct(product);
 
-        // Try to update with invalid category
         ProductDTO invalidUpdate = new ProductDTO(
                 "Updated Name",
                 "Updated description",
                 PriceRange.HIGH,
                 "assets/test/updated.glb",
                 MountingType.FLOOR,
-                999999L // Invalid category
+                999999L
         );
 
         mockMvc.perform(put("/api/products/" + created.getId())
@@ -226,12 +208,9 @@ public class ProductControllerTest {
                 .andExpect(status().isBadRequest());
     }
 
-    // ===== DTO Consistency Tests =====
-
     @Test
     @DisplayName("REST API - Response JSON schema matches ProductDTO structure")
     public void testProductDTOSchemaConsistency() throws Exception {
-        // Create product
         ProductDTO product = new ProductDTO(
                 "Schema Test Product",
                 "Testing JSON schema",
@@ -256,7 +235,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - Data types in response match expected types")
     public void testResponseDataTypes() throws Exception {
-        // Create product
         ProductDTO product = new ProductDTO(
                 "Type Test Product",
                 "Testing data types",
@@ -280,7 +258,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - List endpoint returns array of products")
     public void testGetAllProductsReturnsArray() throws Exception {
-        // Create multiple products
         for (int i = 1; i <= 3; i++) {
             ProductDTO product = new ProductDTO(
                     "List Test Product " + i,
@@ -298,12 +275,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.length()").value(greaterThanOrEqualTo(3)));
     }
 
-    // ===== Filter and Search Tests =====
-
     @Test
     @DisplayName("REST API - Filter by category returns correct products")
     public void testFilterByCategory() throws Exception {
-        // Create products
         ProductDTO product1 = new ProductDTO(
                 "Category Filter Test 1",
                 "Test 1",
@@ -323,7 +297,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - Filter by price range returns correct products")
     public void testFilterByPriceRange() throws Exception {
-        // Create products with different price ranges
         ProductDTO cheap = new ProductDTO(
                 "Cheap Product",
                 "LOW",
@@ -343,7 +316,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - Filter by mounting type returns correct products")
     public void testFilterByMountingType() throws Exception {
-        // Create wall-mounted product
         ProductDTO wallProduct = new ProductDTO(
                 "Wall Product",
                 "Wall mounted",
@@ -363,7 +335,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - Search by name returns matching products")
     public void testSearchByName() throws Exception {
-        // Create searchable product
         ProductDTO searchProduct = new ProductDTO(
                 "Searchable Basin Product",
                 "Easy to find",
@@ -383,7 +354,6 @@ public class ProductControllerTest {
     @Test
     @DisplayName("REST API - Combined filters return correctly filtered products")
     public void testCombinedFilters() throws Exception {
-        // Create specific product
         ProductDTO specific = new ProductDTO(
                 "Specific Wall Basin",
                 "Expensive wall basin",
@@ -411,13 +381,9 @@ public class ProductControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
-    // ===== Color Association Tests =====
-
     @Test
     @DisplayName("REST API - Add color to product returns 200 OK")
     public void testAddColorToProduct() throws Exception {
-        // Note: This test assumes color endpoints and service exist
-        // In real implementation, you'd create a color first and use its ID
         ProductDTO product = new ProductDTO(
                 "Color Test Product",
                 "Test colors",
@@ -427,7 +393,6 @@ public class ProductControllerTest {
                 testCategoryId);
         ProductDTO created = productService.createProduct(product);
 
-        // Assuming color with ID 1 exists
         Long colorId = 1L;
 
         mockMvc.perform(post("/api/products/" + created.getId() + "/colors/" + colorId))
@@ -463,14 +428,11 @@ public class ProductControllerTest {
                 testCategoryId);
         ProductDTO created = productService.createProduct(product);
 
-        // Assuming color with ID 1 exists
         Long colorId = 1L;
 
-        // First add the color
         mockMvc.perform(post("/api/products/" + created.getId() + "/colors/" + colorId))
                 .andExpect(status().isOk());
 
-        // Then remove it
         mockMvc.perform(delete("/api/products/" + created.getId() + "/colors/" + colorId))
                 .andExpect(status().isOk());
     }

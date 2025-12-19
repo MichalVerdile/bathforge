@@ -11,6 +11,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for AI-powered bathroom design generation.
+ */
 @RestController
 @RequestMapping("/api/ai/design")
 @CrossOrigin(origins = "*")
@@ -26,21 +29,22 @@ public class AIDesignController {
     }
 
     /**
-     * Generate a new bathroom design based on AI preferences
+     * Generates a new bathroom design based on AI preferences.
+     *
+     * @param request the AI design request containing user preferences
+     * @return response entity with the generated design or error details
      */
     @PostMapping("/generate")
     public ResponseEntity<AIDesignResponseDTO> generateDesign(@Valid @RequestBody AIDesignRequestDTO request) {
         logger.info("Received AI design generation request: {}", request);
 
         try {
-            // Validate the request
             if (!aiDesignService.validateRequest(request)) {
                 logger.warn("Invalid design request received: {}", request);
                 return ResponseEntity.badRequest()
                         .body(createErrorResponse("Invalid request parameters"));
             }
 
-            // Generate the design
             AIDesignResponseDTO response = aiDesignService.generateDesign(request);
 
             if (response.getStatus() == AIDesignResponseDTO.GenerationStatus.FAILED) {
@@ -59,7 +63,9 @@ public class AIDesignController {
     }
 
     /**
-     * Get available style options for the frontend
+     * Retrieves available style options for the frontend.
+     *
+     * @return response entity with array of available style names
      */
     @GetMapping("/styles")
     public ResponseEntity<String[]> getAvailableStyles() {
@@ -71,7 +77,9 @@ public class AIDesignController {
     }
 
     /**
-     * Get available color palette options for the frontend
+     * Retrieves available color palette options for the frontend.
+     *
+     * @return response entity with array of available color palette names
      */
     @GetMapping("/color-palettes")
     public ResponseEntity<String[]> getAvailableColorPalettes() {
@@ -83,7 +91,9 @@ public class AIDesignController {
     }
 
     /**
-     * Get available feature options for the frontend
+     * Retrieves available feature options for the frontend.
+     *
+     * @return response entity with array of available feature names
      */
     @GetMapping("/features")
     public ResponseEntity<String[]> getAvailableFeatures() {
@@ -95,7 +105,9 @@ public class AIDesignController {
     }
 
     /**
-     * Health check endpoint for AI service
+     * Health check endpoint for AI service.
+     *
+     * @return response entity with status message
      */
     @GetMapping("/health")
     public ResponseEntity<String> healthCheck() {
@@ -103,14 +115,16 @@ public class AIDesignController {
     }
 
     /**
-     * Test OpenAI integration
+     * Tests OpenAI integration with a custom prompt.
+     *
+     * @param testPrompt the test prompt to send to OpenAI
+     * @return response entity with OpenAI response or error message
      */
     @PostMapping("/test-openai")
     public ResponseEntity<String> testOpenAI(@RequestBody String testPrompt) {
         logger.info("Testing OpenAI integration with prompt: {}", testPrompt);
 
         try {
-            // Test basic OpenAI connectivity
             String response = aiDesignService.testOpenAIConnection(testPrompt);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -121,7 +135,10 @@ public class AIDesignController {
     }
 
     /**
-     * Create error response
+     * Creates an error response with the specified message.
+     *
+     * @param message the error message
+     * @return AI design response DTO with failed status
      */
     private AIDesignResponseDTO createErrorResponse(String message) {
         AIDesignResponseDTO errorResponse = new AIDesignResponseDTO();

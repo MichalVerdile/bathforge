@@ -61,7 +61,6 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("User with this email already exists");
         }
 
-        // Encode password before saving
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
@@ -82,7 +81,6 @@ public class UserService implements UserDetailsService {
         QuoteRequest quoteRequest = quoteRequestRepository.findById(quoteRequestId)
                 .orElseThrow(() -> new IllegalArgumentException("Quote request not found"));
 
-        // Verify the quote request belongs to the user
         if (!quoteRequest.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("Unauthorized access to quote request");
         }
@@ -97,7 +95,6 @@ public class UserService implements UserDetailsService {
         dto.setUpdatedAt(quoteRequest.getUpdatedAt());
         dto.setDocumentUrl(quoteRequest.getDocumentUrl());
 
-        // Get all messages for this quote request
         List<QuoteRequestMessage> messages = quoteRequestMessageRepository
                 .findByQuoteRequestIdOrderByCreatedAtAsc(quoteRequestId);
 

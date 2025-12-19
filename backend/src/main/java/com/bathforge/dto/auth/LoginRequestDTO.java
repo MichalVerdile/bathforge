@@ -3,12 +3,17 @@ package com.bathforge.dto.auth;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * Data Transfer Object for user login requests.
+ */
 public class LoginRequestDTO {
 
+    /** The email address of the user */
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     private String email;
 
+    /** The password for authentication */
     @NotBlank(message = "Password is required")
     private String password;
 

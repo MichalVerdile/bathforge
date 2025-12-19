@@ -1,11 +1,23 @@
 package com.bathforge.dto.quote;
 
+/**
+ * DTO for quote request submission responses.
+ */
 public class QuoteResponseDTO {
 
+    /** Indicates if the quote request was successful */
     private boolean success;
+
+    /** Response message */
     private String message;
+
+    /** ID of the user who submitted the quote request */
     private Long userId;
+
+    /** Email of the user who submitted the quote request */
     private String userEmail;
+
+    /** JWT token for newly registered users */
     private String token;
 
     public QuoteResponseDTO() {

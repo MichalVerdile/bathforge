@@ -15,6 +15,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST controller for managing products.
+ */
 @RestController
 @RequestMapping("/api/products")
 @CrossOrigin(origins = "*")
@@ -28,7 +31,9 @@ public class ProductController {
     }
 
     /**
-     * Get all products
+     * Retrieves all products.
+     *
+     * @return response entity with list of all products
      */
     @GetMapping
     public ResponseEntity<List<ProductDTO>> getAllProducts() {
@@ -37,7 +42,10 @@ public class ProductController {
     }
 
     /**
-     * Get product by ID
+     * Retrieves a product by its ID.
+     *
+     * @param id the product ID
+     * @return response entity with the product if found, or 404 if not found
      */
     @GetMapping("/{id}")
     public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
@@ -47,7 +55,10 @@ public class ProductController {
     }
 
     /**
-     * Get products by category ID
+     * Retrieves products by category ID.
+     *
+     * @param categoryId the category ID
+     * @return response entity with list of products in the category
      */
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<ProductDTO>> getProductsByCategoryId(@PathVariable Long categoryId) {
@@ -56,7 +67,10 @@ public class ProductController {
     }
 
     /**
-     * Get products by category name
+     * Retrieves products by category name.
+     *
+     * @param categoryName the category name
+     * @return response entity with list of products in the category
      */
     @GetMapping("/category/name/{categoryName}")
     public ResponseEntity<List<ProductDTO>> getProductsByCategoryName(@PathVariable String categoryName) {
@@ -65,7 +79,10 @@ public class ProductController {
     }
 
     /**
-     * Get products by price range
+     * Retrieves products by price range.
+     *
+     * @param priceRange the price range filter
+     * @return response entity with list of products in the price range
      */
     @GetMapping("/price/{priceRange}")
     public ResponseEntity<List<ProductDTO>> getProductsByPriceRange(@PathVariable PriceRange priceRange) {
@@ -74,7 +91,10 @@ public class ProductController {
     }
 
     /**
-     * Get products by mounting type
+     * Retrieves products by mounting type.
+     *
+     * @param mountingType the mounting type filter
+     * @return response entity with list of products with the mounting type
      */
     @GetMapping("/mounting/{mountingType}")
     public ResponseEntity<List<ProductDTO>> getProductsByMountingType(@PathVariable MountingType mountingType) {
@@ -83,7 +103,10 @@ public class ProductController {
     }
 
     /**
-     * Search products by name
+     * Searches products by name.
+     *
+     * @param name the search term for product name
+     * @return response entity with list of matching products
      */
     @GetMapping("/search")
     public ResponseEntity<List<ProductDTO>> searchProductsByName(@RequestParam String name) {
@@ -92,7 +115,12 @@ public class ProductController {
     }
 
     /**
-     * Get products with filters
+     * Retrieves products with multiple filters.
+     *
+     * @param categoryId   the category ID filter (optional)
+     * @param priceRange   the price range filter (optional)
+     * @param mountingType the mounting type filter (optional)
+     * @return response entity with list of products matching the filters
      */
     @GetMapping("/filter")
     public ResponseEntity<List<ProductDTO>> getProductsWithFilters(
@@ -104,7 +132,11 @@ public class ProductController {
     }
 
     /**
-     * Create new product
+     * Creates a new product.
+     *
+     * @param productDTO the product data to create
+     * @return response entity with the created product and 201 status, or 400 if
+     *         invalid
      */
     @PostMapping
     public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody ProductDTO productDTO) {
@@ -117,7 +149,11 @@ public class ProductController {
     }
 
     /**
-     * Update existing product
+     * Updates an existing product.
+     *
+     * @param id         the product ID to update
+     * @param productDTO the updated product data
+     * @return response entity with the updated product, or 400 if invalid
      */
     @PutMapping("/{id}")
     public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id,
@@ -131,7 +167,10 @@ public class ProductController {
     }
 
     /**
-     * Delete product
+     * Deletes a product by its ID.
+     *
+     * @param id the product ID to delete
+     * @return response entity with 204 status if successful, or 404 if not found
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
@@ -144,7 +183,11 @@ public class ProductController {
     }
 
     /**
-     * Add color to product
+     * Adds a color to a product.
+     *
+     * @param productId the product ID
+     * @param colorId   the color ID to add
+     * @return response entity with 200 status if successful, or 400 if invalid
      */
     @PostMapping("/{productId}/colors/{colorId}")
     public ResponseEntity<Void> addColorToProduct(@PathVariable Long productId, @PathVariable Long colorId) {
@@ -157,7 +200,11 @@ public class ProductController {
     }
 
     /**
-     * Remove color from product
+     * Removes a color from a product.
+     *
+     * @param productId the product ID
+     * @param colorId   the color ID to remove
+     * @return response entity with 200 status if successful, or 400 if invalid
      */
     @DeleteMapping("/{productId}/colors/{colorId}")
     public ResponseEntity<Void> removeColorFromProduct(@PathVariable Long productId, @PathVariable Long colorId) {
@@ -170,7 +217,11 @@ public class ProductController {
     }
 
     /**
-     * Get colors for a product
+     * Retrieves colors available for a product.
+     *
+     * @param productId the product ID
+     * @return response entity with list of colors for the product, or 404 if
+     *         product not found
      */
     @GetMapping("/{productId}/colors")
     public ResponseEntity<List<ColorDTO>> getColorsForProduct(@PathVariable Long productId) {

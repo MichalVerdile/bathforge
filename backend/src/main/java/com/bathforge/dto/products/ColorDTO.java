@@ -4,20 +4,28 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
+/**
+ * Data Transfer Object for product colors.
+ */
 public class ColorDTO {
 
+    /** The unique identifier of the color */
     private Long id;
 
+    /** The name of the color */
     @NotBlank(message = "Color name is required")
     private String name;
 
+    /** The hexadecimal color code (e.g., #FFFFFF) */
     @NotBlank(message = "Hex code is required")
     @Pattern(regexp = "^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$", message = "Invalid hex color code")
     private String hexCode;
 
+    /** The category ID this color belongs to */
     @NotNull(message = "Category ID is required")
     private Long categoryId;
 
+    /** The name of the category this color belongs to */
     private String categoryName;
 
     public ColorDTO() {

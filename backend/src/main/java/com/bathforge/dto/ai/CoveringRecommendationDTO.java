@@ -1,12 +1,22 @@
 package com.bathforge.dto.ai;
 
+/**
+ * Data Transfer Object for surface covering recommendations in AI-generated
+ * designs.
+ */
 public class CoveringRecommendationDTO {
 
+    /** The unique identifier of the recommended product */
     private Long productId;
+    /** The name of the recommended product */
     private String productName;
+    /** The category of the covering product */
     private String category;
+    /** The surface type for the covering (wall or floor) */
     private String surfaceType; // "wall" or "floor"
+    /** The texture repeat value along the X axis */
     private Double repeatX;
+    /** The texture repeat value along the Y axis */
     private Double repeatY;
 
     // Constructors

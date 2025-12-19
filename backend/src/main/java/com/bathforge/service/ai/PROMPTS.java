@@ -18,7 +18,7 @@ public enum PROMPTS {
           - Use exact color names (e.g., "Gloss White" not "White")
           - Create visual variety: use different colors across products, not the same color for everything
           - For dark palettes (e.g., "Dark charcoal, gold, navy"), use the full range: include gold/navy accents, not just black
-          - Prefer lighter colors for large fixtures (basins, bathtubs, WCs); 
+          - Prefer lighter colors for large fixtures (basins, bathtubs, WCs);
 
           COVERING SELECTION:
           - Select EXACTLY ONE wall covering from {{availableProducts}} (category: "coverings") that matches {{style}}

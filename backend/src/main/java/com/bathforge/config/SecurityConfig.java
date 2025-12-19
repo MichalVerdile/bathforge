@@ -3,7 +3,6 @@ package com.bathforge.config;
 import com.bathforge.security.JwtAuthenticationFilter;
 import com.bathforge.security.JwtUtil;
 import com.bathforge.service.user.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +25,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Security configuration for the application, including JWT authentication and
+ * CORS settings.
+ */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -34,11 +37,27 @@ public class SecurityConfig {
     @Value("${bathforge.cors.allowed-origin-patterns:http://localhost:3000}")
     private String allowedOriginPatterns;
 
+    /**
+     * Creates the JWT authentication filter bean.
+     *
+     * @param jwtUtil     the JWT utility for token operations
+     * @param userService the user service for user details
+     * @return configured JwtAuthenticationFilter instance
+     */
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter(JwtUtil jwtUtil, UserService userService) {
         return new JwtAuthenticationFilter(jwtUtil, userService);
     }
 
+    /**
+     * Configures the security filter chain with authentication and authorization
+     * rules.
+     *
+     * @param http                    the HttpSecurity to configure
+     * @param jwtAuthenticationFilter the JWT filter to add to the chain
+     * @return configured SecurityFilterChain
+     * @throws Exception if an error occurs during configuration
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter)
             throws Exception {
@@ -65,6 +84,11 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Configures CORS settings for the application.
+     *
+     * @return configured CorsConfigurationSource
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -84,11 +108,23 @@ public class SecurityConfig {
         return source;
     }
 
+    /**
+     * Creates the password encoder bean for hashing passwords.
+     *
+     * @return BCryptPasswordEncoder instance
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Creates the authentication manager bean.
+     *
+     * @param authenticationConfiguration the authentication configuration
+     * @return configured AuthenticationManager instance
+     * @throws Exception if an error occurs during configuration
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
             throws Exception {

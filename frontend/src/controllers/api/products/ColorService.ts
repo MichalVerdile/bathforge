@@ -1,4 +1,4 @@
-import { Color } from "three";
+import { Color } from "../../../types/api";
 import { apiClient } from "../../configuration";
 
 export class ColorService {

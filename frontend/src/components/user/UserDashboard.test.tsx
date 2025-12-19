@@ -35,17 +35,25 @@ vi.mock('react-router-dom', async () => {
 
 describe('UserDashboard', () => {
   const mockUser = {
-    id: 1,
     email: 'test@example.com',
+    userId: 1,
     firstName: 'Test',
     lastName: 'User',
-    createdAt: '2024-01-01',
+    role: 'USER',
+    token: 'mock-token',
   };
 
   const mockScenes = [
     {
       id: 1,
       name: 'My Bathroom',
+      description: 'Test bathroom scene',
+      user: 'test@example.com',
+      sceneData: '{}',
+      cameraPosition: '0,0,0',
+      lightingSettings: '{}',
+      backgroundColor: '#ffffff',
+      isPublic: false,
       createdAt: '2024-01-15',
       updatedAt: '2024-01-15',
     },
@@ -55,6 +63,9 @@ describe('UserDashboard', () => {
     {
       id: 1,
       status: 'PENDING',
+      roomDimensions: '3x4x2.5',
+      additionalNotes: 'Test notes',
+      sceneSnapshot: 'data:image/png;base64,test',
       createdAt: '2024-01-20',
     },
   ];

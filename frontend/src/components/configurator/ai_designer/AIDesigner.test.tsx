@@ -151,7 +151,18 @@ describe('AIDesigner Multi-Step Workflow', () => {
 
   it('should show loading state during AI generation', async () => {
     vi.mocked(aiDesignerController.generateDesign).mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve({ products: [] }), 1000))
+      () => new Promise(resolve => setTimeout(() => resolve({
+        designId: '123',
+        generatedPrompt: 'test prompt',
+        description: 'test description',
+        style: 'modern',
+        colorPalettes: [],
+        features: [],
+        productRecommendations: [],
+        sceneConfiguration: '{}',
+        generatedAt: new Date().toISOString(),
+        status: 'GENERATED'
+      }), 1000))
     );
     
     render(<AIDesigner onNavigate={mockNavigate} />);

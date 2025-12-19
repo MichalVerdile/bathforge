@@ -7,57 +7,86 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entity representing a user in the system.
+ * Users can have different roles (customer, admin, industry) and own bathroom
+ * scenes and quote requests.
+ */
 @Entity
 @Table(name = "users")
 public class User {
 
+    /** The unique identifier of the user */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** The user's email address (unique) */
     @NotBlank(message = "Email is required")
     @Email(message = "Email should be valid")
     @Column(unique = true, nullable = false)
     private String email;
 
+    /** The user's hashed password */
     @NotBlank(message = "Password is required")
     @Size(min = 8, message = "Password must be at least 8 characters")
     @Column(nullable = false)
     private String password;
 
+    /** The user's first name */
     @NotBlank(message = "First name is required")
     @Column(nullable = false)
     private String firstName;
 
+    /** The user's last name */
     @NotBlank(message = "Last name is required")
     @Column(nullable = false)
     private String lastName;
 
+    /** Optional company name */
     @Column(nullable = true)
     private String company;
 
+    /** Optional phone number */
     @Column(nullable = true)
     private String phone;
 
+    /** Timestamp when the user account was created */
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    /** Whether the user account is enabled */
     @Column(nullable = false)
     private boolean enabled = true;
 
+    /** The role of the user (CUSTOMER, ADMIN, or INDUSTRY) */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserRole role = UserRole.CUSTOMER;
 
+    /**
+     * Lifecycle callback executed before persisting a new user.
+     * Sets the creation timestamp.
+     */
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
     }
 
-    // Constructors
+    /**
+     * Default constructor.
+     */
     public User() {
     }
 
+    /**
+     * Constructs a User with required fields.
+     *
+     * @param email     the user's email address
+     * @param password  the user's password (should be hashed before storing)
+     * @param firstName the user's first name
+     * @param lastName  the user's last name
+     */
     public User(String email, String password, String firstName, String lastName) {
         this.email = email;
         this.password = password;
@@ -65,7 +94,6 @@ public class User {
         this.lastName = lastName;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }

@@ -4,6 +4,7 @@ import { OrbitControls, Environment, Grid, Html, useProgress, ContactShadows } f
 import { FaSpinner } from 'react-icons/fa';
 import * as THREE from 'three';
 import { detectMeshType } from '../bathroom_3d_viewer/WallFloorSelector';
+import SceneWatermark from './SceneWatermark';
 
 export type ViewType = '2D' | '3D-Person' | '3D-Free';
 
@@ -528,6 +529,9 @@ export default function Scene3D({
           )}
 
           <Ground />
+          
+          {/* Subtle watermark throughout the scene */}
+          <SceneWatermark />
 
           <OrbitControls
             ref={controlsRef}

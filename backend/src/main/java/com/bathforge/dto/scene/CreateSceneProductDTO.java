@@ -2,36 +2,67 @@ package com.bathforge.dto.scene;
 
 import jakarta.validation.constraints.NotNull;
 
+/**
+ * Data Transfer Object for creating scene products.
+ * Represents a product placed in a scene with its transformation properties.
+ */
 public class CreateSceneProductDTO {
 
+    /** The ID of the product to place in the scene */
     @NotNull(message = "Product ID is required")
     private Long productId;
 
+    /** The color variant ID for the product */
     private Long colorId;
 
+    /** X-coordinate position in 3D space */
     private Double positionX;
 
+    /** Y-coordinate position in 3D space */
     private Double positionY;
 
+    /** Z-coordinate position in 3D space */
     private Double positionZ;
 
+    /** Rotation around X-axis in degrees */
     private Double rotationX;
 
+    /** Rotation around Y-axis in degrees */
     private Double rotationY;
 
+    /** Rotation around Z-axis in degrees */
     private Double rotationZ;
 
+    /** Scale factor along X-axis */
     private Double scaleX = 1.0;
 
+    /** Scale factor along Y-axis */
     private Double scaleY = 1.0;
 
+    /** Scale factor along Z-axis */
     private Double scaleZ = 1.0;
 
+    /** JSON string containing custom product properties */
     private String customProperties;
 
+    /**
+     * Default constructor.
+     */
     public CreateSceneProductDTO() {
     }
 
+    /**
+     * Constructs a CreateSceneProductDTO with transformation data.
+     *
+     * @param productId the product ID
+     * @param colorId   the color variant ID
+     * @param positionX X position
+     * @param positionY Y position
+     * @param positionZ Z position
+     * @param rotationX X rotation
+     * @param rotationY Y rotation
+     * @param rotationZ Z rotation
+     */
     public CreateSceneProductDTO(Long productId, Long colorId,
             Double positionX, Double positionY, Double positionZ,
             Double rotationX, Double rotationY, Double rotationZ) {
@@ -141,6 +172,11 @@ public class CreateSceneProductDTO {
         this.customProperties = customProperties;
     }
 
+    /**
+     * Returns a string representation of this scene product.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "CreateSceneProductDTO{" +

@@ -2,28 +2,45 @@ package com.bathforge.dto.scene;
 
 import java.util.List;
 
+/**
+ * Data Transfer Object for updating existing scenes.
+ * All fields are optional to allow partial updates.
+ */
 public class UpdateSceneDTO {
 
+    /** The new name for the scene */
     private String name;
 
+    /** The new description for the scene */
     private String description;
 
+    /** JSON string containing updated scene configuration data */
     private String sceneData;
 
+    /** JSON string containing updated camera position */
     private String cameraPosition;
 
+    /** JSON string containing updated lighting configuration */
     private String lightingSettings;
 
+    /** Hex color code for the new background */
     private String backgroundColor;
 
+    /** Updated public visibility status */
     private Boolean isPublic;
 
+    /** Updated list of products in the scene */
     private List<CreateSceneProductDTO> products;
 
+    /** Updated room model configuration */
     private CreateSceneRoomModelDTO roomModel;
 
+    /** Updated list of surface coverings */
     private List<CreateSceneCoveringDTO> coverings;
 
+    /**
+     * Default constructor.
+     */
     public UpdateSceneDTO() {
     }
 
@@ -107,6 +124,11 @@ public class UpdateSceneDTO {
         this.coverings = coverings;
     }
 
+    /**
+     * Returns a string representation of this update request.
+     *
+     * @return string representation
+     */
     @Override
     public String toString() {
         return "UpdateSceneDTO{" +

@@ -2,20 +2,37 @@ package com.bathforge.dto.admin;
 
 import java.time.LocalDateTime;
 
+/**
+ * Data Transfer Object for quote request information in admin views.
+ */
 public class QuoteRequestAdminDTO {
+    /** The unique identifier for the quote request */
     private Long id;
+    /** The user ID who created the request */
     private Long userId;
+    /** The email address of the user */
     private String userEmail;
+    /** The full name of the user */
     private String userFullName;
+    /** The phone number of the user */
     private String userPhone;
+    /** The company name of the user */
     private String userCompany;
+    /** The dimensions of the room */
     private String roomDimensions;
+    /** Additional notes provided by the user */
     private String additionalNotes;
+    /** Snapshot of the scene configuration */
     private String sceneSnapshot;
+    /** The current status of the quote request */
     private String status;
+    /** Response provided by admin */
     private String adminResponse;
+    /** URL to the uploaded document */
     private String documentUrl;
+    /** Timestamp when the request was created */
     private LocalDateTime createdAt;
+    /** Timestamp when the request was last updated */
     private LocalDateTime updatedAt;
 
     public QuoteRequestAdminDTO() {

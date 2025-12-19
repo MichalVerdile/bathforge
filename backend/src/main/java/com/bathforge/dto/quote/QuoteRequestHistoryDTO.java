@@ -2,13 +2,27 @@ package com.bathforge.dto.quote;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO for quote request history entries.
+ */
 public class QuoteRequestHistoryDTO {
 
+    /** Unique identifier for the quote request */
     private Long id;
+
+    /** Dimensions of the room */
     private String roomDimensions;
+
+    /** Additional notes provided by the user */
     private String additionalNotes;
+
+    /** Base64 encoded scene snapshot image */
     private String sceneSnapshot;
+
+    /** Timestamp when the quote request was created */
     private LocalDateTime createdAt;
+
+    /** Current status of the quote request */
     private String status;
 
     public QuoteRequestHistoryDTO() {

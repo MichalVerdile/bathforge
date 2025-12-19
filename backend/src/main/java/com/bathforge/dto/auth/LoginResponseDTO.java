@@ -1,12 +1,21 @@
 package com.bathforge.dto.auth;
 
+/**
+ * Data Transfer Object for user login responses.
+ */
 public class LoginResponseDTO {
 
+    /** The JWT authentication token */
     private String token;
+    /** The email address of the authenticated user */
     private String email;
+    /** The unique identifier of the user */
     private Long userId;
+    /** The first name of the user */
     private String firstName;
+    /** The last name of the user */
     private String lastName;
+    /** The role of the user */
     private String role;
 
     public LoginResponseDTO() {

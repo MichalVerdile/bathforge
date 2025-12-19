@@ -2,10 +2,20 @@ package com.bathforge.dto;
 
 import java.time.LocalDateTime;
 
+/**
+ * DTO for quote request messages between users and admins.
+ */
 public class QuoteRequestMessageDTO {
+    /** Unique identifier for the message */
     private Long id;
+
+    /** The message content */
     private String message;
+
+    /** The type of sender (e.g., USER, ADMIN) */
     private String senderType;
+
+    /** Timestamp when the message was created */
     private LocalDateTime createdAt;
 
     public QuoteRequestMessageDTO() {

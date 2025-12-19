@@ -6,23 +6,32 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
+/**
+ * Data Transfer Object for AI-powered bathroom design generation requests.
+ */
 public class AIDesignRequestDTO {
 
+    /** The design style preference */
     @NotNull(message = "Style is required")
     private String style;
 
+    /** List of preferred color palettes (1-3 allowed) */
     @NotEmpty(message = "At least one color palette is required")
     @Size(max = 3, message = "Maximum 3 color palettes allowed")
     private List<String> colorPalettes;
 
+    /** List of required features for the bathroom */
     @NotEmpty(message = "At least one feature is required")
     private List<String> features;
 
+    /** The price range preference (LOW, MEDIUM, or HIGH) */
     private String priceRange; // LOW, MEDIUM, or HIGH
 
+    /** The room configuration details */
     @Valid
     private RoomConfigurationDTO roomConfiguration;
 
+    /** Additional requirements or notes for the design */
     private String additionalRequirements;
 
     // Constructors

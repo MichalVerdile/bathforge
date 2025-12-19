@@ -1,7 +1,12 @@
 package com.bathforge.dto.admin;
 
+/**
+ * Data Transfer Object for updating quote request status and admin response.
+ */
 public class UpdateQuoteRequestDTO {
+    /** The new status for the quote request */
     private String status;
+    /** The admin's response to the quote request */
     private String adminResponse;
 
     public UpdateQuoteRequestDTO() {

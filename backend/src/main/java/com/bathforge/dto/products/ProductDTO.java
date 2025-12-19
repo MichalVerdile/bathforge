@@ -8,32 +8,44 @@ import java.util.List;
 import com.bathforge.model.products.Product.MountingType;
 import com.bathforge.model.products.Product.PriceRange;
 
+/**
+ * Data Transfer Object for products.
+ */
 public class ProductDTO {
 
+    /** The unique identifier of the product */
     private Long id;
 
+    /** The name of the product */
     @NotBlank(message = "Product name is required")
     private String name;
 
+    /** The description of the product */
     private String description;
 
+    /** The price range of the product */
     @NotNull(message = "Price range is required")
     private PriceRange priceRange;
 
+    /** The path to the 3D model file */
     @NotBlank(message = "Model path is required")
     private String modelPath;
 
-    // Optional URL (relative or absolute) to a thumbnail image for this product
+    /** Optional URL to a thumbnail image for this product */
     private String thumbnail;
 
+    /** The mounting type of the product */
     @NotNull(message = "Mounting type is required")
     private MountingType mountingType;
 
+    /** The category ID this product belongs to */
     @NotNull(message = "Category ID is required")
     private Long categoryId;
 
+    /** The name of the category this product belongs to */
     private String categoryName;
 
+    /** List of available colors for this product */
     private List<ColorDTO> availableColors;
 
     public ProductDTO() {

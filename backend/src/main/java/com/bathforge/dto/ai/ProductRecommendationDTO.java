@@ -1,19 +1,35 @@
 package com.bathforge.dto.ai;
 
+/**
+ * Data Transfer Object for product recommendations in AI-generated designs.
+ */
 public class ProductRecommendationDTO {
 
+    /** The unique identifier of the recommended product */
     private Long productId;
+    /** The name of the recommended product */
     private String productName;
+    /** The category of the product */
     private String category;
+    /** The category ID of the product */
     private Long categoryId;
+    /** The price range of the product */
     private String priceRange;
+    /** The mounting type of the product */
     private String mountingType;
-    private String color;                   
+    /** The color of the product */
+    private String color;
+    /** The X position of the product in the scene */
     private Double positionX;
+    /** The Y position of the product in the scene */
     private Double positionY;
+    /** The Z position of the product in the scene */
     private Double positionZ;
+    /** The X rotation of the product in the scene */
     private Double rotationX;
+    /** The Y rotation of the product in the scene */
     private Double rotationY;
+    /** The Z rotation of the product in the scene */
     private Double rotationZ;
 
     // Constructors

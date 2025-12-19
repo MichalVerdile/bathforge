@@ -99,7 +99,6 @@ public class ColorServiceTest {
         colorService.createColor(new ColorDTO("Red", "#ff0000", testCategory.getId()));
         colorService.createColor(new ColorDTO("Blue", "#0000ff", testCategory.getId()));
 
-        // Create another category with colors
         CategoryDTO otherCategory = categoryService.createCategory(
                 new CategoryDTO("other_category", "Other category"));
         colorService.createColor(new ColorDTO("Green", "#00ff00", otherCategory.getId()));

@@ -19,6 +19,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing products and their relationships with categories and
+ * colors.
+ * Provides comprehensive CRUD operations, filtering, search capabilities, and
+ * color associations.
+ */
 @Service
 @Transactional
 public class ProductService {
@@ -40,7 +46,9 @@ public class ProductService {
     }
 
     /**
-     * Get all products
+     * Retrieves all products in the catalog.
+     *
+     * @return list of all products as DTOs with their available colors
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getAllProducts() {
@@ -51,8 +59,10 @@ public class ProductService {
     }
 
     /**
-     * Get products for AI selection
-     * Returns products with descriptions (showcase items) + all coverings
+     * Retrieves products suitable for AI-powered selection.
+     * Returns products with descriptions (showcase items) plus all coverings.
+     *
+     * @return list of products curated for AI design recommendations
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsForAISelection() {
@@ -63,7 +73,10 @@ public class ProductService {
     }
 
     /**
-     * Get product by ID
+     * Retrieves a product by its unique identifier.
+     *
+     * @param id the product ID
+     * @return an Optional containing the product DTO if found, empty otherwise
      */
     @Transactional(readOnly = true)
     public Optional<ProductDTO> getProductById(Long id) {
@@ -72,7 +85,10 @@ public class ProductService {
     }
 
     /**
-     * Get products by category ID
+     * Retrieves all products in a specific category.
+     *
+     * @param categoryId the category ID
+     * @return list of products in the category
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByCategoryId(Long categoryId) {
@@ -83,7 +99,10 @@ public class ProductService {
     }
 
     /**
-     * Get products by category name
+     * Retrieves all products in a category by category name.
+     *
+     * @param categoryName the category name
+     * @return list of products in the category
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByCategoryName(String categoryName) {
@@ -94,7 +113,10 @@ public class ProductService {
     }
 
     /**
-     * Get products by price range
+     * Retrieves all products within a specific price range.
+     *
+     * @param priceRange the price range to filter by
+     * @return list of products in the specified price range
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByPriceRange(PriceRange priceRange) {
@@ -105,7 +127,11 @@ public class ProductService {
     }
 
     /**
-     * Get products by mounting type
+     * Retrieves all products with a specific mounting type.
+     *
+     * @param mountingType the mounting type to filter by (e.g., WALL, FLOOR,
+     *                     FREESTANDING)
+     * @return list of products with the specified mounting type
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsByMountingType(MountingType mountingType) {
@@ -116,7 +142,10 @@ public class ProductService {
     }
 
     /**
-     * Search products by name
+     * Searches for products by name using case-insensitive partial matching.
+     *
+     * @param name the search term to match against product names
+     * @return list of products whose names contain the search term
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> searchProductsByName(String name) {
@@ -127,8 +156,11 @@ public class ProductService {
     }
 
     /**
-     * Find product by exact name (case-insensitive)
-     * Used by AI to look up products by name
+     * Finds a product by exact name match (case-insensitive).
+     * Primarily used by AI to look up products by their exact name.
+     *
+     * @param name the exact product name to search for
+     * @return the product DTO if found, null otherwise
      */
     @Transactional(readOnly = true)
     public ProductDTO findByName(String name) {
@@ -138,7 +170,12 @@ public class ProductService {
     }
 
     /**
-     * Get products with filters
+     * Retrieves products matching multiple filter criteria.
+     *
+     * @param categoryId   optional category ID filter (null to ignore)
+     * @param priceRange   optional price range filter (null to ignore)
+     * @param mountingType optional mounting type filter (null to ignore)
+     * @return list of products matching all specified filters
      */
     @Transactional(readOnly = true)
     public List<ProductDTO> getProductsWithFilters(Long categoryId, PriceRange priceRange, MountingType mountingType) {
@@ -149,7 +186,11 @@ public class ProductService {
     }
 
     /**
-     * Create new product
+     * Creates a new product in the catalog.
+     *
+     * @param productDTO the product data to create
+     * @return the created product as a DTO
+     * @throws IllegalArgumentException if the specified category does not exist
      */
     public ProductDTO createProduct(ProductDTO productDTO) {
         Category category = categoryService.getCategoryEntityById(productDTO.getCategoryId());
@@ -161,7 +202,12 @@ public class ProductService {
     }
 
     /**
-     * Update existing product
+     * Updates an existing product.
+     *
+     * @param id         the ID of the product to update
+     * @param productDTO the updated product data
+     * @return the updated product as a DTO
+     * @throws IllegalArgumentException if the product or category is not found
      */
     public ProductDTO updateProduct(Long id, ProductDTO productDTO) {
         Product existingProduct = productRepository.findById(id)
@@ -182,7 +228,10 @@ public class ProductService {
     }
 
     /**
-     * Delete product
+     * Deletes a product by its ID.
+     *
+     * @param id the ID of the product to delete
+     * @throws IllegalArgumentException if the product is not found
      */
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
@@ -192,7 +241,12 @@ public class ProductService {
     }
 
     /**
-     * Add color to product
+     * Associates a color with a product.
+     *
+     * @param productId the product ID
+     * @param colorId   the color ID
+     * @throws IllegalArgumentException if the product or color is not found, or if
+     *                                  the association already exists
      */
     public void addColorToProduct(Long productId, Long colorId) {
         Product product = productRepository.findById(productId)
@@ -209,7 +263,12 @@ public class ProductService {
     }
 
     /**
-     * Remove color from product
+     * Removes a color association from a product.
+     *
+     * @param productId the product ID
+     * @param colorId   the color ID
+     * @throws IllegalArgumentException if the product or color is not found, or if
+     *                                  the association does not exist
      */
     public void removeColorFromProduct(Long productId, Long colorId) {
         Product product = productRepository.findById(productId)
@@ -224,7 +283,11 @@ public class ProductService {
     }
 
     /**
-     * Get colors for a product
+     * Retrieves all colors available for a specific product.
+     *
+     * @param productId the product ID
+     * @return list of colors associated with the product
+     * @throws IllegalArgumentException if the product is not found
      */
     @Transactional(readOnly = true)
     public List<ColorDTO> getColorsForProduct(Long productId) {
@@ -237,6 +300,12 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Converts a Product entity to a ProductDTO with available colors.
+     *
+     * @param product the product entity
+     * @return the product DTO
+     */
     private ProductDTO convertToDTO(Product product) {
         ProductDTO dto = new ProductDTO();
         dto.setId(product.getId());
@@ -258,6 +327,13 @@ public class ProductService {
         return dto;
     }
 
+    /**
+     * Converts a ProductDTO to a Product entity.
+     *
+     * @param productDTO the product DTO
+     * @param category   the category to associate the product with
+     * @return the product entity
+     */
     private Product convertToEntity(ProductDTO productDTO, Category category) {
         Product product = new Product();
         product.setName(productDTO.getName());
@@ -270,6 +346,12 @@ public class ProductService {
         return product;
     }
 
+    /**
+     * Converts a Color entity to a ColorDTO.
+     *
+     * @param color the color entity
+     * @return the color DTO
+     */
     private ColorDTO convertColorToDTO(Color color) {
         return new ColorDTO(
                 color.getId(),

@@ -18,6 +18,13 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Service responsible for importing bathroom product assets from the
+ * filesystem.
+ * Processes 3D models, images, and metadata to populate the product database
+ * with categories,
+ * colors, thumbnails, and mounting information.
+ */
 @Service
 public class AssetImportService {
 
@@ -65,6 +72,16 @@ public class AssetImportService {
     private static final Set<String> MODEL_EXTS = Set.of(".glb", ".gltf");
     private static final Set<String> IMAGE_EXTS = Set.of(".jpg", ".jpeg", ".png", ".webp");
 
+    /**
+     * Imports all product assets from the specified directory path.
+     * Scans category directories, processes 3D models and images, and creates
+     * product entries in the database.
+     *
+     * @param assetsPath the absolute path to the assets root directory
+     * @return a map containing import status, list of imported products, errors,
+     *         and total product count
+     * @throws IllegalArgumentException if the assets directory does not exist
+     */
     @Transactional
     public Map<String, Object> importAllAssets(String assetsPath) {
         final Path assetsRoot = Paths.get(assetsPath).toAbsolutePath().normalize();
@@ -110,6 +127,16 @@ public class AssetImportService {
                 "totalProducts", productRepository.count());
     }
 
+    /**
+     * Processes a single category directory, importing all product models and their
+     * associated metadata.
+     *
+     * @param assetsRoot  the root assets directory
+     * @param categoryDir the category directory to process
+     * @param categoryKey the category identifier key
+     * @return the number of products imported from this category
+     * @throws IOException if there is an error reading the directory
+     */
     private int processCategoryDirectory(Path assetsRoot, Path categoryDir, String categoryKey) throws IOException {
         final String canonicalCategory = CATEGORY_MAPPING.get(categoryKey);
         final Category category = categoryRepository.findByNameIgnoreCase(canonicalCategory)
@@ -155,6 +182,13 @@ public class AssetImportService {
         return importedCount;
     }
 
+    /**
+     * Checks if a filename ends with any of the provided suffixes.
+     *
+     * @param filenameLower the lowercase filename to check
+     * @param suffixes      the set of file extension suffixes to match against
+     * @return true if the filename ends with any of the suffixes, false otherwise
+     */
     private static boolean hasAnySuffix(String filenameLower, Set<String> suffixes) {
         for (String s : suffixes) {
             if (filenameLower.endsWith(s))
@@ -163,6 +197,12 @@ public class AssetImportService {
         return false;
     }
 
+    /**
+     * Associates all available colors with a product if not already linked.
+     *
+     * @param product the product to attach colors to
+     * @param colors  the list of colors available for this product's category
+     */
     private void attachColors(Product product, List<Color> colors) {
         for (Color color : colors) {
             if (!productColorRepository.existsByProductIdAndColorId(product.getId(), color.getId())) {
@@ -174,6 +214,18 @@ public class AssetImportService {
         }
     }
 
+    /**
+     * Creates a new Product entity from an asset file.
+     * Generates product name, determines mounting type, assigns price range, and
+     * resolves thumbnail image.
+     *
+     * @param assetsRoot  the root assets directory
+     * @param categoryDir the category directory containing the asset
+     * @param file        the asset file path
+     * @param category    the product category
+     * @param categoryKey the category identifier key
+     * @return a new Product entity configured from the asset
+     */
     private Product createProductFromAsset(Path assetsRoot,
             Path categoryDir,
             Path file,
@@ -202,6 +254,13 @@ public class AssetImportService {
         return product;
     }
 
+    /**
+     * Formats a product name from category name and sequential number.
+     *
+     * @param categoryName  the category name
+     * @param productNumber the sequential product number within the category
+     * @return formatted product name (e.g., "Basins 1")
+     */
     private static String formatProductName(String categoryName, int productNumber) {
         if (categoryName == null || categoryName.isEmpty())
             return "Product " + productNumber;
@@ -210,11 +269,29 @@ public class AssetImportService {
         return formatted + " " + productNumber;
     }
 
+    /**
+     * Converts an absolute asset path to a relative web path.
+     *
+     * @param assetsRoot the root assets directory
+     * @param target     the target file path
+     * @return relative path prefixed with "/assets/" and using forward slashes
+     */
     private static String toRelativeAssetPath(Path assetsRoot, Path target) {
         Path rel = assetsRoot.relativize(target.toAbsolutePath().normalize());
         return "/assets/" + rel.toString().replace('\\', '/');
     }
 
+    /**
+     * Resolves the thumbnail image path for a product asset based on
+     * category-specific rules.
+     * Different categories use different naming conventions and mapping strategies.
+     *
+     * @param categoryKey the category identifier
+     * @param assetsRoot  the root assets directory
+     * @param categoryDir the category directory
+     * @param assetFile   the asset file
+     * @return the relative path to the thumbnail image, or null if not found
+     */
     private String resolveThumbnail(String categoryKey, Path assetsRoot, Path categoryDir, Path assetFile) {
         String base = stripExtension(assetFile.getFileName().toString());
         String baseLower = base.toLowerCase(Locale.ROOT);
@@ -251,6 +328,12 @@ public class AssetImportService {
         }
     }
 
+    /**
+     * Removes the file extension from a filename.
+     *
+     * @param filename the filename to process
+     * @return the filename without its extension
+     */
     private static String stripExtension(String filename) {
         int idx = filename.lastIndexOf('.');
         return (idx > 0) ? filename.substring(0, idx) : filename;
@@ -414,6 +497,13 @@ public class AssetImportService {
         return null;
     }
 
+    /**
+     * Retrieves comprehensive statistics about the current import state.
+     * Includes counts of products, categories, colors, and product-color
+     * associations.
+     *
+     * @return a map containing import statistics and counts by category
+     */
     public Map<String, Object> getImportStatistics() {
         try {
             long totalProducts = productRepository.count();
@@ -439,6 +529,13 @@ public class AssetImportService {
         }
     }
 
+    /**
+     * Deletes all products and their color associations from the database.
+     * Useful for resetting the product catalog before a fresh import.
+     *
+     * @return a map containing the number of deleted products and product-color
+     *         associations, or error information
+     */
     @Transactional
     public Map<String, Object> clearAllProducts() {
         try {

@@ -30,6 +30,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service class for admin operations.
+ * Provides functionality for managing users, scenes, and quote requests from an
+ * administrative perspective.
+ */
 @Service
 public class AdminService {
 
@@ -51,19 +56,36 @@ public class AdminService {
     @Autowired
     private EmailService emailService;
 
-    // User Management
+    /**
+     * Retrieves all users in the system.
+     *
+     * @return list of UserDTO objects representing all users
+     */
     public List<UserDTO> getAllUsers() {
         return userRepository.findAll().stream()
                 .map(this::convertToUserDTO)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a specific user by ID.
+     *
+     * @param userId the ID of the user to retrieve
+     * @return UserDTO object representing the user
+     * @throws IllegalArgumentException if user not found
+     */
     public UserDTO getUserById(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return convertToUserDTO(user);
     }
 
+    /**
+     * Converts a User entity to a UserDTO.
+     *
+     * @param user the User entity to convert
+     * @return UserDTO with user information and counts
+     */
     private UserDTO convertToUserDTO(User user) {
         UserDTO dto = new UserDTO(
                 user.getId(),
@@ -83,7 +105,11 @@ public class AdminService {
         return dto;
     }
 
-    // Scene Management
+    /**
+     * Retrieves all scenes with user information.
+     *
+     * @return list of UserSceneDTO objects for all scenes
+     */
     public List<UserSceneDTO> getAllScenesByUser() {
         List<Scene> scenes = sceneRepository.findAll();
         return scenes.stream()
@@ -92,6 +118,12 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves all scenes created by a specific user.
+     *
+     * @param userId the ID of the user
+     * @return list of UserSceneDTO objects for the user's scenes
+     */
     public List<UserSceneDTO> getScenesByUserId(Long userId) {
         List<Scene> scenes = sceneRepository.findByUserIdOrderByCreatedAtDesc(userId);
         return scenes.stream()
@@ -99,6 +131,12 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Converts a Scene entity to a UserSceneDTO.
+     *
+     * @param scene the Scene entity to convert
+     * @return UserSceneDTO with scene and user information
+     */
     private UserSceneDTO convertToUserSceneDTO(Scene scene) {
         UserSceneDTO dto = new UserSceneDTO();
         dto.setSceneId(scene.getId());
@@ -117,7 +155,12 @@ public class AdminService {
         return dto;
     }
 
-    // Quote Request Management
+    /**
+     * Retrieves all quote requests in the system.
+     *
+     * @return list of QuoteRequestAdminDTO objects sorted by creation date (newest
+     *         first)
+     */
     public List<QuoteRequestAdminDTO> getAllQuoteRequests() {
         return quoteRequestRepository.findAll().stream()
                 .map(this::convertToQuoteRequestAdminDTO)
@@ -125,12 +168,25 @@ public class AdminService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieves a specific quote request by ID.
+     *
+     * @param requestId the ID of the quote request
+     * @return QuoteRequestAdminDTO with full quote request details
+     * @throws IllegalArgumentException if quote request not found
+     */
     public QuoteRequestAdminDTO getQuoteRequestById(Long requestId) {
         QuoteRequest request = quoteRequestRepository.findById(requestId)
                 .orElseThrow(() -> new IllegalArgumentException("Quote request not found"));
         return convertToQuoteRequestAdminDTO(request);
     }
 
+    /**
+     * Converts a QuoteRequest entity to a QuoteRequestAdminDTO.
+     *
+     * @param request the QuoteRequest entity to convert
+     * @return QuoteRequestAdminDTO with request and user information
+     */
     private QuoteRequestAdminDTO convertToQuoteRequestAdminDTO(QuoteRequest request) {
         User user = request.getUser();
         return new QuoteRequestAdminDTO(
@@ -150,6 +206,17 @@ public class AdminService {
                 request.getUpdatedAt());
     }
 
+    /**
+     * Updates a quote request with new status and/or admin response.
+     * Creates system messages for status changes and admin responses.
+     * Sends email notification if status changes.
+     *
+     * @param requestId the ID of the quote request to update
+     * @param updateDTO DTO containing the updates to apply
+     * @return updated QuoteRequestAdminDTO
+     * @throws IllegalArgumentException if quote request not found
+     * @throws MessagingException       if email notification fails
+     */
     @Transactional
     public QuoteRequestAdminDTO updateQuoteRequest(Long requestId, UpdateQuoteRequestDTO updateDTO)
             throws MessagingException {
@@ -185,6 +252,17 @@ public class AdminService {
         return convertToQuoteRequestAdminDTO(request);
     }
 
+    /**
+     * Uploads a document file for a quote request.
+     * Stores the file in the uploads directory and updates the quote request with
+     * the document URL.
+     *
+     * @param requestId the ID of the quote request
+     * @param file      the multipart file to upload
+     * @return updated QuoteRequestAdminDTO with document URL
+     * @throws IllegalArgumentException if quote request not found
+     * @throws IOException              if file upload fails
+     */
     @Transactional
     public QuoteRequestAdminDTO uploadDocument(Long requestId, MultipartFile file) throws IOException {
         QuoteRequest request = quoteRequestRepository.findById(requestId)
@@ -217,6 +295,13 @@ public class AdminService {
         return convertToQuoteRequestAdminDTO(request);
     }
 
+    /**
+     * Sends an email notification to the user when their quote request status
+     * changes.
+     *
+     * @param request the quote request with updated status
+     * @throws MessagingException if email sending fails
+     */
     private void sendStatusChangeEmail(QuoteRequest request) throws MessagingException {
         User user = request.getUser();
         String subject = "Quote Request Status Update - BathForge";

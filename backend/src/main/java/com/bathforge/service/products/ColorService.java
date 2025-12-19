@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing product colors.
+ * Provides CRUD operations for colors and their associations with categories.
+ */
 @Service
 @Transactional
 public class ColorService {
@@ -27,7 +31,9 @@ public class ColorService {
     }
 
     /**
-     * Get all colors
+     * Retrieves all colors ordered by category and name.
+     *
+     * @return list of all colors as DTOs
      */
     @Transactional(readOnly = true)
     public List<ColorDTO> getAllColors() {
@@ -38,7 +44,10 @@ public class ColorService {
     }
 
     /**
-     * Get color by ID
+     * Retrieves a color by its unique identifier.
+     *
+     * @param id the color ID
+     * @return an Optional containing the color DTO if found, empty otherwise
      */
     @Transactional(readOnly = true)
     public Optional<ColorDTO> getColorById(Long id) {
@@ -47,7 +56,10 @@ public class ColorService {
     }
 
     /**
-     * Get colors by category ID
+     * Retrieves all colors associated with a specific category.
+     *
+     * @param categoryId the category ID
+     * @return list of colors belonging to the category
      */
     @Transactional(readOnly = true)
     public List<ColorDTO> getColorsByCategoryId(Long categoryId) {
@@ -58,7 +70,10 @@ public class ColorService {
     }
 
     /**
-     * Get colors by category name
+     * Retrieves all colors associated with a category by category name.
+     *
+     * @param categoryName the category name
+     * @return list of colors belonging to the category
      */
     @Transactional(readOnly = true)
     public List<ColorDTO> getColorsByCategoryName(String categoryName) {
@@ -69,7 +84,12 @@ public class ColorService {
     }
 
     /**
-     * Create new color
+     * Creates a new color within a specific category.
+     *
+     * @param colorDTO the color data to create
+     * @return the created color as a DTO
+     * @throws IllegalArgumentException if a color with the same name already exists
+     *                                  in the category
      */
     public ColorDTO createColor(ColorDTO colorDTO) {
         Category category = categoryService.getCategoryEntityById(colorDTO.getCategoryId());
@@ -85,7 +105,13 @@ public class ColorService {
     }
 
     /**
-     * Update existing color
+     * Updates an existing color.
+     *
+     * @param id       the ID of the color to update
+     * @param colorDTO the updated color data
+     * @return the updated color as a DTO
+     * @throws IllegalArgumentException if the color is not found or if the new name
+     *                                  already exists in the category
      */
     public ColorDTO updateColor(Long id, ColorDTO colorDTO) {
         Color existingColor = colorRepository.findById(id)
@@ -109,7 +135,10 @@ public class ColorService {
     }
 
     /**
-     * Delete color
+     * Deletes a color by its ID.
+     *
+     * @param id the ID of the color to delete
+     * @throws IllegalArgumentException if the color is not found
      */
     public void deleteColor(Long id) {
         if (!colorRepository.existsById(id)) {
@@ -119,7 +148,11 @@ public class ColorService {
     }
 
     /**
-     * Get color entity by ID (for internal use)
+     * Retrieves a color entity by its ID for internal service use.
+     *
+     * @param id the color ID
+     * @return the color entity
+     * @throws IllegalArgumentException if the color is not found
      */
     @Transactional(readOnly = true)
     public Color getColorEntityById(Long id) {
@@ -127,6 +160,12 @@ public class ColorService {
                 .orElseThrow(() -> new IllegalArgumentException("Color not found with ID: " + id));
     }
 
+    /**
+     * Converts a Color entity to a ColorDTO.
+     *
+     * @param color the color entity
+     * @return the color DTO
+     */
     private ColorDTO convertToDTO(Color color) {
         return new ColorDTO(
                 color.getId(),
@@ -136,6 +175,13 @@ public class ColorService {
                 color.getCategory().getName());
     }
 
+    /**
+     * Converts a ColorDTO to a Color entity.
+     *
+     * @param colorDTO the color DTO
+     * @param category the category to associate the color with
+     * @return the color entity
+     */
     private Color convertToEntity(ColorDTO colorDTO, Category category) {
         Color color = new Color();
         color.setName(colorDTO.getName());

@@ -31,6 +31,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+/**
+ * Service for AI-powered bathroom design generation.
+ * Integrates with OpenAI to generate product recommendations and positioning
+ * based on user preferences.
+ * Handles intelligent product placement with collision detection and room
+ * boundary validation.
+ */
 @Service
 public class AIDesignService {
 
@@ -41,6 +48,14 @@ public class AIDesignService {
     private final SceneService sceneService;
     private final ObjectMapper objectMapper;
 
+    /**
+     * Constructs an AIDesignService with required dependencies.
+     *
+     * @param productService service for product operations
+     * @param promptService  service for OpenAI prompt processing
+     * @param sceneService   service for scene management
+     * @param objectMapper   JSON object mapper
+     */
     @Autowired
     public AIDesignService(ProductService productService, OpenAIPromptService promptService,
             SceneService sceneService, ObjectMapper objectMapper) {
@@ -51,7 +66,15 @@ public class AIDesignService {
     }
 
     /**
-     * Generate an AI-powered bathroom design based on user preferences
+     * Generates an AI-powered bathroom design based on user preferences.
+     * Orchestrates the entire design generation process including product
+     * recommendations,
+     * positioning, and scene creation.
+     *
+     * @param request the design request containing style, features, and room
+     *                configuration
+     * @return AIDesignResponseDTO containing recommended products and design
+     *         details
      */
     public AIDesignResponseDTO generateDesign(AIDesignRequestDTO request) {
         logger.info("Starting AI design generation for style: {}, features: {}",
@@ -61,22 +84,17 @@ public class AIDesignService {
         response.setDesignId(UUID.randomUUID().toString());
 
         try {
-            // Generate product and covering recommendations
-            logger.debug("Generating product and covering recommendations...");
             generateProductRecommendations(request, response);
             logger.info("Generated {} product recommendations and {} covering recommendations",
                     response.getProductRecommendations() != null ? response.getProductRecommendations().size() : 0,
                     response.getCoveringRecommendations() != null ? response.getCoveringRecommendations().size() : 0);
 
-            // Set simple metadata from user input (no AI call needed)
             response.setStyle(request.getStyle());
             response.setColorPalettes(request.getColorPalettes());
             response.setFeatures(request.getFeatures());
-            response.setDescription("AI-generated bathroom design"); // Simple placeholder
+            response.setDescription("AI-generated bathroom design");
             response.setStatus(AIDesignResponseDTO.GenerationStatus.GENERATED);
 
-            // Save the design as a scene
-            logger.debug("Saving AI-generated design as scene...");
             saveDesignAsScene(request, response);
 
             logger.info("Successfully completed AI design generation with ID: {}", response.getDesignId());
@@ -91,21 +109,22 @@ public class AIDesignService {
     }
 
     /**
-     * Generate product and covering recommendations based on requested features
+     * Generates product and covering recommendations based on requested features.
+     * Filters products by price range if specified and sends formatted data to
+     * OpenAI.
+     *
+     * @param request  the design request with preferences
+     * @param response the response object to populate with recommendations
      */
     private void generateProductRecommendations(AIDesignRequestDTO request, AIDesignResponseDTO response) {
         logger.debug("Building product recommendations prompt...");
 
         Map<String, Object> templateData = buildTemplateData(request);
 
-        // Fetch showcase products (with descriptions) and all coverings
-        logger.debug("Fetching showcase products and coverings for AI selection...");
         List<ProductDTO> allProducts = productService.getProductsForAISelection();
         logger.info("Found {} products available for AI selection", allProducts.size());
 
-        // Filter products by price range if specified
         if (request.getPriceRange() != null && !request.getPriceRange().isEmpty()) {
-            logger.debug("Filtering products by price range: {}", request.getPriceRange());
             String priceRangeUpper = request.getPriceRange().toUpperCase();
             allProducts = allProducts.stream()
                     .filter(product -> product.getPriceRange() != null &&
@@ -114,14 +133,11 @@ public class AIDesignService {
             logger.info("After price range filter: {} products available", allProducts.size());
         }
 
-        // Format products as JSON for the prompt (includes coverings with descriptions)
         String productsJson = formatProductsForPrompt(allProducts);
         templateData.put("availableProducts", productsJson);
 
         String prompt = applyTemplate(PROMPTS.ProductRecommendationPrompt.getPromptText(), templateData);
         String aiResponse = promptService.generateDesignFromPrompt(prompt);
-
-        logger.debug("Received product recommendations response from OpenAI");
 
         parseRecommendations(aiResponse, response, request);
         logger.info("Parsed {} product and {} covering recommendations from AI response",
@@ -130,12 +146,14 @@ public class AIDesignService {
     }
 
     /**
-     * Save the AI-generated design as a scene in the database
+     * Saves the AI-generated design as a scene in the database.
+     * Creates scene with products, room model, and associated metadata.
+     *
+     * @param request  the original design request
+     * @param response the generated design response with recommendations
      */
     private void saveDesignAsScene(AIDesignRequestDTO request, AIDesignResponseDTO response) {
         try {
-            logger.debug("Creating scene DTO from AI design...");
-
             CreateSceneDTO sceneDTO = new CreateSceneDTO();
             sceneDTO.setName("AI Design - " + response.getStyle());
             sceneDTO.setDescription(response.getDescription());
@@ -143,13 +161,11 @@ public class AIDesignService {
             sceneDTO.setIsPublic(false);
             sceneDTO.setBackgroundColor("#0f172a");
 
-            // Convert product recommendations to scene products
             List<CreateSceneProductDTO> sceneProducts = new ArrayList<>();
             for (ProductRecommendationDTO rec : response.getProductRecommendations()) {
                 CreateSceneProductDTO productDTO = new CreateSceneProductDTO();
                 productDTO.setProductId(rec.getProductId());
 
-                // Find matching color ID if color name is specified
                 if (rec.getColor() != null && !rec.getColor().isEmpty()) {
                     try {
                         var colors = productService.getColorsForProduct(rec.getProductId());
@@ -161,8 +177,6 @@ public class AIDesignService {
                             if (matchingColor.isPresent()) {
                                 productDTO.setColorId(matchingColor.get().getId());
                             } else {
-                                logger.debug("Color '{}' not found for product '{}', using first available color",
-                                        rec.getColor(), rec.getProductName());
                                 if (!colors.isEmpty()) {
                                     productDTO.setColorId(colors.get(0).getId());
                                 }
@@ -187,11 +201,9 @@ public class AIDesignService {
             }
             sceneDTO.setProducts(sceneProducts);
 
-            // Add room model if available
             if (request.getRoomConfiguration() != null) {
                 CreateSceneRoomModelDTO roomModelDTO = new CreateSceneRoomModelDTO();
 
-                // Convert vertices to JSON string
                 try {
                     String verticesJson = objectMapper.writeValueAsString(
                             request.getRoomConfiguration().getVertices());
@@ -204,20 +216,15 @@ public class AIDesignService {
                 roomModelDTO.setRoomHeight(request.getRoomConfiguration().getHeight());
                 roomModelDTO.setModelType("CUSTOM");
 
-                // Add doors and windows to room properties
                 try {
                     Map<String, Object> roomProperties = new HashMap<>();
                     if (request.getRoomConfiguration().getDoors() != null
                             && !request.getRoomConfiguration().getDoors().isEmpty()) {
                         roomProperties.put("doors", request.getRoomConfiguration().getDoors());
-                        logger.debug("Added {} doors to room properties",
-                                request.getRoomConfiguration().getDoors().size());
                     }
                     if (request.getRoomConfiguration().getWindows() != null
                             && !request.getRoomConfiguration().getWindows().isEmpty()) {
                         roomProperties.put("windows", request.getRoomConfiguration().getWindows());
-                        logger.debug("Added {} windows to room properties",
-                                request.getRoomConfiguration().getWindows().size());
                     }
                     if (!roomProperties.isEmpty()) {
                         String roomPropertiesJson = objectMapper.writeValueAsString(roomProperties);
@@ -226,25 +233,25 @@ public class AIDesignService {
                     }
                 } catch (Exception e) {
                     logger.error("Failed to serialize room properties (doors/windows): {}", e.getMessage(), e);
-                    // Continue without room properties - don't fail the entire save
                 }
 
                 sceneDTO.setRoomModel(roomModelDTO);
             }
 
-            // Save the scene
-            logger.debug("Saving scene to database...");
             var savedScene = sceneService.createScene(sceneDTO);
             logger.info("Successfully saved AI design as scene with ID: {}", savedScene.getId());
 
         } catch (Exception e) {
             logger.error("Failed to save AI design as scene: {}", e.getMessage(), e);
-            // Don't throw - we still want to return the design even if scene save fails
         }
     }
 
     /**
-     * Build template data map for prompt generation
+     * Builds template data map for prompt generation.
+     * Extracts relevant information from the request for AI prompt construction.
+     *
+     * @param request the design request
+     * @return map of template variables and their values
      */
     private Map<String, Object> buildTemplateData(AIDesignRequestDTO request) {
         Map<String, Object> map = new HashMap<>();
@@ -252,7 +259,6 @@ public class AIDesignService {
         map.put("colorPalettes", request.getColorPalettes());
         map.put("features", request.getFeatures());
 
-        // Add detailed color palette descriptions for AI
         String colorPaletteDescriptions = getColorPaletteDescriptions(request.getColorPalettes());
         map.put("colorPaletteDescriptions", colorPaletteDescriptions);
 
@@ -271,7 +277,12 @@ public class AIDesignService {
     }
 
     /**
-     * Get detailed color descriptions for the selected color palettes
+     * Gets detailed color descriptions for the selected color palettes.
+     * Converts palette names to human-readable color descriptions for AI
+     * processing.
+     *
+     * @param colorPalettes list of color palette identifiers
+     * @return formatted string with color descriptions
      */
     private String getColorPaletteDescriptions(List<String> colorPalettes) {
         if (colorPalettes == null || colorPalettes.isEmpty()) {
@@ -303,7 +314,11 @@ public class AIDesignService {
     }
 
     /**
-     * Apply template substitution
+     * Applies template substitution to replace placeholders with actual values.
+     *
+     * @param template the template string with {{placeholders}}
+     * @param values   map of placeholder names to replacement values
+     * @return the processed template with substituted values
      */
     private String applyTemplate(String template, Map<String, Object> values) {
         String result = template;
@@ -315,7 +330,11 @@ public class AIDesignService {
     }
 
     /**
-     * Format products as JSON string for OpenAI prompt
+     * Formats products as JSON string for OpenAI prompt.
+     * Serializes product data including categories, colors, and mounting types.
+     *
+     * @param products list of products to format
+     * @return JSON string representation of products, or empty array on error
      */
     private String formatProductsForPrompt(List<ProductDTO> products) {
         try {
@@ -331,7 +350,6 @@ public class AIDesignService {
                 productMap.put("priceRange", product.getPriceRange());
                 productMap.put("mountingType", product.getMountingType());
 
-                // Add available colors
                 List<String> colorNames = product.getAvailableColors().stream()
                         .map(color -> color.getName())
                         .collect(java.util.stream.Collectors.toList());
@@ -356,14 +374,12 @@ public class AIDesignService {
      */
     private RoomBounds extractRoomBounds(RoomConfigurationDTO roomConfig) {
         if (roomConfig == null || roomConfig.getVertices() == null || roomConfig.getVertices().isEmpty()) {
-            // Default room: 2.2m x 2.2m
             logger.debug("No room configuration provided, using default bounds");
             return new RoomBounds(-1.1, 1.1, -1.1, 1.1);
         }
 
         List<VertexDTO> vertices = roomConfig.getVertices();
 
-        // Calculate centroid
         double centerX = vertices.stream()
                 .mapToDouble(VertexDTO::getX)
                 .average().orElse(0);
@@ -371,7 +387,6 @@ public class AIDesignService {
                 .mapToDouble(VertexDTO::getY)
                 .average().orElse(0);
 
-        // Convert to 3D coordinates (cm to meters: multiply by 0.01)
         List<Position3D> vertices3D = new ArrayList<>();
         for (VertexDTO vertex : vertices) {
             double x = (vertex.getX() - centerX) * 0.01;
@@ -379,7 +394,6 @@ public class AIDesignService {
             vertices3D.add(new Position3D(x, 0, z));
         }
 
-        // Calculate bounding box
         double minX = vertices3D.stream()
                 .mapToDouble(v -> v.x)
                 .min().orElse(-1.1);
@@ -399,10 +413,13 @@ public class AIDesignService {
     }
 
     /**
-     * Calculate positions for AI-recommended products using smart placement.
+     * Calculates positions for AI-recommended products using smart placement.
      * Uses actual room vertices for L-shaped, U-shaped, and irregular rooms.
-     * Validates that products fit inside the room polygon.
-     * Bathtubs are always placed in the center.
+     * Validates that products fit inside the room polygon and don't collide.
+     * Bathtubs are always placed in the center when possible.
+     *
+     * @param products list of recommended products to position
+     * @param request  the design request containing room configuration
      */
     private void calculateProductPositions(
             List<ProductRecommendationDTO> products,
@@ -413,15 +430,11 @@ public class AIDesignService {
 
         logger.info("Calculating positions for {} products using smart placement", products.size());
 
-        // Extract room bounds
         RoomBounds room = extractRoomBounds(request.getRoomConfiguration());
         logger.info("Room bounds: {}", room);
 
-        // Safety buffer to add extra space from walls
-        final double SAFETY_BUFFER = 0.25; // 25cm extra clearance
+        final double SAFETY_BUFFER = 0.25;
 
-        // Sort products: bathtubs go last (will be placed in center)
-        // Other large items also sorted by size so largest items get placed last
         products.sort((a, b) -> {
             boolean aIsBathtub = "bathtubs".equalsIgnoreCase(a.getCategory()) ||
                     "bath tubs".equalsIgnoreCase(a.getCategory()) ||
@@ -430,14 +443,11 @@ public class AIDesignService {
                     "bath tubs".equalsIgnoreCase(b.getCategory()) ||
                     b.getCategory().toLowerCase().contains("bathtub");
 
-            // Bathtubs always go last (to center)
             if (aIsBathtub && !bIsBathtub)
                 return 1;
             if (!aIsBathtub && bIsBathtub)
                 return -1;
 
-            // For non-bathtubs, sort by footprint (smaller first, so larger ones go toward
-            // center)
             ProductDimensions dimsA = ProductDimensions.forCategory(a.getCategory());
             ProductDimensions dimsB = ProductDimensions.forCategory(b.getCategory());
             return Double.compare(dimsA.getFootprint(), dimsB.getFootprint());
@@ -447,23 +457,17 @@ public class AIDesignService {
                 .map(p -> p.getProductName() + " (" + p.getCategory() + ")")
                 .toList());
 
-        // Track used positions to avoid placing multiple products at the same spot
         List<BoundingBox2D> usedPositions = new ArrayList<>();
 
-        // Assign products to positions
         for (int i = 0; i < products.size(); i++) {
             ProductRecommendationDTO product = products.get(i);
 
-            // Get product dimensions based on category
             ProductDimensions dims = ProductDimensions.forCategory(product.getCategory());
-            logger.debug("Product '{}' dimensions: {}", product.getProductName(), dims);
 
-            // Check if this is a bathtub (should go in center)
             boolean isBathtub = "bathtubs".equalsIgnoreCase(product.getCategory()) ||
                     "bath tubs".equalsIgnoreCase(product.getCategory()) ||
                     product.getCategory().toLowerCase().contains("bathtub");
 
-            // Find a valid position for this product
             Position3D position = findValidPosition(room, dims, usedPositions, SAFETY_BUFFER, isBathtub);
 
             if (position == null) {
@@ -472,7 +476,6 @@ public class AIDesignService {
                 position = room.getCenter();
             }
 
-            // Get height based on mounting type
             double height = getDefaultHeightForMountingType(product.getMountingType());
 
             product.setPositionX(position.x);
@@ -482,7 +485,6 @@ public class AIDesignService {
             product.setRotationY(0.0);
             product.setRotationZ(0.0);
 
-            // Record this position as used
             BoundingBox2D productBox = new BoundingBox2D(position, dims);
             usedPositions.add(productBox);
 
@@ -497,18 +499,24 @@ public class AIDesignService {
     }
 
     /**
-     * Find a valid position for a product that:
+     * Finds a valid position for a product that:
      * 1. Is inside the room polygon
      * 2. Doesn't collide with already placed products
      * 3. Has proper clearance from walls
      * 4. Spreads items evenly across the room
+     *
+     * @param room          the room boundaries
+     * @param dims          the product dimensions
+     * @param usedPositions list of already occupied positions
+     * @param safetyBuffer  minimum clearance from walls and objects
+     * @param preferCenter  whether to prefer center placement (for bathtubs)
+     * @return valid Position3D or null if no valid position found
      */
     private Position3D findValidPosition(RoomBounds room, ProductDimensions dims,
             List<BoundingBox2D> usedPositions,
             double safetyBuffer, boolean preferCenter) {
         double offset = Math.max(dims.getWidth(), dims.getDepth()) / 2.0 + safetyBuffer;
 
-        // If product should be in center (bathtubs), try center first
         if (preferCenter) {
             Position3D center = room.getCenter();
             if (isValidPosition(center, dims, room, usedPositions)) {
@@ -517,31 +525,23 @@ public class AIDesignService {
             }
         }
 
-        // Generate candidate positions in priority order
         List<Position3D> candidates = new ArrayList<>();
 
-        // Strategy 1: Bounding box corners (prioritize spreading to corners)
-        // This ensures items spread out across the room first
         candidates.add(new Position3D(room.getMinX() + offset, 0, room.getMaxZ() - offset)); // Top-left
         candidates.add(new Position3D(room.getMaxX() - offset, 0, room.getMaxZ() - offset)); // Top-right
         candidates.add(new Position3D(room.getMinX() + offset, 0, room.getMinZ() + offset)); // Bottom-left
         candidates.add(new Position3D(room.getMaxX() - offset, 0, room.getMinZ() + offset)); // Bottom-right
 
-        // Strategy 2: Edge midpoints (for better distribution)
         double midX = (room.getMinX() + room.getMaxX()) / 2.0;
         double midZ = (room.getMinZ() + room.getMaxZ()) / 2.0;
-        candidates.add(new Position3D(midX, 0, room.getMaxZ() - offset)); // Top-middle
-        candidates.add(new Position3D(midX, 0, room.getMinZ() + offset)); // Bottom-middle
-        candidates.add(new Position3D(room.getMinX() + offset, 0, midZ)); // Left-middle
-        candidates.add(new Position3D(room.getMaxX() - offset, 0, midZ)); // Right-middle
+        candidates.add(new Position3D(midX, 0, room.getMaxZ() - offset));
+        candidates.add(new Position3D(midX, 0, room.getMinZ() + offset));
+        candidates.add(new Position3D(room.getMinX() + offset, 0, midZ));
+        candidates.add(new Position3D(room.getMaxX() - offset, 0, midZ));
 
-        // Strategy 3: Use actual room vertices if available (for L, U, irregular
-        // shapes)
-        // These provide additional placement options specific to the room shape
         if (room.hasVertices()) {
             List<Position3D> vertices = room.getVertices();
             for (Position3D vertex : vertices) {
-                // Try positions offset inward from each vertex
                 candidates.add(new Position3D(vertex.x + offset, 0, vertex.z + offset));
                 candidates.add(new Position3D(vertex.x - offset, 0, vertex.z + offset));
                 candidates.add(new Position3D(vertex.x + offset, 0, vertex.z - offset));
@@ -549,20 +549,17 @@ public class AIDesignService {
             }
         }
 
-        // Strategy 4: Center (only for non-bathtubs as last resort before grid)
         if (!preferCenter) {
             candidates.add(room.getCenter());
         }
 
-        // Strategy 5: Grid sampling across the room (last resort)
-        double stepSize = 0.5; // 50cm grid
+        double stepSize = 0.5;
         for (double x = room.getMinX() + offset; x <= room.getMaxX() - offset; x += stepSize) {
             for (double z = room.getMinZ() + offset; z <= room.getMaxZ() - offset; z += stepSize) {
                 candidates.add(new Position3D(x, 0, z));
             }
         }
 
-        // Try each candidate position
         for (Position3D candidate : candidates) {
             if (isValidPosition(candidate, dims, room, usedPositions)) {
                 logger.debug("Found valid position at ({}, {})",
@@ -572,26 +569,29 @@ public class AIDesignService {
             }
         }
 
-        return null; // No valid position found
+        return null;
     }
 
     /**
-     * Check if a position is valid for placing a product:
-     * - Product must fit entirely inside the room polygon
-     * - Product must not collide with already placed products
+     * Checks if a position is valid for placing a product.
+     * Validates that the product fits entirely inside the room polygon
+     * and doesn't collide with already placed products.
+     *
+     * @param position      the position to check
+     * @param dims          the product dimensions
+     * @param room          the room boundaries
+     * @param usedPositions list of already occupied positions
+     * @return true if the position is valid, false otherwise
      */
     private boolean isValidPosition(Position3D position, ProductDimensions dims,
             RoomBounds room, List<BoundingBox2D> usedPositions) {
-        // Create bounding box for this product at this position
         BoundingBox2D productBox = new BoundingBox2D(position, dims);
 
-        // Check 1: Product must fit inside the room polygon
         if (!room.containsBox(productBox)) {
             return false;
         }
 
-        // Check 2: Product must not collide with already placed products
-        final double COLLISION_BUFFER = 0.15; // 15cm clearance between products
+        final double COLLISION_BUFFER = 0.15;
         for (BoundingBox2D usedBox : usedPositions) {
             if (productBox.intersects(usedBox, COLLISION_BUFFER)) {
                 return false;
@@ -602,32 +602,40 @@ public class AIDesignService {
     }
 
     /**
-     * Get the default Y-height for a product based on its mounting type
-     * Matches the frontend's default placement logic
+     * Gets the default Y-height for a product based on its mounting type.
+     * Matches the frontend's default placement logic.
+     *
+     * @param mountingType the mounting type (WALL, FLOOR, FREESTANDING)
+     * @return the default Y-coordinate height in meters
      */
     private double getDefaultHeightForMountingType(String mountingType) {
         if (mountingType == null) {
-            return 0.08; // Default to floor level
+            return 0.08;
         }
 
         return switch (mountingType) {
-            case "WALL" -> 0.38; // Wall-mounted items at 38cm
-            case "FLOOR" -> 0.08; // Floor items at 8cm
-            case "FREESTANDING" -> 0.08; // Freestanding items at 8cm
-            default -> 0.08; // Default to floor level
+            case "WALL" -> 0.38;
+            case "FLOOR" -> 0.08;
+            case "FREESTANDING" -> 0.08;
+            default -> 0.08;
         };
     }
 
     /**
-     * Parse product and covering recommendations from JSON response
+     * Parses product and covering recommendations from JSON response.
+     * Validates products against the database and enriches recommendations with
+     * full product data.
+     *
+     * @param json     the JSON response from OpenAI
+     * @param response the response object to populate
+     * @param request  the original request for position calculation
+     * @throws RuntimeException if JSON parsing fails
      */
     private void parseRecommendations(String json, AIDesignResponseDTO response, AIDesignRequestDTO request) {
         try {
-            // Parse the response which contains both products and coverings
             Map<String, Object> aiResult = objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {
             });
 
-            // Parse products array
             if (aiResult.containsKey("products")) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> productsRaw = (List<Map<String, Object>>) aiResult.get("products");
@@ -637,14 +645,12 @@ public class AIDesignService {
                     String productName = (String) productData.get("productName");
                     String color = (String) productData.get("color");
 
-                    // Look up the actual product by name
                     ProductDTO actualProduct = productService.findByName(productName);
                     if (actualProduct == null) {
                         logger.warn("AI recommended unknown product: {}", productName);
                         continue;
                     }
 
-                    // Build complete recommendation with correct data from database
                     ProductRecommendationDTO rec = new ProductRecommendationDTO();
                     rec.setProductId(actualProduct.getId());
                     rec.setProductName(actualProduct.getName());
@@ -660,13 +666,11 @@ public class AIDesignService {
                     products.add(rec);
                 }
 
-                // Calculate positions for products to avoid overlap
                 calculateProductPositions(products, request);
 
                 response.setProductRecommendations(products);
             }
 
-            // Parse coverings array
             if (aiResult.containsKey("coverings")) {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> coveringsRaw = (List<Map<String, Object>>) aiResult.get("coverings");
@@ -676,21 +680,19 @@ public class AIDesignService {
                     String productName = (String) coveringData.get("productName");
                     String surfaceType = (String) coveringData.get("surfaceType");
 
-                    // Look up the actual product by name
                     ProductDTO actualProduct = productService.findByName(productName);
                     if (actualProduct == null) {
                         logger.warn("AI recommended unknown covering: {}", productName);
                         continue;
                     }
 
-                    // Build complete recommendation with correct data from database
                     CoveringRecommendationDTO rec = new CoveringRecommendationDTO();
                     rec.setProductId(actualProduct.getId());
                     rec.setProductName(actualProduct.getName());
                     rec.setCategory(actualProduct.getCategoryName());
                     rec.setSurfaceType(surfaceType != null ? surfaceType : "wall");
-                    rec.setRepeatX(3.0); // Sensible default
-                    rec.setRepeatY(3.0); // Sensible default
+                    rec.setRepeatX(3.0);
+                    rec.setRepeatY(3.0);
 
                     coverings.add(rec);
                     logger.info("Resolved covering '{}' to ID {} (surfaceType: {})",
@@ -706,7 +708,11 @@ public class AIDesignService {
     }
 
     /**
-     * Validate design request
+     * Validates a design request for required fields.
+     * Checks that style, color palettes, and features are provided.
+     *
+     * @param request the design request to validate
+     * @return true if request is valid, false otherwise
      */
     public boolean validateRequest(AIDesignRequestDTO request) {
         if (request == null) {
@@ -726,7 +732,12 @@ public class AIDesignService {
     }
 
     /**
-     * Test OpenAI connection with a simple prompt
+     * Tests OpenAI connection with a simple prompt.
+     * Used for diagnostics and connection validation.
+     *
+     * @param testPrompt the test prompt to send
+     * @return the AI response
+     * @throws RuntimeException if connection test fails
      */
     public String testOpenAIConnection(String testPrompt) {
         logger.info("Testing OpenAI connection with prompt: {}", testPrompt);
@@ -742,7 +753,10 @@ public class AIDesignService {
     }
 
     /**
-     * Get products available for AI selection (for debugging)
+     * Gets products available for AI selection.
+     * Primarily used for debugging and testing.
+     *
+     * @return list of products available for AI recommendation
      */
     public List<ProductDTO> getProductsForAISelection() {
         return productService.getProductsForAISelection();

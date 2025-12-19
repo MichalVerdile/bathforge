@@ -10,7 +10,6 @@ import com.bathforge.model.user.UserRole;
 import com.bathforge.repository.products.CategoryRepository;
 import com.bathforge.repository.products.ColorRepository;
 import com.bathforge.repository.quote.QuoteRequestRepository;
-import com.bathforge.repository.QuoteRequestMessageRepository;
 import com.bathforge.repository.user.UserRepository;
 import com.bathforge.service.products.CategoryService;
 
@@ -54,12 +53,10 @@ public class RepositoryIntegrationTest {
     @Autowired
     private CategoryService categoryService;
 
-    // ========== Category Repository Tests ==========
-
     @Test
     @DisplayName("CategoryRepository: Find by name returns category")
     public void testCategoryFindByName() {
-        CategoryDTO categoryDTO = categoryService.createCategory(
+        categoryService.createCategory(
                 new CategoryDTO("test_category", "Test Category"));
 
         Optional<Category> found = categoryRepository.findByNameIgnoreCase("test_category");
@@ -90,7 +87,6 @@ public class RepositoryIntegrationTest {
 
         assertTrue(categories.size() >= 3);
 
-        // Verify our test categories are in alphabetical order
         List<String> testCategories = categories.stream()
                 .map(Category::getName)
                 .filter(name -> name.equals("alpha") || name.equals("middle") || name.equals("zebra"))
@@ -121,8 +117,6 @@ public class RepositoryIntegrationTest {
 
         assertTrue(exists);
     }
-
-    // ========== Color Repository Tests ==========
 
     @Test
     @DisplayName("ColorRepository: Find by name returns color")
@@ -185,8 +179,6 @@ public class RepositoryIntegrationTest {
         assertEquals("Yellow", found.get().getName());
     }
 
-    // ========== User Repository Tests ==========
-
     @Test
     @DisplayName("UserRepository: Find by email returns user")
     public void testUserFindByEmail() {
@@ -243,8 +235,6 @@ public class RepositoryIntegrationTest {
         });
     }
 
-    // ========== Quote Request Repository Tests ==========
-
     @Test
     @DisplayName("QuoteRequestRepository: Find by user ID ordered by created date")
     public void testQuoteRequestFindByUserId() {
@@ -273,8 +263,6 @@ public class RepositoryIntegrationTest {
         assertEquals(2, requests.size());
         assertEquals("6m x 5m", requests.get(0).getRoomDimensions());
     }
-
-    // ========== Quote Request Message Repository Tests ==========
 
     @Test
     @DisplayName("QuoteRequestMessageRepository: Find by quote request ID ordered by created date")

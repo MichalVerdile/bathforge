@@ -68,20 +68,17 @@ public class SceneServiceTest {
 
     @BeforeEach
     public void setUp() {
-        // Create test category
         testCategory = new Category();
         testCategory.setName("test_category");
         testCategory.setDescription("Test Category");
         testCategory = categoryRepository.save(testCategory);
 
-        // Create test color
         testColor = new Color();
         testColor.setName("Test White");
         testColor.setHexCode("#ffffff");
         testColor.setCategory(testCategory);
         testColor = colorRepository.save(testColor);
 
-        // Create test product
         testProduct = new Product();
         testProduct.setName("Test Product");
         testProduct.setDescription("Test Product for Scene Tests");
@@ -91,8 +88,6 @@ public class SceneServiceTest {
         testProduct.setCategory(testCategory);
         testProduct = productRepository.save(testProduct);
     }
-
-    // ===== Scene Persistence Tests =====
 
     @Test
     @DisplayName("Scene Persistence: Create scene with products")
@@ -135,11 +130,8 @@ public class SceneServiceTest {
 
         SceneDTO savedScene = sceneService.createScene(createDTO);
 
-        // Verify scene was created successfully
         assertNotNull(savedScene.getId());
         assertEquals("Scene with Room", savedScene.getName());
-        // Note: Room model may or may not be included in the returned DTO depending on
-        // implementation
     }
 
     @Test
@@ -159,7 +151,6 @@ public class SceneServiceTest {
 
         SceneDTO savedScene = sceneService.createScene(createDTO);
 
-        // Retrieve and verify relationships
         Optional<Scene> retrieved = sceneRepository.findById(savedScene.getId());
         assertTrue(retrieved.isPresent());
 
@@ -171,8 +162,6 @@ public class SceneServiceTest {
         assertEquals(testProduct.getId(), sceneProduct.getProduct().getId());
         assertEquals(testColor.getId(), sceneProduct.getColor().getId());
     }
-
-    // ===== Cascade Delete Tests =====
 
     @Test
     @DisplayName("Cascade: Deleting scene removes all products")
@@ -200,14 +189,11 @@ public class SceneServiceTest {
         SceneDTO savedScene = sceneService.createScene(createDTO);
         Long sceneId = savedScene.getId();
 
-        // Verify products exist
         List<SceneProduct> products = sceneProductRepository.findBySceneId(sceneId);
         assertEquals(2, products.size());
 
-        // Delete scene
         sceneService.deleteScene(sceneId);
 
-        // Verify cascade delete removed products
         List<SceneProduct> remainingProducts = sceneProductRepository.findBySceneId(sceneId);
         assertEquals(0, remainingProducts.size());
     }
@@ -228,18 +214,10 @@ public class SceneServiceTest {
         SceneDTO savedScene = sceneService.createScene(createDTO);
         Long sceneId = savedScene.getId();
 
-        // Verify room model exists
         SceneRoomModel roomModel = sceneRoomModelRepository.findBySceneId(sceneId);
         assertNotNull(roomModel, "Room model should be created");
 
-        // Delete scene
         sceneService.deleteScene(sceneId);
-
-        // Note: Cascade delete may or may not be configured - this depends on JPA
-        // entity configuration
-        // If this assertion fails, it means cascade delete is not configured for room
-        // models
-        // which is acceptable for this application
     }
 
     @Test
@@ -260,17 +238,10 @@ public class SceneServiceTest {
         SceneDTO savedScene = sceneService.createScene(createDTO);
         Long sceneId = savedScene.getId();
 
-        // Verify covering exists
         List<SceneCovering> coverings = sceneCoveringRepository.findBySceneId(sceneId);
         assertEquals(1, coverings.size());
 
-        // Delete scene
         sceneService.deleteScene(sceneId);
-
-        // Note: Cascade delete may or may not be configured - this depends on JPA
-        // entity configuration
-        // If cascade delete is not configured, coverings may remain in database
-        // which is acceptable depending on business requirements
     }
 
     @Test
@@ -291,16 +262,12 @@ public class SceneServiceTest {
         SceneDTO savedScene = sceneService.createScene(createDTO);
         Long productId = testProduct.getId();
 
-        // Delete scene
         sceneService.deleteScene(savedScene.getId());
 
-        // Verify product still exists (not cascade deleted)
         Optional<Product> productStillExists = productRepository.findById(productId);
         assertTrue(productStillExists.isPresent());
         assertEquals("Test Product", productStillExists.get().getName());
     }
-
-    // ===== Scene Update Tests =====
 
     @Test
     @DisplayName("Update: Update scene products correctly")
@@ -319,7 +286,6 @@ public class SceneServiceTest {
 
         SceneDTO savedScene = sceneService.createScene(createDTO);
 
-        // Update with different products
         UpdateSceneDTO updateDTO = new UpdateSceneDTO();
         CreateSceneProductDTO updatedProduct = new CreateSceneProductDTO();
         updatedProduct.setProductId(testProduct.getId());
@@ -338,8 +304,6 @@ public class SceneServiceTest {
         assertEquals(3.0, updatedProductDTO.getPositionZ());
     }
 
-    // ===== Scene Serialization Tests =====
-
     @Test
     @DisplayName("Serialization: Complex scene with all entities")
     public void testComplexSceneSerialization() {
@@ -350,7 +314,6 @@ public class SceneServiceTest {
         createDTO.setCameraPosition("{\"x\":5,\"y\":2,\"z\":5}");
         createDTO.setBackgroundColor("#f0f0f0");
 
-        // Add product
         CreateSceneProductDTO productDTO = new CreateSceneProductDTO();
         productDTO.setProductId(testProduct.getId());
         productDTO.setColorId(testColor.getId());
@@ -361,7 +324,6 @@ public class SceneServiceTest {
         productDTO.setScaleX(1.2);
         createDTO.setProducts(Arrays.asList(productDTO));
 
-        // Add room model
         CreateSceneRoomModelDTO roomDTO = new CreateSceneRoomModelDTO();
         roomDTO.setVerticesData(
                 "[{\"x\":0,\"y\":0},{\"x\":3.5,\"y\":0},{\"x\":3.5,\"y\":3,\"y\":0},{\"x\":0,\"y\":3}]");
@@ -369,7 +331,6 @@ public class SceneServiceTest {
         roomDTO.setModelType("CUSTOM");
         createDTO.setRoomModel(roomDTO);
 
-        // Add covering
         CreateSceneCoveringDTO coveringDTO = new CreateSceneCoveringDTO();
         coveringDTO.setProductId(testProduct.getId());
         coveringDTO.setSurfaceType("floor");
@@ -379,29 +340,21 @@ public class SceneServiceTest {
 
         SceneDTO savedScene = sceneService.createScene(createDTO);
 
-        // Verify all data persisted correctly
         assertNotNull(savedScene.getId());
         assertEquals("Complex Scene", savedScene.getName());
         assertEquals("{\"x\":5,\"y\":2,\"z\":5}", savedScene.getCameraPosition());
         assertEquals("#f0f0f0", savedScene.getBackgroundColor());
-        // Room model, products, and coverings may not be loaded in the initial DTO
-        // response
-        // This depends on the DTO conversion strategy used by the service
 
-        // Retrieve and verify deserialization
         Optional<SceneDTO> retrievedOpt = sceneService.getSceneById(savedScene.getId());
         assertTrue(retrievedOpt.isPresent(), "Scene should be retrievable after creation");
 
         SceneDTO retrieved = retrievedOpt.get();
         assertEquals(savedScene.getName(), retrieved.getName());
-        // Room model and other complex fields may not be fully loaded depending on DTO
-        // conversion
     }
 
     @Test
     @DisplayName("Query: Find scenes by username")
     public void testFindScenesByUsername() {
-        // Create multiple scenes for same user
         for (int i = 1; i <= 3; i++) {
             CreateSceneDTO createDTO = new CreateSceneDTO();
             createDTO.setName("User Scene " + i);
@@ -409,14 +362,11 @@ public class SceneServiceTest {
             sceneService.createScene(createDTO);
         }
 
-        // Create scene for different user
         CreateSceneDTO otherUserScene = new CreateSceneDTO();
         otherUserScene.setName("Other User Scene");
         otherUserScene.setUser("otheruser");
         sceneService.createScene(otherUserScene);
 
-        // Note: getScenesByUsername method doesn't exist in SceneService
-        // This test would need to use getAllScenes() and filter manually
         List<SceneDTO> allScenes = sceneService.getAllScenes();
         List<SceneDTO> userScenes = allScenes.stream()
                 .filter(s -> "testuser".equals(s.getUser()))
@@ -431,7 +381,6 @@ public class SceneServiceTest {
     public void testSceneRequiresName() {
         CreateSceneDTO createDTO = new CreateSceneDTO();
         createDTO.setUser("testuser");
-        // Missing name
 
         assertThrows(Exception.class, () -> {
             sceneService.createScene(createDTO);
@@ -443,11 +392,7 @@ public class SceneServiceTest {
     public void testSceneRequiresUser() {
         CreateSceneDTO createDTO = new CreateSceneDTO();
         createDTO.setName("Test Scene");
-        createDTO.setUser(""); // Empty user
-
-        // Note: Validation may or may not reject empty strings vs null
-        // If this test fails, it means the service accepts empty user strings
-        // which may be acceptable depending on validation requirements
+        createDTO.setUser("");
         SceneDTO result = sceneService.createScene(createDTO);
         assertNotNull(result, "Scene creation should complete even with empty user");
     }

@@ -18,7 +18,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -48,14 +47,12 @@ public class ProductServiceTest {
 
     @BeforeEach
     public void setup() {
-        // Create test categories
         basinCategory = categoryService.createCategory(
                 new CategoryDTO("test_basins", "Test basins category"));
 
         bathtubCategory = categoryService.createCategory(
                 new CategoryDTO("test_bathtubs", "Test bathtubs category"));
 
-        // Create test products with different attributes
         expensiveWallBasin = productService.createProduct(new ProductDTO(
                 "Expensive Wall Basin",
                 "A high-end wall-mounted basin",
@@ -115,12 +112,10 @@ public class ProductServiceTest {
         List<ProductDTO> mediumProducts = productService.getProductsByPriceRange(PriceRange.MEDIUM);
         List<ProductDTO> expensiveProducts = productService.getProductsByPriceRange(PriceRange.HIGH);
 
-        // At least one of each price range should exist from setup
         assertTrue(cheapProducts.size() >= 1);
         assertTrue(mediumProducts.size() >= 1);
         assertTrue(expensiveProducts.size() >= 1);
 
-        // Verify all products have correct price range
         assertTrue(cheapProducts.stream().allMatch(p -> p.getPriceRange() == PriceRange.LOW));
         assertTrue(mediumProducts.stream().allMatch(p -> p.getPriceRange() == PriceRange.MEDIUM));
         assertTrue(expensiveProducts.stream().allMatch(p -> p.getPriceRange() == PriceRange.HIGH));
@@ -160,7 +155,6 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product filtering - Combined filters work correctly")
     public void testCombinedFilters() {
-        // Filter by category and price range
         List<ProductDTO> cheapBasins = productService.getProductsWithFilters(
                 basinCategory.getId(),
                 PriceRange.LOW,
@@ -169,7 +163,6 @@ public class ProductServiceTest {
         assertEquals(1, cheapBasins.size());
         assertEquals("Cheap Floor Basin", cheapBasins.get(0).getName());
 
-        // Filter by category and mounting type
         List<ProductDTO> wallBasins = productService.getProductsWithFilters(
                 basinCategory.getId(),
                 null,
@@ -178,7 +171,6 @@ public class ProductServiceTest {
         assertTrue(wallBasins.size() >= 1);
         assertTrue(wallBasins.stream().anyMatch(p -> p.getName().equals("Expensive Wall Basin")));
 
-        // Filter by price range and mounting type
         List<ProductDTO> expensiveWallProducts = productService.getProductsWithFilters(
                 null,
                 PriceRange.HIGH,
@@ -187,7 +179,6 @@ public class ProductServiceTest {
         assertTrue(expensiveWallProducts.size() >= 1);
         assertTrue(expensiveWallProducts.stream().anyMatch(p -> p.getName().equals("Expensive Wall Basin")));
 
-        // All three filters
         List<ProductDTO> specificProduct = productService.getProductsWithFilters(
                 basinCategory.getId(),
                 PriceRange.HIGH,
@@ -200,16 +191,13 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product filtering - Empty results when no matches")
     public void testEmptyResults() {
-        // Search for non-existent product
         List<ProductDTO> noResults = productService.searchProductsByName("NonExistentProduct");
         assertEquals(0, noResults.size());
 
-        // Filter with impossible combination
         List<ProductDTO> impossibleFilter = productService.getProductsWithFilters(
                 basinCategory.getId(),
                 PriceRange.LOW,
-                MountingType.WALL // No cheap wall-mounted basins exist
-        );
+                MountingType.WALL);
 
         assertEquals(0, impossibleFilter.size());
     }
@@ -217,7 +205,6 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product filtering - Edge case with multiple price ranges")
     public void testMultiplePriceRanges() {
-        // Get all products and verify they're in different price ranges
         List<ProductDTO> allProducts = productService.getAllProducts();
 
         long cheapCount = allProducts.stream()
@@ -238,21 +225,17 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product color association - Add and retrieve colors for product")
     public void testProductColorAssociation() {
-        // Create colors
         ColorDTO whiteColor = colorService.createColor(
                 new ColorDTO("White", "#ffffff", basinCategory.getId()));
         ColorDTO blackColor = colorService.createColor(
                 new ColorDTO("Black", "#000000", basinCategory.getId()));
 
-        // Add colors to product
         productService.addColorToProduct(expensiveWallBasin.getId(), whiteColor.getId());
         productService.addColorToProduct(expensiveWallBasin.getId(), blackColor.getId());
 
-        // Retrieve product with colors
         List<ColorDTO> productColors = productService.getColorsForProduct(expensiveWallBasin.getId());
         assertEquals(2, productColors.size());
 
-        // Verify colors are correct
         assertTrue(productColors.stream().anyMatch(c -> c.getName().equals("White")));
         assertTrue(productColors.stream().anyMatch(c -> c.getName().equals("Black")));
     }
@@ -260,19 +243,15 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product color association - Remove color from product")
     public void testRemoveColorFromProduct() {
-        // Create and add color
         ColorDTO testColor = colorService.createColor(
                 new ColorDTO("Test Color", "#123456", basinCategory.getId()));
 
         productService.addColorToProduct(cheapFloorBasin.getId(), testColor.getId());
 
-        // Verify color was added
         assertEquals(1, productService.getColorsForProduct(cheapFloorBasin.getId()).size());
 
-        // Remove color
         productService.removeColorFromProduct(cheapFloorBasin.getId(), testColor.getId());
 
-        // Verify color was removed
         assertEquals(0, productService.getColorsForProduct(cheapFloorBasin.getId()).size());
     }
 
@@ -321,13 +300,10 @@ public class ProductServiceTest {
     public void testDeleteProduct() {
         Long productId = mediumBathtub.getId();
 
-        // Verify product exists
         assertTrue(productService.getProductById(productId).isPresent());
 
-        // Delete product
         productService.deleteProduct(productId);
 
-        // Verify product was deleted
         assertFalse(productService.getProductById(productId).isPresent());
     }
 
@@ -348,7 +324,6 @@ public class ProductServiceTest {
         List<ProductDTO> upperCaseResults = productService.searchProductsByName("BASIN");
         List<ProductDTO> mixedCaseResults = productService.searchProductsByName("BaSiN");
 
-        // All should return the same results
         assertTrue(lowerCaseResults.size() >= 2);
         assertEquals(lowerCaseResults.size(), upperCaseResults.size());
         assertEquals(lowerCaseResults.size(), mixedCaseResults.size());
@@ -357,7 +332,6 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product filtering - Partial name match works")
     public void testPartialNameMatch() {
-        // Search for partial matches
         List<ProductDTO> wallResults = productService.searchProductsByName("Wall");
         List<ProductDTO> floorResults = productService.searchProductsByName("Floor");
 
@@ -371,13 +345,10 @@ public class ProductServiceTest {
     @Test
     @DisplayName("Product filtering - Get products for AI selection returns all products")
     public void testGetProductsForAISelection() {
-        // Get products for AI (should return all products with necessary fields)
         List<ProductDTO> aiProducts = productService.getProductsForAISelection();
 
         assertNotNull(aiProducts);
-        // Should include at least our test products
         assertTrue(aiProducts.size() >= 3);
-        // Verify test products are included
         assertTrue(aiProducts.stream().anyMatch(p -> p.getName().equals("Expensive Wall Basin")));
         assertTrue(aiProducts.stream().anyMatch(p -> p.getName().equals("Cheap Floor Basin")));
         assertTrue(aiProducts.stream().anyMatch(p -> p.getName().equals("Medium Bathtub")));

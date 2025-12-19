@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Base64;
 
 /**
- * Service for handling OpenAI API interactions
+ * Service for handling OpenAI API interactions.
+ * Manages prompt generation, chat completion requests, and image encoding for
+ * AI-powered features.
  */
 @Service
 public class OpenAIPromptService {
@@ -29,16 +31,27 @@ public class OpenAIPromptService {
 
     private final OpenAiService openAiService;
 
+    /** The OpenAI model to use for chat completions */
     @Value("${openai.api.model:gpt-5-nano}")
     private String openaiModel;
 
+    /**
+     * Constructs an OpenAIPromptService with the OpenAI service.
+     *
+     * @param openAiService the OpenAI service for API interactions
+     */
     @Autowired
     public OpenAIPromptService(OpenAiService openAiService) {
         this.openAiService = openAiService;
     }
 
     /**
-     * Send prompt to OpenAI and get response
+     * Sends a prompt to OpenAI and gets the response.
+     * Includes a system message defining the AI's role as a bathroom designer.
+     *
+     * @param prompt the user prompt to send to OpenAI
+     * @return the AI-generated response text
+     * @throws RuntimeException if the API call fails
      */
     public String generateDesignFromPrompt(String prompt) {
         logger.info("Sending prompt to OpenAI: {}", prompt.substring(0, Math.min(100, prompt.length())));
@@ -70,7 +83,12 @@ public class OpenAIPromptService {
     }
 
     /**
-     * Load image from URL or local path and convert to base64
+     * Loads an image from a URL or local path and converts it to base64.
+     * Supports HTTP/HTTPS URLs, frontend public assets, and local file paths.
+     *
+     * @param imagePath the path or URL to the image
+     * @return base64-encoded string of the image
+     * @throws IOException if the image cannot be loaded or encoded
      */
     @SuppressWarnings("deprecation")
     public String loadImageAsBase64(String imagePath) throws IOException {
@@ -79,15 +97,10 @@ public class OpenAIPromptService {
         try {
             InputStream inputStream;
 
-            // Check if it's a URL (starts with http:// or https://)
             if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
                 URL url = new URL(imagePath);
                 inputStream = url.openStream();
-            }
-            // Check if it's an assets path (frontend resources)
-            else if (imagePath.startsWith("/assets") || imagePath.startsWith("assets")) {
-                // Try to construct path to frontend public folder
-                // Assuming backend and frontend are sibling directories
+            } else if (imagePath.startsWith("/assets") || imagePath.startsWith("assets")) {
                 Path currentPath = Paths.get("").toAbsolutePath();
                 Path frontendPublicPath = currentPath.getParent().resolve("frontend").resolve("public");
 
@@ -99,7 +112,6 @@ public class OpenAIPromptService {
                 if (Files.exists(fullPath)) {
                     inputStream = Files.newInputStream(fullPath);
                 } else {
-                    // Try relative to current directory (in case structure is different)
                     Path relativePath = Paths.get("../frontend/public").resolve(assetPath);
                     if (Files.exists(relativePath)) {
                         inputStream = Files.newInputStream(relativePath);
@@ -107,9 +119,7 @@ public class OpenAIPromptService {
                         throw new IOException("Image file not found at: " + fullPath + " or " + relativePath);
                     }
                 }
-            }
-            // Otherwise treat as file system path
-            else {
+            } else {
                 Path path = Paths.get(imagePath);
                 inputStream = Files.newInputStream(path);
             }

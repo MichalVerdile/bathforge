@@ -26,6 +26,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Service for managing quote requests from users.
+ * Handles the complete quote request workflow including user creation/update,
+ * quote persistence, scene creation, and email notifications to both industry
+ * and users.
+ */
 @Service
 public class QuoteService {
 
@@ -50,29 +56,32 @@ public class QuoteService {
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * Processes a complete quote request workflow.
+     * Creates or updates user account, saves quote request to database, creates a
+     * scene from the request,
+     * and sends notification emails to both industry contact and the user.
+     *
+     * @param quoteRequest the quote request data containing user info, room
+     *                     dimensions, products, and coverings
+     * @return the created or updated User entity
+     * @throws MessagingException if there is an error sending emails
+     */
     @Transactional
     public User processQuoteRequest(QuoteRequestDTO quoteRequest) throws MessagingException {
-        // Create or get user
         User user;
         if (userService.existsByEmail(quoteRequest.getEmail())) {
-            // User already exists, fetch from database
             user = userService.findByEmail(quoteRequest.getEmail())
                     .orElseThrow(() -> new IllegalStateException("User exists but could not be retrieved"));
             logger.info("Existing user found: {}", user.getEmail());
 
-            // Update phone and company if provided in the quote request
-            boolean needsUpdate = false;
             if (quoteRequest.getPhone() != null && !quoteRequest.getPhone().isEmpty()) {
                 user.setPhone(quoteRequest.getPhone());
-                needsUpdate = true;
             }
             if (quoteRequest.getCompany() != null && !quoteRequest.getCompany().isEmpty()) {
                 user.setCompany(quoteRequest.getCompany());
-                needsUpdate = true;
             }
-            // Note: User entity will be saved automatically due to @Transactional on method
         } else {
-            // Create new user
             user = new User();
             user.setEmail(quoteRequest.getEmail());
             user.setPassword(quoteRequest.getPassword());
@@ -85,7 +94,6 @@ public class QuoteService {
             logger.info("New user created: {}", user.getEmail());
         }
 
-        // Save quote request to database
         try {
             String sceneDataJson = objectMapper.writeValueAsString(quoteRequest);
             QuoteRequest quoteRequestEntity = new QuoteRequest(
@@ -100,7 +108,6 @@ public class QuoteService {
             logger.error("Failed to save quote request to database", e);
         }
 
-        // Create a scene for the user so they can load it later
         try {
             CreateSceneDTO sceneDTO = new CreateSceneDTO();
             sceneDTO.setName("Quote Request - " + user.getFirstName() + " " + user.getLastName());
@@ -108,14 +115,12 @@ public class QuoteService {
             sceneDTO.setUser(user.getEmail());
             sceneDTO.setIsPublic(false);
 
-            // Store the quote request data as scene data for reference
             try {
                 sceneDTO.setSceneData(objectMapper.writeValueAsString(quoteRequest));
             } catch (JsonProcessingException e) {
                 logger.warn("Failed to serialize scene data", e);
             }
 
-            // Convert room data to CreateSceneRoomModelDTO
             if (quoteRequest.getRoomData() != null) {
                 CreateSceneRoomModelDTO roomModelDTO = new CreateSceneRoomModelDTO();
                 roomModelDTO.setVerticesData(quoteRequest.getRoomData().getVerticesData());
@@ -124,10 +129,9 @@ public class QuoteService {
                 sceneDTO.setRoomModel(roomModelDTO);
             }
 
-            // Convert products to CreateSceneProductDTO
             if (quoteRequest.getProducts() != null && !quoteRequest.getProducts().isEmpty()) {
                 sceneDTO.setProducts(quoteRequest.getProducts().stream()
-                        .filter(p -> p.getProductId() != null) // Only include products with IDs
+                        .filter(p -> p.getProductId() != null)
                         .map(p -> {
                             CreateSceneProductDTO productDTO = new CreateSceneProductDTO();
                             productDTO.setProductId(p.getProductId());
@@ -146,10 +150,9 @@ public class QuoteService {
                         .collect(Collectors.toList()));
             }
 
-            // Convert coverings to CreateSceneCoveringDTO
             if (quoteRequest.getCoverings() != null && !quoteRequest.getCoverings().isEmpty()) {
                 sceneDTO.setCoverings(quoteRequest.getCoverings().stream()
-                        .filter(c -> c.getProductId() != null) // Only include coverings with IDs
+                        .filter(c -> c.getProductId() != null)
                         .map(c -> {
                             CreateSceneCoveringDTO coveringDTO = new CreateSceneCoveringDTO();
                             coveringDTO.setProductId(c.getProductId());
@@ -165,11 +168,9 @@ public class QuoteService {
             sceneService.createSceneForUser(sceneDTO, user);
             logger.info("Scene created for quote request user: {}", user.getEmail());
         } catch (Exception e) {
-            // Log error but don't fail the entire request if scene creation fails
             logger.error("Failed to create scene for quote request user {}: {}", user.getEmail(), e.getMessage(), e);
         }
 
-        // Prepare email data
         QuoteRequestEmailData emailData = new QuoteRequestEmailData();
         emailData.setUserFullName(user.getFirstName() + " " + user.getLastName());
         emailData.setUserEmail(user.getEmail());
@@ -177,7 +178,6 @@ public class QuoteService {
         emailData.setUserCompany(user.getCompany());
         emailData.setRoomDimensions(quoteRequest.getRoomDimensions());
 
-        // Convert wall lengths
         if (quoteRequest.getWallLengths() != null) {
             emailData.setWallLengths(quoteRequest.getWallLengths().stream()
                     .map(w -> new QuoteRequestEmailData.WallLength(w.getWall(), w.getLength()))
@@ -187,7 +187,6 @@ public class QuoteService {
         emailData.setSceneSnapshot(quoteRequest.getSceneSnapshot());
         emailData.setAdditionalNotes(quoteRequest.getAdditionalNotes());
 
-        // Convert products
         if (quoteRequest.getProducts() != null) {
             emailData.setProducts(quoteRequest.getProducts().stream()
                     .map(p -> new QuoteRequestEmailData.ProductDetail(
@@ -195,7 +194,6 @@ public class QuoteService {
                     .collect(Collectors.toList()));
         }
 
-        // Convert coverings
         if (quoteRequest.getCoverings() != null) {
             emailData.setCoverings(quoteRequest.getCoverings().stream()
                     .map(c -> new QuoteRequestEmailData.CoveringDetail(
@@ -203,22 +201,26 @@ public class QuoteService {
                     .collect(Collectors.toList()));
         }
 
-        // Send email to industry
         emailService.sendQuoteRequest(emailData);
         logger.info("Quote request email sent to industry for user: {}", user.getEmail());
 
-        // Send confirmation email to user
         try {
             emailService.sendUserConfirmation(emailData);
             logger.info("Confirmation email sent to user: {}", user.getEmail());
         } catch (MessagingException e) {
-            // Log the error but don't fail the entire request if confirmation email fails
             logger.error("Failed to send confirmation email to user {}: {}", user.getEmail(), e.getMessage());
         }
 
         return user;
     }
 
+    /**
+     * Retrieves all quote requests for a specific user, ordered by creation date
+     * (newest first).
+     *
+     * @param userId the user ID
+     * @return list of quote request history entries for the user
+     */
     public List<QuoteRequestHistoryDTO> getUserQuoteRequests(Long userId) {
         return quoteRequestRepository.findByUserIdOrderByCreatedAtDesc(userId).stream()
                 .map(qr -> new QuoteRequestHistoryDTO(
@@ -232,9 +234,11 @@ public class QuoteService {
     }
 
     /**
-     * Generate a JWT token for the given user.
-     * This is used to automatically log in new users after they submit a quote
-     * request.
+     * Generates a JWT authentication token for a user.
+     * Used to automatically log in new users after they submit a quote request.
+     *
+     * @param user the user to generate a token for
+     * @return JWT token string for authentication
      */
     public String generateTokenForUser(User user) {
         return jwtUtil.generateToken(user.getEmail(), user.getId());
